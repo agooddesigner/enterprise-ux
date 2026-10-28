@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Staffing Brief</title>
+<style>
+:root{
+  color-scheme: light;
+  --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink-2:#52514e; --muted:#6f6d67;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10); --wash:rgba(11,11,11,.05);
+  --s1:#2a78d6; --good:#0ca30c; --warn:#fab219; --crit:#d03b3b; --good-ink:#006300;
+  --accent-bg:#e9f1fc; --accent-ink:#184f95;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19; --ink:#f0efec; --ink-2:#c3c2b7; --muted:#a09e96;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10); --wash:rgba(255,255,255,.07);
+    --s1:#3987e5; --good-ink:#0ca30c; --accent-bg:#14263d; --accent-ink:#9ec5f4;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --page:#0d0d0d; --surface:#1a1a19; --ink:#f0efec; --ink-2:#c3c2b7; --muted:#a09e96;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10); --wash:rgba(255,255,255,.07);
+  --s1:#3987e5; --good-ink:#0ca30c; --accent-bg:#14263d; --accent-ink:#9ec5f4;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1240px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+h1{font-size:20px;margin:0;font-weight:650;letter-spacing:-.01em}
+.sub{color:var(--ink-2);font-size:13px;margin-top:2px}
+button{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--axis);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{background:var(--wash)}
+button:focus-visible,details summary:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+button.primary{background:var(--s1);border-color:var(--s1);color:#fff;font-weight:600}
+button.primary:hover{filter:brightness(1.08)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}
+.card h2{font-size:14px;font-weight:650;margin:0}
+.card .hint{color:var(--ink-2);font-size:12.5px;margin-top:2px}
+
+/* incident + call */
+.incident{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--warn);margin-bottom:12px;font-size:13px}
+.incident b{font-weight:650}
+.call{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap;background:var(--accent-bg);border-color:transparent;margin-bottom:12px}
+.call .eyebrow{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-ink);font-weight:650}
+.call .headline{font-size:18px;font-weight:650;margin:2px 0 0;letter-spacing:-.01em;max-width:62ch}
+.call .actions{display:flex;gap:8px;flex-wrap:wrap}
+.moves{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.move{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:3px 10px;font-size:12.5px}
+.move b{font-weight:650}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:12px}
+.kpi .l{color:var(--ink-2);font-size:12.5px}
+.kpi .v{font-size:28px;font-weight:650;letter-spacing:-.02em;margin:2px 0}
+.kpi .v small{font-size:14px;color:var(--ink-2);font-weight:500;letter-spacing:0}
+.delta{font-size:12px;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.dot.bad{background:var(--crit)} .dot.ok{background:var(--good)} .dot.warn{background:var(--warn)}
+
+/* planner */
+.planner{padding:16px 0 0;margin-bottom:12px;overflow:hidden}
+.planner .ph{padding:0 16px 10px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.grid{display:grid;grid-template-columns:minmax(190px,1.5fr) 1.1fr .9fr minmax(200px,1.5fr) 110px 150px;gap:0 16px;align-items:center;padding:0 16px}
+.gh{font-size:11.5px;color:var(--ink-2);padding:8px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--wash);margin:0 -16px;padding-left:16px;padding-right:16px;display:contents}
+.gh>div{background:var(--wash);padding:8px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-size:11.5px;color:var(--ink-2)}
+.gh>div:first-child{padding-left:16px;margin-left:-16px}
+.gh>div:last-child{padding-right:16px;margin-right:-16px}
+.row{display:contents}
+.row>div{padding:11px 0;border-bottom:1px solid var(--border)}
+.row:last-of-type>div{border-bottom:0}
+.qn{font-weight:600}
+.qnote{font-size:12px;color:var(--ink-2)}
+.num{font-variant-numeric:tabular-nums}
+.big{font-weight:600}
+.cov{display:flex;align-items:center;gap:10px}
+.track{position:relative;flex:1;height:10px;background:var(--wash);border-radius:5px}
+.fill{position:absolute;left:0;top:0;bottom:0;background:var(--s1);border-radius:5px;transition:width .25s}
+.tick{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink-2);left:66.667%;margin-left:-1px;border-radius:1px}
+.tick-lab{position:absolute;left:66.667%;transform:translateX(-50%);font-size:11px;color:var(--ink-2)}
+.pct{width:42px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600}
+.badge{width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;font-size:11px;font-weight:800;line-height:1;color:#fff}
+.badge.short{background:var(--crit)} .badge.tight{background:var(--warn);color:#0b0b0b} .badge.covered{background:var(--good)} .badge.surplus{background:var(--muted)}
+.step{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+.step button{width:30px;height:30px;padding:0;font-size:18px;line-height:1;border-radius:8px}
+.step button:disabled{opacity:.35;cursor:not-allowed}
+.step .n{min-width:28px;text-align:center;font-size:18px;font-weight:650;font-variant-numeric:tabular-nums}
+.chg{font-size:11.5px;color:var(--ink-2);text-align:right;min-height:16px;font-variant-numeric:tabular-nums}
+.chg b{font-weight:650;color:var(--ink)}
+.pfoot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--border);font-size:12.5px;color:var(--ink-2);background:var(--wash)}
+.pfoot b{color:var(--ink)}
+.warnline{color:var(--ink);font-weight:600}
+
+/* charts */
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ch{position:relative;margin-top:10px}
+.ch svg{display:block;width:100%;height:auto;overflow:visible}
+.legend{display:flex;gap:14px;font-size:12.5px;color:var(--ink-2);margin-top:6px;flex-wrap:wrap}
+.legend i{display:inline-block;width:14px;height:0;border-top:2px solid;vertical-align:middle;margin-right:6px}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--axis);border-radius:8px;padding:7px 10px;font-size:12.5px;box-shadow:0 4px 14px rgba(0,0,0,.15);white-space:nowrap;display:none;z-index:5}
+.tip .th{font-weight:650;margin-bottom:3px}
+.tip .tr{display:flex;align-items:center;gap:6px;color:var(--ink)}
+.tip .sw{width:10px;height:3px;border-radius:2px}
+details{margin-top:10px;font-size:12.5px;color:var(--ink-2)}
+details summary{cursor:pointer;width:max-content}
+details table{border-collapse:collapse;margin-top:8px;width:100%;font-variant-numeric:tabular-nums}
+details th,details td{text-align:left;padding:3px 10px 3px 0;border-bottom:1px solid var(--border)}
+footer{margin-top:16px;color:var(--muted);font-size:12px}
+
+@media (max-width:1000px){
+  .kpis{grid-template-columns:repeat(2,1fr)} .kpis .kpi:last-child{grid-column:span 2}
+  .charts{grid-template-columns:1fr}
+}
+@media (max-width:860px){
+  .grid{display:block;padding:0}
+  .gh{display:none}
+  .row{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:12px 16px;border-bottom:1px solid var(--border)}
+  .row:last-of-type{border-bottom:0}
+  .row>div{padding:0;border:0 !important}
+  .row .c-q{grid-column:1}
+  .row .c-stat{grid-column:2;text-align:right}
+  .row .c-cov{grid-column:1/-1}
+  .row .c-work,.row .c-risk{grid-column:1/-1;font-size:12.5px;color:var(--ink-2)}
+  .row .c-step{grid-column:1/-1}
+  .step{justify-content:space-between}
+  .chg{text-align:left}
+  .tick-lab{display:none}
+}
+@media (max-width:520px){
+  .kpis{grid-template-columns:1fr} .kpis .kpi:last-child{grid-column:auto}
+  .call .headline{font-size:16px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Support staffing brief</h1>
+      <div class="sub" id="asof">Wednesday, Oct 28 · data as of 7:42 AM PT</div>
+    </div>
+    <button id="theme" type="button" aria-label="Switch colour theme">Theme: Auto</button>
+  </header>
+
+  <div class="incident" role="status">
+    <span class="badge tight" aria-hidden="true">!</span>
+    <div><b>Active incident:</b> Salesforce connector sync delays since 02:10 PT (status page: degraded). Integrations tickets are arriving at roughly 2× the usual morning rate; engineering ETA for fix is 11:00.</div>
+  </div>
+
+  <section class="card call" aria-live="polite">
+    <div>
+      <div class="eyebrow" id="eyebrow">Today's call</div>
+      <p class="headline" id="headline"></p>
+      <div class="moves" id="moves"></div>
+    </div>
+    <div class="actions">
+      <button class="primary" id="apply" type="button">Apply suggested plan</button>
+      <button id="reset" type="button">Reset to today's rota</button>
+    </div>
+  </section>
+
+  <section class="kpis" id="kpis" aria-label="Key metrics"></section>
+
+  <section class="card planner" aria-labelledby="ph">
+    <div class="ph">
+      <div>
+        <h2 id="ph">Where the 37 available agents should sit today</h2>
+        <div class="hint">Coverage = agents × typical tickets handled per agent per day ÷ work due today. Queues are sorted by how short they are on today's rota. Adjust the counts to test a plan.</div>
+      </div>
+    </div>
+    <div class="grid" role="table" aria-label="Queue coverage">
+      <div class="gh" role="row">
+        <div role="columnheader">Queue</div>
+        <div role="columnheader">Work due today</div>
+        <div role="columnheader">SLA risk (next 4h)</div>
+        <div role="columnheader" style="position:relative">Coverage <span style="color:var(--muted)">· tick = 100%</span></div>
+        <div role="columnheader">Status</div>
+        <div role="columnheader" style="text-align:right">Agents</div>
+      </div>
+      <div id="rows" style="display:contents"></div>
+    </div>
+    <div class="pfoot" id="pfoot"></div>
+  </section>
+
+  <section class="charts">
+    <div class="card">
+      <h2>Inbound tickets by hour · today vs a typical Wednesday</h2>
+      <div class="hint" id="inb-hint"></div>
+      <div class="ch" id="c1"></div>
+      <div class="legend"><span><i style="border-color:var(--s1)"></i>Today (forecast)</span><span><i style="border-color:var(--ink-2);border-top-style:dashed"></i>Typical Wednesday (4-wk avg)</span></div>
+      <details><summary>View as table</summary><div id="t1"></div></details>
+    </div>
+    <div class="card">
+      <h2>Open tickets · last 14 days</h2>
+      <div class="hint" id="bl-hint"></div>
+      <div class="ch" id="c2"></div>
+      <details><summary>View as table</summary><div id="t2"></div></details>
+    </div>
+  </section>
+
+  <footer>Sample data for illustration. Agent counts assume cross-trained staff; Integrations moves need API-certified agents (14 on the roster). Throughput rates are 90-day medians per queue.</footer>
+</div>
+
+<script>
+(() => {
+  /* ---------- data ---------- */
+  const TOTAL_AGENTS = 40, OUT = { pto: 2, sick: 1 };
+  const AVAILABLE = TOTAL_AGENTS - OUT.pto - OUT.sick; // 37
+  const QUEUES = [
+    { id:'tech', name:'Technical Support (Tier 1)', note:'Product how-to, bugs, errors',          open:372, carry:46, fresh:114, rate:16, risk:19, oldest:'9h',  cur:11 },
+    { id:'bill', name:'Billing & Invoicing',       note:'Month-end invoice questions rising',      open:214, carry:70, fresh:74,  rate:30, risk:31, oldest:'31h', cur:3  },
+    { id:'intg', name:'Integrations & API',        note:'Salesforce sync incident · API-cert only', open:168, carry:52, fresh:38,  rate:12, risk:27, oldest:'26h', cur:4  },
+    { id:'onbd', name:'Onboarding & Setup',        note:'Two enterprise launches slipped to Nov',  open:96,  carry:17, fresh:37,  rate:14, risk:3,  oldest:'14h', cur:7  },
+    { id:'ent',  name:'Enterprise (named accts)',  note:'Priority SLA · 1h first response',        open:88,  carry:20, fresh:16,  rate:9,  risk:8,  oldest:'6h',  cur:4  },
+    { id:'sec',  name:'Security & Access',         note:'SSO, permissions, audit requests',        open:54,  carry:9,  fresh:22,  rate:13, risk:2,  oldest:'3h',  cur:3  },
+    { id:'esc',  name:'Escalations (Tier 2)',      note:'Engineering hand-offs, repeat contacts',  open:126, carry:22, fresh:13,  rate:7,  risk:9,  oldest:'22h', cur:5  },
+  ];
+  QUEUES.forEach(q => { q.work = q.carry + q.fresh; q.need = q.work / q.rate; });
+  const cov = (q, n) => n * q.rate / q.work;
+  QUEUES.sort((a, b) => cov(a, a.cur) - cov(b, b.cur));
+
+  const HOURS = [7,8,9,10,11,12,13,14,15,16,17,18,19];
+  const TODAY = [10,20,34,40,41,34,32,33,28,20,12,7,3];
+  const TYPICAL = [9,18,28,33,32,26,26,27,23,17,10,6,3];
+  const DAYS = ['Thu 15','Fri 16','Sat 17','Sun 18','Mon 19','Tue 20','Wed 21','Thu 22','Fri 23','Sat 24','Sun 25','Mon 26','Tue 27','Wed 28'];
+  const BACKLOG = [861,884,931,968,1012,974,921,902,919,957,996,1081,1052,1118];
+  const NOW = 7.75;
+
+  /* ---------- state ---------- */
+  const base = Object.fromEntries(QUEUES.map(q => [q.id, q.cur]));
+  let plan = { ...base };
+
+  const suggested = () => {
+    const a = Object.fromEntries(QUEUES.map(q => [q.id, 0]));
+    for (let i = 0; i < AVAILABLE; i++) {
+      let best = null, bs = Infinity;
+      QUEUES.forEach(q => { const s = a[q.id] / q.need; if (s < bs - 1e-9 || (Math.abs(s - bs) < 1e-9 && q.need > best.need)) { bs = s; best = q; } });
+      a[best.id]++;
+    }
+    return a;
+  };
+  const SUG = suggested();
+
+  const status = c => c < .9 ? 'short' : c < 1 ? 'tight' : c <= 1.25 ? 'covered' : 'surplus';
+  const LABEL = { short:'Short', tight:'Tight', covered:'Covered', surplus:'Surplus' };
+  const GLYPH = { short:'!', tight:'~', covered:'✓', surplus:'+' };
+  const fmt = n => n.toLocaleString('en-US');
+  const $ = id => document.getElementById(id);
+
+  /* ---------- KPIs ---------- */
+  const risk = QUEUES.reduce((s, q) => s + q.risk, 0);
+  const open = QUEUES.reduce((s, q) => s + q.open, 0);
+  const lastWed = BACKLOG[6];
+  const openDelta = Math.round((open / lastWed - 1) * 100);
+  const KPIS = [
+    { l:'Open tickets', v:fmt(open), d:`+${openDelta}% vs last Wednesday`, s:'bad', w:'worse' },
+    { l:'Breaching SLA in next 4h', v:risk, d:'31 of them in Billing', s:'bad', w:'needs action' },
+    { l:'Median first response', v:'52', u:' min', d:'Target 60 · was 38 last Wed', s:'warn', w:'near limit' },
+    { l:'CSAT, last 7 days', v:'4.41', u:' / 5', d:'−0.07 vs prior 7 days', s:'warn', w:'slipping' },
+    { l:'Agents on shift', v:AVAILABLE, u:` of ${TOTAL_AGENTS}`, d:`${OUT.pto} on PTO · ${OUT.sick} out sick`, s:'ok', w:'' },
+  ];
+  $('kpis').innerHTML = KPIS.map(k => `
+    <div class="card kpi"><div class="l">${k.l}</div>
+    <div class="v num">${k.v}${k.u ? `<small>${k.u}</small>` : ''}</div>
+    <div class="delta"><i class="dot ${k.s}"></i><span>${k.d}${k.w ? ' · ' + k.w : ''}</span></div></div>`).join('');
+
+  /* ---------- planner ---------- */
+  function render() {
+    const assigned = Object.values(plan).reduce((s, n) => s + n, 0);
+    const free = AVAILABLE - assigned;
+    $('rows').innerHTML = QUEUES.map(q => {
+      const n = plan[q.id], c = cov(q, n), st = status(c), d = n - base[q.id];
+      const w = Math.min(c / 1.5, 1) * 100;
+      return `<div class="row" role="row">
+        <div class="c-q" role="cell"><div class="qn">${q.name}</div><div class="qnote">${q.note}</div></div>
+        <div class="c-work num" role="cell"><span class="big">${q.work}</span> tickets<div class="qnote">${q.carry} carry-over + ${q.fresh} expected</div></div>
+        <div class="c-risk num" role="cell"><span class="big">${q.risk}</span> at risk<div class="qnote">oldest waiting ${q.oldest}</div></div>
+        <div class="c-cov" role="cell"><div class="cov"><div class="track" aria-hidden="true"><div class="fill" style="width:${w}%"></div><div class="tick"></div></div><div class="pct">${Math.round(c * 100)}%</div></div></div>
+        <div class="c-stat" role="cell"><span class="pill"><span class="badge ${st}" aria-hidden="true">${GLYPH[st]}</span>${LABEL[st]}</span></div>
+        <div class="c-step" role="cell"><div class="step">
+          <button type="button" data-q="${q.id}" data-d="-1" aria-label="Remove an agent from ${q.name}" ${n === 0 ? 'disabled' : ''}>−</button>
+          <span class="n" aria-live="polite">${n}</span>
+          <button type="button" data-q="${q.id}" data-d="1" aria-label="Add an agent to ${q.name}" ${free <= 0 ? 'disabled' : ''}>+</button></div>
+          <div class="chg">needs ${q.need.toFixed(1)}${d ? ` · <b>${d > 0 ? '+' : '−'}${Math.abs(d)} vs rota</b>` : ''}</div></div>
+      </div>`;
+    }).join('');
+
+    const worst = QUEUES.map(q => ({ q, c: cov(q, plan[q.id]) })).sort((a, b) => a.c - b.c);
+    const w0 = worst[0];
+    $('pfoot').innerHTML = `<span><b>${assigned}</b> of ${AVAILABLE} agents assigned${free > 0 ? ` · <span class="warnline">${free} unassigned</span>` : ''}</span>
+      <span>Overall coverage <b>${Math.round(QUEUES.reduce((s, q) => s + plan[q.id] * q.rate, 0) / QUEUES.reduce((s, q) => s + q.work, 0) * 100)}%</b> · lowest: <b>${w0.q.name} ${Math.round(w0.c * 100)}%</b></span>`;
+
+    // headline
+    const isBase = QUEUES.every(q => plan[q.id] === base[q.id]);
+    const rota = QUEUES.map(q => ({ q, c: cov(q, base[q.id]), gap: q.need - base[q.id] })).sort((a, b) => b.gap - a.gap);
+    const short = rota.filter(r => r.c < .9), spare = rota.filter(r => r.gap < -0.5).sort((a, b) => a.gap - b.gap);
+    if (isBase) {
+      $('eyebrow').textContent = "Today's call · on the default rota";
+      $('headline').textContent = `${short.map(r => r.q.name.split(' (')[0].split(' &')[0]).slice(0, 2).join(' and ')} ${short.length > 1 ? 'are' : 'is'} short on today's rota; ${spare[0] ? spare[0].q.name.split(' &')[0] : 'no queue'} has agents to spare.`;
+    } else {
+      const sh = worst.filter(r => r.c < .9).length;
+      $('eyebrow').textContent = 'Your plan';
+      $('headline').textContent = sh ? `${sh} queue${sh > 1 ? 's' : ''} still below 90% coverage. Weakest: ${w0.q.name.split(' (')[0]} at ${Math.round(w0.c * 100)}%.`
+        : `Every queue is at 90% or better. Weakest: ${w0.q.name.split(' (')[0]} at ${Math.round(w0.c * 100)}%.`;
+    }
+    // moves from rota -> plan
+    const from = [], to = [];
+    QUEUES.forEach(q => { const d = plan[q.id] - base[q.id]; if (d < 0) from.push({ q, n: -d }); if (d > 0) to.push({ q, n: d }); });
+    const mv = [];
+    from.forEach(f => { while (f.n > 0 && to.length) { const t = to.find(x => x.n > 0); if (!t) break; const k = Math.min(f.n, t.n); mv.push(`<span class="move"><b>${k}</b> ${f.q.name.split(' (')[0].split(' &')[0]} → ${t.q.name.split(' (')[0].split(' &')[0]}</span>`); f.n -= k; t.n -= k; } });
+    $('moves').innerHTML = mv.length ? mv.join('') : '<span class="move">No moves yet. Apply the suggested plan or use the +/− buttons.</span>';
+  }
+  $('rows').addEventListener('click', e => {
+    const b = e.target.closest('button[data-q]'); if (!b) return;
+    plan[b.dataset.q] = Math.max(0, plan[b.dataset.q] + Number(b.dataset.d));
+    const f = document.activeElement && document.activeElement.dataset ? { q: document.activeElement.dataset.q, d: document.activeElement.dataset.d } : null;
+    render();
+    if (f) { const nb = document.querySelector(`button[data-q="${f.q}"][data-d="${f.d}"]`); if (nb && !nb.disabled) nb.focus(); }
+  });
+  $('apply').onclick = () => { plan = { ...SUG }; render(); };
+  $('reset').onclick = () => { plan = { ...base }; render(); };
+
+  /* ---------- line chart ---------- */
+  const NS = 'http://www.w3.org/2000/svg';
+  function lineChart(host, o) {
+    const W = Math.max(host.clientWidth, 280), H = o.h || 250, m = { l: 40, r: 16, t: 16, b: 28 };
+    const x0 = o.x[0], x1 = o.x[o.x.length - 1];
+    const X = v => m.l + (v - x0) / (x1 - x0) * (W - m.l - m.r);
+    const Y = v => m.t + (1 - (v - o.y0) / (o.y1 - o.y0)) * (H - m.t - m.b);
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${o.aria}">`;
+    for (let t = o.y0; t <= o.y1 + 1e-9; t += o.step) {
+      s += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--grid)"/><text x="${m.l - 8}" y="${Y(t) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${o.fy(t)}</text>`;
+    }
+    s += `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="var(--axis)"/>`;
+    o.xt.forEach(([v, lab]) => { s += `<text x="${X(v)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--muted)">${lab}</text>`; });
+    if (o.now != null) s += `<line x1="${X(o.now)}" x2="${X(o.now)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--ink-2)" stroke-dasharray="3 3"/><text x="${X(o.now) + 5}" y="${m.t + 8}" font-size="11" fill="var(--ink-2)">Now · 7:45</text>`;
+    o.series.forEach(se => {
+      const pts = se.v.map((v, i) => `${X(o.x[i]).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+      s += `<polyline points="${pts}" fill="none" stroke="${se.c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" ${se.dash ? 'stroke-dasharray="5 4"' : ''}/>`;
+      (se.labels || []).forEach(L => { s += `<text x="${X(o.x[L.i])}" y="${Y(se.v[L.i]) + L.dy}" text-anchor="${L.a || 'middle'}" font-size="12" font-weight="600" fill="var(--ink)">${L.t}</text>`; });
+      if (se.end) { const i = se.v.length - 1; s += `<circle cx="${X(o.x[i])}" cy="${Y(se.v[i])}" r="4" fill="${se.c}" stroke="var(--surface)" stroke-width="2"/>`; }
+    });
+    s += `<g id="hv" style="display:none"><line y1="${m.t}" y2="${H - m.b}" stroke="var(--axis)"/></g>
+      <rect x="${m.l}" y="0" width="${W - m.l - m.r}" height="${H}" fill="transparent" style="touch-action:pan-y"/></svg><div class="tip"></div>`;
+    host.innerHTML = s;
+    const svg = host.querySelector('svg'), tip = host.querySelector('.tip'), hv = svg.querySelector('#hv'), vl = hv.querySelector('line');
+    const move = e => {
+      const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * (W / r.width);
+      let bi = 0, bd = Infinity; o.x.forEach((v, i) => { const d = Math.abs(X(v) - px); if (d < bd) { bd = d; bi = i; } });
+      hv.querySelectorAll('circle').forEach(c => c.remove());
+      vl.setAttribute('x1', X(o.x[bi])); vl.setAttribute('x2', X(o.x[bi]));
+      o.series.forEach(se => { const c = document.createElementNS(NS, 'circle'); c.setAttribute('cx', X(o.x[bi])); c.setAttribute('cy', Y(se.v[bi])); c.setAttribute('r', 5); c.setAttribute('fill', se.c); c.setAttribute('stroke', 'var(--surface)'); c.setAttribute('stroke-width', 2); hv.appendChild(c); });
+      hv.style.display = '';
+      tip.innerHTML = `<div class="th">${o.tipHead(bi)}</div>` + o.series.map(se => `<div class="tr"><span class="sw" style="background:${se.c}"></span>${se.name}: <b>${o.fv(se.v[bi])}</b></div>`).join('');
+      tip.style.display = 'block';
+      const sx = X(o.x[bi]) * (r.width / W), tw = tip.offsetWidth;
+      tip.style.left = (sx + 14 + tw > r.width ? sx - tw - 14 : sx + 14) + 'px'; tip.style.top = '8px';
+    };
+    const out = () => { hv.style.display = 'none'; tip.style.display = 'none'; };
+    svg.addEventListener('pointermove', move); svg.addEventListener('pointerdown', move); svg.addEventListener('pointerleave', out);
+  }
+  const hl = h => (h % 12 || 12) + (h < 12 ? 'a' : 'p');
+  const hl2 = h => (h % 12 || 12) + ':00 ' + (h < 12 ? 'AM' : 'PM');
+  function charts() {
+    lineChart($('c1'), {
+      x: HOURS, y0: 0, y1: 50, step: 10, fy: v => v, fv: v => v + ' tickets', h: 250, now: NOW,
+      xt: HOURS.filter((h, i) => i % 2 === 0).map(h => [h, hl(h)]),
+      aria: 'Line chart of expected inbound tickets per hour today versus a typical Wednesday. Peak is 41 tickets at 11 AM versus 33 typically.',
+      tipHead: i => hl2(HOURS[i]) + ' hour',
+      series: [
+        { name:'Typical Wed', c:'var(--ink-2)', dash:true, v:TYPICAL, labels:[{ i:3, dy:18, t:'Typical 33' }] },
+        { name:'Today', c:'var(--s1)', v:TODAY, labels:[{ i:4, dy:-10, t:'Today 41' }] },
+      ],
+    });
+    lineChart($('c2'), {
+      x: DAYS.map((_, i) => i), y0: 800, y1: 1200, step: 100, fy: v => fmt(v), fv: v => fmt(v) + ' open', h: 250,
+      xt: DAYS.map((d, i) => [i, d]).filter((_, i) => i % 3 === 1),
+      aria: 'Line chart of open tickets over 14 days, rising from 861 on Oct 15 to 1,118 today.',
+      tipHead: i => DAYS[i],
+      series: [{ name:'Open tickets', c:'var(--s1)', v:BACKLOG, end:true, labels:[{ i:13, dy:-12, t:'1,118', a:'end' }] }],
+    });
+  }
+  const tbl = (head, rows) => `<table><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  $('t1').innerHTML = tbl(['Hour', 'Today (forecast)', 'Typical Wed'], HOURS.map((h, i) => [hl2(h), TODAY[i], TYPICAL[i]]));
+  $('t2').innerHTML = tbl(['Day', 'Open tickets'], DAYS.map((d, i) => [d, fmt(BACKLOG[i])]));
+  const sum = a => a.reduce((s, n) => s + n, 0);
+  $('inb-hint').textContent = `${sum(TODAY)} tickets expected today, +${Math.round((sum(TODAY) / sum(TYPICAL) - 1) * 100)}% vs a typical Wednesday. Peak runs 10 AM to 2 PM.`;
+  $('bl-hint').textContent = `Up ${fmt(BACKLOG[13] - BACKLOG[6])} since last Wednesday. The Monday jump (+85) was never fully worked down.`;
+
+  /* ---------- theme ---------- */
+  const modes = ['auto', 'light', 'dark'];
+  let mode = 'auto';
+  try { mode = localStorage.getItem('sd-theme') || 'auto'; } catch (e) {}
+  const applyTheme = () => {
+    if (mode === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', mode);
+    $('theme').textContent = 'Theme: ' + mode[0].toUpperCase() + mode.slice(1);
+  };
+  $('theme').onclick = () => { mode = modes[(modes.indexOf(mode) + 1) % 3]; try { localStorage.setItem('sd-theme', mode); } catch (e) {} applyTheme(); };
+  applyTheme();
+
+  render(); charts();
+  let rz; addEventListener('resize', () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(charts); });
+})();
+</script>
+</body>
+</html>

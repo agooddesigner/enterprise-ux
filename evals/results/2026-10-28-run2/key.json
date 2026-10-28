@@ -1,0 +1,146 @@
+[
+  {
+    "code": "QTZ3MR",
+    "case": "E3",
+    "condition": "v1",
+    "run": 1
+  },
+  {
+    "code": "0YQ19K",
+    "case": "E5",
+    "condition": "v1",
+    "run": 1
+  },
+  {
+    "code": "ZWUO8J",
+    "case": "E8",
+    "condition": "baseline",
+    "run": 1
+  },
+  {
+    "code": "7WRFI6",
+    "case": "E2",
+    "condition": "baseline",
+    "run": 1
+  },
+  {
+    "code": "V6ZCVJ",
+    "case": "E4",
+    "condition": "v1",
+    "run": 1
+  },
+  {
+    "code": "73DA8U",
+    "case": "E8",
+    "condition": "v2",
+    "run": 1
+  },
+  {
+    "code": "S8HEV4",
+    "case": "E3",
+    "condition": "v2",
+    "run": 1
+  },
+  {
+    "code": "8P4HMU",
+    "case": "E6",
+    "condition": "v1",
+    "run": 1
+  },
+  {
+    "code": "OEJ7S1",
+    "case": "E2",
+    "condition": "v2",
+    "run": 1
+  },
+  {
+    "code": "76GTLX",
+    "case": "E1",
+    "condition": "v1",
+    "run": 1
+  },
+  {
+    "code": "DW155G",
+    "case": "E6",
+    "condition": "v2",
+    "run": 1
+  },
+  {
+    "code": "R4ZU5N",
+    "case": "E1",
+    "condition": "v2",
+    "run": 1
+  },
+  {
+    "code": "U1GCBY",
+    "case": "E4",
+    "condition": "baseline",
+    "run": 1
+  },
+  {
+    "code": "0SZBHN",
+    "case": "E7",
+    "condition": "baseline",
+    "run": 1
+  },
+  {
+    "code": "WERZSF",
+    "case": "E4",
+    "condition": "v2",
+    "run": 1
+  },
+  {
+    "code": "MZ9EET",
+    "case": "E5",
+    "condition": "v2",
+    "run": 1
+  },
+  {
+    "code": "A939PY",
+    "case": "E6",
+    "condition": "baseline",
+    "run": 1
+  },
+  {
+    "code": "E4Z2R5",
+    "case": "E3",
+    "condition": "baseline",
+    "run": 1
+  },
+  {
+    "code": "9XMWNK",
+    "case": "E1",
+    "condition": "baseline",
+    "run": 1
+  },
+  {
+    "code": "8VJLBS",
+    "case": "E7",
+    "condition": "v2",
+    "run": 1
+  },
+  {
+    "code": "UL95UQ",
+    "case": "E7",
+    "condition": "v1",
+    "run": 1
+  },
+  {
+    "code": "F0EBPG",
+    "case": "E8",
+    "condition": "v1",
+    "run": 1
+  },
+  {
+    "code": "8QCZG1",
+    "case": "E2",
+    "condition": "v1",
+    "run": 1
+  },
+  {
+    "code": "VOFM4J",
+    "case": "E5",
+    "condition": "baseline",
+    "run": 1
+  }
+]

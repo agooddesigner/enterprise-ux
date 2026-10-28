@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usage &amp; billing · Ledgerly</title>
+<link rel="stylesheet" href="acme-ds.css">
+<style>
+  /* Layout only. Colour, type, radius and spacing all come from acme-ds.css tokens. */
+  *{box-sizing:border-box}
+  body{margin:0;line-height:1.45}
+  h1,h2,h3,p{margin:0}
+  a{color:var(--ds-color-brand-hover)}
+  :focus-visible{outline:2px solid var(--ds-color-focus);outline-offset:2px}
+  .skip{position:absolute;left:var(--ds-space-2);top:-48px;background:var(--ds-color-surface);padding:var(--ds-space-2) var(--ds-space-3);border-radius:var(--ds-radius-md);z-index:10}
+  .skip:focus{top:var(--ds-space-2)}
+  .muted{color:var(--ds-color-text-muted)}
+  .num{font-variant-numeric:tabular-nums}
+  .ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--ds-space-2);text-decoration:none;white-space:nowrap}
+  .ds-btn[disabled],.ds-btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
+  .ds-btn--sm{height:28px;padding:0 var(--ds-space-3);font-size:var(--ds-text-sm)}
+
+  .shell{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+  .side{background:var(--ds-color-surface);border-right:1px solid var(--ds-color-border);padding:var(--ds-space-4);display:flex;flex-direction:column;gap:var(--ds-space-4);position:sticky;top:0;height:100vh}
+  .logo{font-weight:600;font-size:var(--ds-text-lg);display:flex;align-items:center;gap:var(--ds-space-2)}
+  .logo i{width:20px;height:20px;background:var(--ds-color-brand);border-radius:var(--ds-radius-md);display:inline-block}
+  .ws{width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center;height:auto;padding:var(--ds-space-2) var(--ds-space-3)}
+  .ws small{display:block;color:var(--ds-color-text-muted);font-size:var(--ds-text-xs);font-weight:400}
+  .nav{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+  .nav a{display:block;padding:var(--ds-space-2) var(--ds-space-3);border-radius:var(--ds-radius-md);color:var(--ds-color-text);text-decoration:none}
+  .nav a:hover{background:var(--ds-color-surface-raised)}
+  .nav a[aria-current="page"]{background:var(--ds-color-brand-subtle);color:var(--ds-color-brand-hover);font-weight:600}
+  .nav-label{font-size:var(--ds-text-xs);text-transform:uppercase;letter-spacing:.04em;color:var(--ds-color-text-muted);padding:var(--ds-space-2) var(--ds-space-3) 0}
+
+  .top{display:flex;align-items:center;gap:var(--ds-space-3);padding:var(--ds-space-3) var(--ds-space-8);background:var(--ds-color-surface);border-bottom:1px solid var(--ds-color-border)}
+  .search{flex:1;max-width:420px;display:flex;align-items:center;position:relative}
+  .search .ds-input{width:100%;padding-right:56px}
+  .search kbd{position:absolute;right:var(--ds-space-2);font:var(--ds-text-xs) var(--ds-font);border:1px solid var(--ds-color-border-strong);border-radius:var(--ds-radius-sm);padding:1px 6px;color:var(--ds-color-text-muted);background:var(--ds-color-surface-raised)}
+  .top .sp{flex:1}
+  .avatar{width:32px;height:32px;border-radius:50%;background:var(--ds-color-brand-subtle);color:var(--ds-color-brand-hover);font-weight:600;font-size:var(--ds-text-sm);display:inline-flex;align-items:center;justify-content:center}
+  .dot{position:relative}
+  .dot::after{content:"";position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--ds-color-danger);border:2px solid var(--ds-color-surface)}
+
+  main{padding:var(--ds-space-6) var(--ds-space-8) 64px;max-width:1160px;width:100%}
+  .crumbs{font-size:var(--ds-text-sm);color:var(--ds-color-text-muted);margin-bottom:var(--ds-space-3)}
+  .crumbs a{color:var(--ds-color-text-muted)}
+  .head{display:flex;justify-content:space-between;align-items:flex-end;gap:var(--ds-space-4);flex-wrap:wrap;margin-bottom:var(--ds-space-6)}
+  h1{font-size:var(--ds-text-2xl);line-height:1.2;font-weight:600}
+  .fresh{font-size:var(--ds-text-sm);color:var(--ds-color-text-muted);margin-top:var(--ds-space-1)}
+  .actions{display:flex;gap:var(--ds-space-2);flex-wrap:wrap}
+
+  .banner{display:flex;gap:var(--ds-space-3);align-items:flex-start;justify-content:space-between;padding:var(--ds-space-3) var(--ds-space-4);border-radius:var(--ds-radius-lg);border:1px solid;margin-bottom:var(--ds-space-4)}
+  .banner--danger{background:var(--ds-color-danger-subtle);border-color:var(--ds-color-danger)}
+  .banner--info{background:var(--ds-color-surface-raised);border-color:var(--ds-color-border-strong)}
+  .banner strong{display:block}
+
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:var(--ds-space-4)}
+  .c12{grid-column:span 12}.c8{grid-column:span 8}.c7{grid-column:span 7}.c5{grid-column:span 5}.c4{grid-column:span 4}.c6{grid-column:span 6}
+  .card-h{display:flex;justify-content:space-between;align-items:baseline;gap:var(--ds-space-3);margin-bottom:var(--ds-space-4);flex-wrap:wrap}
+  h2{font-size:var(--ds-text-lg);font-weight:600}
+  .label{font-size:var(--ds-text-xs);text-transform:uppercase;letter-spacing:.04em;color:var(--ds-color-text-muted)}
+
+  .hero{border-left:4px solid var(--ds-color-brand)}
+  .hero-amt{font-size:48px;line-height:1.1;font-weight:600;margin:var(--ds-space-2) 0}
+  .hero-amt small{font-size:var(--ds-text-lg);font-weight:400;color:var(--ds-color-text-muted)}
+  .lines{list-style:none;margin:var(--ds-space-4) 0 0;padding:0}
+  .lines li{display:flex;justify-content:space-between;gap:var(--ds-space-4);padding:var(--ds-space-2) 0;border-top:1px solid var(--ds-color-border)}
+  .lines li.total{font-weight:600}
+
+  .meter{padding:var(--ds-space-3) 0;border-top:1px solid var(--ds-color-border)}
+  .meter:first-of-type{border-top:0;padding-top:0}
+  .meter-top{display:flex;justify-content:space-between;align-items:baseline;gap:var(--ds-space-3);flex-wrap:wrap}
+  .meter-name{font-weight:500}
+  .bar{height:8px;background:var(--ds-color-surface-raised);border:1px solid var(--ds-color-border);border-radius:var(--ds-radius-sm);margin:var(--ds-space-2) 0;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--ds-color-brand)}
+  .bar.warn i{background:var(--ds-color-warning)}
+  .bar.bad i{background:var(--ds-color-danger)}
+  .meter-sub{font-size:var(--ds-text-sm);color:var(--ds-color-text-muted)}
+
+  .chart{width:100%;height:auto;display:block}
+  .chart text{font:var(--ds-text-xs) var(--ds-font);fill:var(--ds-color-text-muted)}
+  details{margin-top:var(--ds-space-3);font-size:var(--ds-text-sm)}
+  summary{cursor:pointer;color:var(--ds-color-brand-hover)}
+  details .ds-table th,details .ds-table td{height:32px}
+  .scroll{max-height:260px;overflow:auto;margin-top:var(--ds-space-2)}
+
+  .field{display:flex;flex-direction:column;gap:var(--ds-space-1);margin-bottom:var(--ds-space-4)}
+  .field label,.field legend{font-weight:500}
+  .hint{font-size:var(--ds-text-sm);color:var(--ds-color-text-muted)}
+  fieldset{border:0;padding:0;margin:0 0 var(--ds-space-4)}
+  .opt{display:flex;gap:var(--ds-space-2);align-items:flex-start;margin-top:var(--ds-space-2)}
+  .opt input{margin-top:3px;width:16px;height:16px;accent-color:var(--ds-color-brand)}
+  .inline-warn{display:none;margin-top:var(--ds-space-2);padding:var(--ds-space-2) var(--ds-space-3);background:var(--ds-color-warning-subtle);color:var(--ds-color-warning);border-radius:var(--ds-radius-md);font-size:var(--ds-text-sm)}
+  .err{color:var(--ds-color-danger);font-size:var(--ds-text-sm);display:none}
+  .ds-input[aria-invalid="true"]{border-color:var(--ds-color-danger)}
+  .money{display:flex;align-items:center;gap:var(--ds-space-2)}
+  .form-foot{display:flex;gap:var(--ds-space-3);align-items:center;flex-wrap:wrap}
+
+  .ds-table td.r,.ds-table th.r{text-align:right}
+  .tbl-wrap{overflow-x:auto}
+  .pay{display:flex;justify-content:space-between;gap:var(--ds-space-3);flex-wrap:wrap;align-items:center}
+  dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:var(--ds-space-2) var(--ds-space-4)}
+  dt{color:var(--ds-color-text-muted)} dd{margin:0}
+
+  .skel{background:linear-gradient(90deg,var(--ds-color-surface-raised),var(--ds-color-border),var(--ds-color-surface-raised));background-size:200% 100%;border-radius:var(--ds-radius-md);animation:sh 1.4s infinite linear}
+  @keyframes sh{to{background-position:-200% 0}}
+  @media (prefers-reduced-motion:reduce){.skel{animation:none}}
+  .state-box{text-align:center;padding:var(--ds-space-6) var(--ds-space-4)}
+  .state-box p{margin:var(--ds-space-2) 0 var(--ds-space-4)}
+  .previewbar{margin-top:var(--ds-space-8);padding-top:var(--ds-space-4);border-top:1px dashed var(--ds-color-border-strong);display:flex;gap:var(--ds-space-3);align-items:center;flex-wrap:wrap;font-size:var(--ds-text-sm);color:var(--ds-color-text-muted)}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+  @media (max-width:1000px){.c8,.c7,.c5,.c4,.c6{grid-column:span 12}}
+  @media (max-width:800px){
+    .shell{grid-template-columns:1fr}
+    .side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--ds-color-border)}
+    .nav{flex-direction:row;flex-wrap:wrap}.nav-label{display:none}
+    main{padding:var(--ds-space-4)}
+    .top{padding:var(--ds-space-3) var(--ds-space-4)}
+    .hero-amt{font-size:36px}
+  }
+</style>
+</head>
+<body>
+<a class="skip ds-btn" href="#main">Skip to content</a>
+<div class="shell">
+  <aside class="side">
+    <div class="logo"><i aria-hidden="true"></i>Ledgerly</div>
+    <button class="ds-btn ws" type="button" aria-haspopup="menu" aria-label="Switch workspace, current: Northwind Trading">
+      <span>Northwind Trading<small>Business plan</small></span><span aria-hidden="true">⌄</span>
+    </button>
+    <nav aria-label="Primary">
+      <ul class="nav">
+        <li><a href="#">Overview</a></li>
+        <li><a href="#">Ledgers</a></li>
+        <li><a href="#">Bank connections</a></li>
+        <li><a href="#">Reports</a></li>
+        <li class="nav-label" aria-hidden="true">Workspace admin</li>
+        <li><a href="#">Members &amp; roles</a></li>
+        <li><a href="#" aria-current="page">Usage &amp; billing</a></li>
+        <li><a href="#">Security</a></li>
+        <li><a href="#">Audit log</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <div>
+    <header class="top">
+      <form class="search" role="search" onsubmit="return false">
+        <label class="sr" for="q">Search Ledgerly</label>
+        <input id="q" class="ds-input" type="search" placeholder="Search ledgers, people, invoices">
+        <kbd aria-hidden="true">⌘K</kbd>
+      </form>
+      <span class="sp"></span>
+      <button class="ds-btn dot" type="button" aria-label="Notifications, 2 unread">🔔</button>
+      <button class="ds-btn" type="button" aria-haspopup="menu" aria-label="Account menu for Dana Okafor"><span class="avatar" aria-hidden="true">DO</span></button>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="#">Workspace admin</a> / <span aria-current="page">Usage &amp; billing</span></nav>
+
+      <div class="head">
+        <div>
+          <h1>Usage &amp; billing</h1>
+          <p class="fresh" id="fresh">Northwind Trading · Billing period 1–31 Oct 2026 · Usage as of 28 Oct 2026, 08:00 UTC</p>
+        </div>
+        <div class="actions">
+          <button class="ds-btn" type="button" id="csv">Download usage CSV</button>
+          <a class="ds-btn" href="#plan">Change plan</a>
+        </div>
+      </div>
+
+      <div id="banners"></div>
+      <div id="live" class="sr" role="status" aria-live="polite"></div>
+      <div id="app"></div>
+
+      <div class="previewbar">
+        <label for="statesel">Preview state (design review only)</label>
+        <select id="statesel" class="ds-input">
+          <option value="ready">Ready</option>
+          <option value="loading">Loading</option>
+          <option value="error">Error</option>
+          <option value="empty">New workspace (empty)</option>
+          <option value="pastdue">Payment failed</option>
+          <option value="readonly">Not a billing admin</option>
+        </select>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ---------- Data (stand-in for API) ---------- */
+  var RATE_PER_1000 = 4.00, SEAT_PRICE = 18, INCLUDED_TX = 250000;
+  var seats = {bought:48, assigned:46};
+  var days = []; // Oct 1 2026 is a Thursday
+  for (var d=1; d<=28; d++){
+    var dow=(4+d-1)%7, wk=(dow===0||dow===6);
+    days.push({d:d, dow:dow, wk:wk, v: wk ? 3200+((d*13)%7)*120 : 9400+((d*37)%11)*180});
+  }
+  var total = days.reduce(function(s,x){return s+x.v},0);
+  var wkd = days.filter(function(x){return !x.wk}), wke = days.filter(function(x){return x.wk});
+  var avg = function(a){return a.reduce(function(s,x){return s+x.v},0)/a.length};
+  var projected = Math.round(total + 2*avg(wkd) + avg(wke)); // Oct 29, 30 weekdays; Oct 31 Saturday
+  var overUnits = Math.max(0, projected-INCLUDED_TX);
+  var overCost = Math.round(overUnits/1000*RATE_PER_1000*100)/100;
+  var seatCost = seats.bought*SEAT_PRICE;
+  var nextTotal = seatCost+overCost;
+  var meters = [
+    {name:"Transactions synced", used:total, cap:INCLUDED_TX, unit:"", note:"Overage is billed at $4.00 per 1,000 after the included amount.", soft:true, href:"#chart"},
+    {name:"Bank connections", used:22, cap:25, unit:"", note:"Hard limit: new connections are blocked at 25. Plan limit, not billed.", href:"#"},
+    {name:"API requests", used:61240, cap:100000, unit:"", note:"Resets 1 Nov. Requests above the limit are rate-limited, not billed.", href:"#"},
+    {name:"Seats assigned", used:seats.assigned, cap:seats.bought, unit:"", note:"2 seats unassigned. Seats are billed whether or not they are assigned.", href:"#"}
+  ];
+  var invoices = [
+    {n:"INV-2026-0147", date:"1 Oct 2026", period:"Oct 2026", amt:864+31.2, st:"Paid"},
+    {n:"INV-2026-0132", date:"1 Sep 2026", period:"Sep 2026", amt:864, st:"Paid"},
+    {n:"INV-2026-0118", date:"1 Aug 2026", period:"Aug 2026", amt:828, st:"Paid"},
+    {n:"INV-2026-0101", date:"1 Jul 2026", period:"Jul 2026", amt:828, st:"Paid"},
+    {n:"INV-2026-0087", date:"1 Jun 2026", period:"Jun 2026", amt:792, st:"Paid"},
+    {n:"INV-2026-0070", date:"1 May 2026", period:"May 2026", amt:792, st:"Paid"}
+  ];
+
+  /* ---------- Helpers ---------- */
+  var nf = new Intl.NumberFormat("en-US"), cf = new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"});
+  var $ = function(id){return document.getElementById(id)};
+  var pct = function(a,b){return a/b*100};
+  var fmtDay = function(n){return n+" Oct"};
+  function statusOf(p){ return p>=100 ? {t:"At limit",c:"danger",bar:"bad"} : p>=90 ? {t:"Near limit",c:"warning",bar:"warn"} : p>=75 ? {t:"Over 75%",c:"warning",bar:"warn"} : {t:"On track",c:"success",bar:""}; }
+  function badge(t,c){return '<span class="ds-badge ds-badge--'+c+'">'+t+'</span>'}
+  function announce(m){ $("live").textContent=""; setTimeout(function(){$("live").textContent=m},50); }
+
+  var params = new URLSearchParams(location.search);
+  var state = params.get("state") || "ready";
+  if (["ready","loading","error","empty","pastdue","readonly"].indexOf(state)<0) state="ready";
+  $("statesel").value = state;
+  $("statesel").addEventListener("change", function(){
+    var p = new URLSearchParams(location.search); p.set("state", this.value);
+    location.search = p.toString();
+  });
+
+  /* ---------- Section builders ---------- */
+  function skel(h){return '<div class="skel" style="height:'+h+'px;margin-bottom:12px" aria-hidden="true"></div>'}
+  function errorCard(title){
+    return '<section class="ds-card"><div class="state-box"><h2>'+title+' couldn’t be loaded</h2><p class="muted">Your data is safe; we just can’t reach the billing service. Nothing has changed on your account.</p><button class="ds-btn" type="button" onclick="location.reload()">Try again</button></div></section>';
+  }
+
+  function hero(ro){
+    return '<section class="ds-card hero c5" aria-labelledby="h-next">'+
+      '<p class="label" id="h-next">Projected invoice · 1 Nov 2026</p>'+
+      '<p class="hero-amt num">'+cf.format(nextTotal)+' <small>USD</small></p>'+
+      '<p class="'+(overCost>0?'':'muted')+'">'+(overCost>0
+        ? 'About <strong>'+cf.format(overCost)+'</strong> more than your base plan, because transactions are on track to pass the included '+nf.format(INCLUDED_TX)+' this month.'
+        : 'Matches your base plan. No overage expected this month.')+'</p>'+
+      '<ul class="lines num">'+
+        '<li><span>Seats: '+seats.bought+' × '+cf.format(SEAT_PRICE)+'/month<br><span class="muted" style="font-size:var(--ds-text-sm)">Billed in advance for November</span></span><span>'+cf.format(seatCost)+'</span></li>'+
+        '<li><span>Transaction overage, October<br><span class="muted" style="font-size:var(--ds-text-sm)">~'+nf.format(overUnits)+' over × $4.00 per 1,000 (estimate)</span></span><span>'+cf.format(overCost)+'</span></li>'+
+        '<li class="total"><span>Estimated total</span><span>'+cf.format(nextTotal)+'</span></li>'+
+      '</ul>'+
+      '<p class="hint" style="margin-top:var(--ds-space-3)">Charged to Visa ending 4242. Final amount is set on 1 Nov; taxes not included.</p>'+
+    '</section>';
+  }
+
+  function metersCard(){
+    var h='<section class="ds-card c7" aria-labelledby="h-use"><div class="card-h"><h2 id="h-use">This month’s usage</h2><span class="hint">Scope: Northwind Trading, all ledgers</span></div>';
+    meters.forEach(function(m){
+      var p=pct(m.used,m.cap), s=statusOf(p), w=Math.min(100,p);
+      h+='<div class="meter"><div class="meter-top"><span class="meter-name">'+m.name+'</span>'+
+        '<span class="num"><strong>'+nf.format(m.used)+'</strong> of '+nf.format(m.cap)+' · '+p.toFixed(1)+'% '+badge(s.t,s.c)+'</span></div>'+
+        '<div class="bar '+s.bar+'" role="img" aria-label="'+m.name+': '+p.toFixed(1)+' percent used"><i style="width:'+w+'%"></i></div>'+
+        '<p class="meter-sub">'+m.note+(m.soft?' <a href="#chart">See daily trend</a>':'')+'</p></div>';
+    });
+    return h+'</section>';
+  }
+
+  function chartCard(){
+    var W=720,H=250,L=52,R=16,T=16,B=32, maxY=300000, last=31;
+    var X=function(d){return L+(d-1)/(last-1)*(W-L-R)}, Y=function(v){return T+(1-v/maxY)*(H-T-B)};
+    var cum=0, pts=days.map(function(x){cum+=x.v; return [X(x.d),Y(cum)]});
+    var path='M'+pts.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1)}).join(' L');
+    var lp=pts[pts.length-1], ex=X(31), ey=Y(projected);
+    var svg='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-labelledby="ct cd">'+
+      '<title id="ct">Cumulative transactions synced in October 2026</title>'+
+      '<desc id="cd">'+nf.format(total)+' synced through 28 October. Projected '+nf.format(projected)+' by 31 October against '+nf.format(INCLUDED_TX)+' included.</desc>';
+    [0,100000,200000,300000].forEach(function(v){
+      svg+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--ds-color-border)"/>'+
+           '<text x="'+(L-8)+'" y="'+(Y(v)+4)+'" text-anchor="end">'+(v/1000)+'k</text>';
+    });
+    [1,8,15,22,29].forEach(function(d){svg+='<text x="'+X(d)+'" y="'+(H-10)+'" text-anchor="middle">'+d+' Oct</text>'});
+    svg+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(INCLUDED_TX)+'" y2="'+Y(INCLUDED_TX)+'" stroke="var(--ds-color-warning)" stroke-width="2" stroke-dasharray="2 4"/>'+
+         '<text x="'+(L+6)+'" y="'+(Y(INCLUDED_TX)-6)+'" style="fill:var(--ds-color-warning);font-weight:500">Included: '+nf.format(INCLUDED_TX)+'</text>'+
+         '<path d="'+path+'" fill="none" stroke="var(--ds-color-brand)" stroke-width="2.5" stroke-linejoin="round"/>'+
+         '<line x1="'+lp[0]+'" y1="'+lp[1]+'" x2="'+ex+'" y2="'+ey+'" stroke="var(--ds-color-brand)" stroke-width="2.5" stroke-dasharray="5 5"/>'+
+         '<circle cx="'+lp[0]+'" cy="'+lp[1]+'" r="4" fill="var(--ds-color-brand)"/>'+
+         '<text x="'+(lp[0]-8)+'" y="'+(lp[1]-10)+'" text-anchor="end" style="fill:var(--ds-color-text);font-weight:500">'+nf.format(total)+' so far</text>'+
+         '<text x="'+(ex-4)+'" y="'+(ey-10)+'" text-anchor="end" style="fill:var(--ds-color-text);font-weight:500">~'+nf.format(projected)+' projected</text>'+
+      '</svg>';
+    var rows=''; var c2=0;
+    days.forEach(function(x){c2+=x.v; rows+='<tr><td>'+fmtDay(x.d)+'</td><td class="r num">'+nf.format(x.v)+'</td><td class="r num">'+nf.format(c2)+'</td></tr>'});
+    return '<section class="ds-card c12" id="chart" aria-labelledby="h-chart"><div class="card-h"><h2 id="h-chart">Transactions synced, cumulative</h2>'+
+      '<span class="hint">Solid: actual · Dashed: projection from recent weekday/weekend averages</span></div>'+svg+
+      '<details><summary>View daily numbers as a table</summary><div class="scroll"><table class="ds-table"><caption class="sr">Transactions synced per day, October 2026</caption><thead><tr><th scope="col">Date</th><th scope="col" class="r">Synced that day</th><th scope="col" class="r">Cumulative</th></tr></thead><tbody>'+rows+'</tbody></table></div></details></section>';
+  }
+
+  function alertsCard(ro){
+    var dis = ro ? ' disabled' : '';
+    return '<section class="ds-card c6" aria-labelledby="h-alerts"><div class="card-h"><h2 id="h-alerts">Spend limit &amp; alerts</h2></div>'+
+      (ro?'<p class="hint" style="margin-bottom:var(--ds-space-4)">Only billing admins can change these settings. Ask Dana Okafor (billing owner) to make changes.</p>':'')+
+      '<form id="alertform" novalidate>'+
+      '<fieldset><legend class="label" style="margin-bottom:var(--ds-space-1)">Email billing admins when usage reaches</legend>'+
+        '<div class="opt"><input type="checkbox" id="t75" checked'+dis+'><label for="t75">75% of any included amount</label></div>'+
+        '<div class="opt"><input type="checkbox" id="t90" checked'+dis+'><label for="t90">90% of any included amount</label></div>'+
+        '<div class="opt"><input type="checkbox" id="t100" checked'+dis+'><label for="t100">100%, when overage charges start</label></div>'+
+        '<div class="inline-warn" id="warnoff" role="note">With all alerts off, you could be charged for overage without any warning first.</div>'+
+      '</fieldset>'+
+      '<div class="field"><label for="cap">Monthly overage limit <span class="muted" style="font-weight:400">(optional)</span></label>'+
+        '<div class="money"><span aria-hidden="true">$</span><input id="cap" class="ds-input num" inputmode="decimal" style="width:140px" value="100.00" aria-describedby="caphint caperr"'+dis+'></div>'+
+        '<span class="hint" id="caphint">When overage reaches this amount we email you and keep syncing. Syncing is never paused automatically. Leave empty for no limit.</span>'+
+        '<span class="err" id="caperr" role="alert">Enter an amount like 100.00, or leave it empty for no limit.</span></div>'+
+      '<div class="form-foot"><button class="ds-btn ds-btn--primary" type="submit"'+dis+'>Save alert settings</button><span class="hint" id="saved" role="status"></span></div>'+
+      '</form></section>';
+  }
+
+  function planCard(ro){
+    return '<section class="ds-card c6" id="plan" aria-labelledby="h-plan"><div class="card-h"><h2 id="h-plan">Plan &amp; payment</h2></div>'+
+      '<dl>'+
+        '<dt>Plan</dt><dd>Business · monthly · renews 1 Nov 2026</dd>'+
+        '<dt>Seats</dt><dd class="num">'+seats.assigned+' assigned of '+seats.bought+' purchased · '+cf.format(SEAT_PRICE)+' per seat per month</dd>'+
+        '<dt>Payment method</dt><dd>Visa ending 4242 · expires 08/2028</dd>'+
+        '<dt>Billing contact</dt><dd>Dana Okafor · billing@northwind.example</dd>'+
+        '<dt>Tax ID</dt><dd>—</dd>'+
+      '</dl>'+
+      (ro?'<p class="hint" style="margin-top:var(--ds-space-4)">Billing is managed by Dana Okafor. You can view but not change plan or payment details.</p>':
+      '<div class="actions" style="margin-top:var(--ds-space-4)"><button class="ds-btn" type="button">Update payment method</button><button class="ds-btn" type="button">Change seats</button><a class="ds-btn" href="#">Compare plans</a></div>'+
+      '<p class="hint" style="margin-top:var(--ds-space-3)">Seat changes are prorated and take effect immediately; downgrades take effect at renewal. <a href="#">Cancel subscription</a></p>')+
+      '</section>';
+  }
+
+  function invoicesCard(empty){
+    var body;
+    if (empty){
+      body='<div class="state-box"><h3>No invoices yet</h3><p class="muted">Your first invoice will be issued on 1 Nov 2026 and appear here.</p></div>';
+    } else {
+      body='<div class="tbl-wrap"><table class="ds-table"><caption class="sr">Invoice history</caption><thead><tr><th scope="col">Invoice</th><th scope="col">Issued</th><th scope="col">Period</th><th scope="col" class="r">Amount</th><th scope="col">Status</th><th scope="col"><span class="sr">Download</span></th></tr></thead><tbody>'+
+      invoices.map(function(i){return '<tr><td><a href="#">'+i.n+'</a></td><td>'+i.date+'</td><td>'+i.period+'</td><td class="r num">'+cf.format(i.amt)+'</td><td>'+badge(i.st,i.st==="Paid"?"success":"danger")+'</td><td class="r"><a href="#" aria-label="Download PDF for '+i.n+'">PDF</a></td></tr>'}).join('')+
+      '</tbody></table></div>';
+    }
+    return '<section class="ds-card c12" aria-labelledby="h-inv"><div class="card-h"><h2 id="h-inv">Invoices</h2><span class="hint">Amounts in USD, dates in UTC</span></div>'+body+'</section>';
+  }
+
+  /* ---------- Render by state ---------- */
+  var app=$("app"), ban=$("banners"), html='', ro=(state==="readonly");
+  if (state==="loading"){
+    app.setAttribute("aria-busy","true");
+    html='<div class="grid"><div class="c5">'+skel(300)+'</div><div class="c7">'+skel(300)+'</div><div class="c12">'+skel(260)+'</div><div class="c12">'+skel(200)+'</div></div><span class="sr" role="status">Loading usage and billing</span>';
+  } else if (state==="error"){
+    html='<div class="grid"><div class="c12">'+errorCard("Usage and billing")+'</div></div>';
+    ban.innerHTML='<div class="banner banner--danger" role="alert"><div><strong>Usage data is unavailable</strong>We couldn’t load usage as of 28 Oct 2026. Your plan and charges are unaffected.</div><button class="ds-btn ds-btn--sm" onclick="location.reload()">Try again</button></div>';
+  } else if (state==="empty"){
+    html='<div class="grid"><section class="ds-card c12"><div class="state-box"><h2>No usage yet this month</h2><p class="muted">Usage appears here once you connect a bank account or sync a ledger. You’re on the Business plan: '+nf.format(INCLUDED_TX)+' transactions per month are included.</p><a class="ds-btn ds-btn--primary" href="#">Connect a bank account</a></div></section>'+planCard(false).replace('c6','c12')+invoicesCard(true)+'</div>';
+  } else {
+    if (state==="pastdue") ban.innerHTML='<div class="banner banner--danger" role="alert"><div><strong>Your 1 Oct payment of $895.20 failed</strong>Visa ending 4242 was declined. Update your payment method by 4 Nov 2026 to avoid your workspace switching to read-only.</div><button class="ds-btn ds-btn--danger ds-btn--sm" type="button">Update payment method</button></div>';
+    if (ro) ban.innerHTML='<div class="banner banner--info" role="note"><div><strong>View only</strong>You’re a workspace admin but not a billing admin. Billing is managed by Dana Okafor.</div></div>';
+    html='<div class="grid">'+hero(ro)+metersCard()+chartCard()+alertsCard(ro)+planCard(ro)+invoicesCard(false)+'</div>';
+  }
+  app.innerHTML=html;
+  if (state==="pastdue"){
+    // reflect failed invoice in the table
+    var cells=app.querySelectorAll("tbody tr:first-child td:nth-child(5)");
+    if(cells[0]) cells[0].innerHTML=badge("Failed","danger");
+  }
+
+  /* ---------- Behaviour ---------- */
+  var form=$("alertform");
+  if (form){
+    var boxes=["t75","t90","t100"].map($);
+    function warn(){ $("warnoff").style.display = boxes.every(function(b){return !b.checked}) ? "block":"none"; }
+    boxes.forEach(function(b){b.addEventListener("change",warn)});
+    form.addEventListener("submit",function(e){
+      e.preventDefault();
+      var cap=$("cap"), v=cap.value.trim().replace(/^\$/,"");
+      var ok = v==="" || /^\d{1,7}(\.\d{1,2})?$/.test(v);
+      cap.setAttribute("aria-invalid", ok?"false":"true");
+      $("caperr").style.display = ok?"none":"block";
+      if(!ok){ cap.focus(); return; }
+      $("saved").textContent="Saved just now";
+      announce("Alert settings saved.");
+    });
+  }
+  $("csv").addEventListener("click",function(){
+    var csv="date,transactions_synced\n"+days.map(function(x){return "2026-10-"+(x.d<10?"0":"")+x.d+","+x.v}).join("\n");
+    var a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download="ledgerly-usage-2026-10.csv"; a.click();
+    announce("Usage CSV downloaded.");
+  });
+  if (state==="loading") $("csv").disabled=true;
+  document.addEventListener("keydown",function(e){ if((e.metaKey||e.ctrlKey)&&e.key==="k"){e.preventDefault();$("q").focus();} });
+})();
+</script>
+</body>
+</html>

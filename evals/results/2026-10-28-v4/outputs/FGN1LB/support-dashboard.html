@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Staffing – Daily Briefing</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb;
+  --ink: #0b0b0b; --ink-2: #52514e; --ink-3: #6f6d68;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,.10);
+  --s1: #2a78d6; --s2: #eb6834;
+  --good: #0ca30c; --warn: #fab219; --serious: #ec835a; --crit: #d03b3b;
+  --good-text: #006300; --accent: #2a78d6; --accent-ink: #fff;
+  --hover: rgba(11,11,11,.05); --callout: #eef4fc;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19;
+    --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #a09e97;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,.10);
+    --s1: #3987e5; --s2: #d95926; --good-text: #0ca30c; --accent: #3987e5;
+    --hover: rgba(255,255,255,.06); --callout: #16222f;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 20px; margin: 0; font-weight: 650; }
+h2 { font-size: 15px; margin: 0; font-weight: 650; }
+.sub { color: var(--ink-2); font-size: 13px; }
+header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+.grid { display: grid; gap: 16px; margin-top: 16px; }
+.kpis { grid-template-columns: repeat(5, 1fr); }
+.two { grid-template-columns: 1.35fr 1fr; }
+@media (max-width: 1000px) { .kpis { grid-template-columns: repeat(2, 1fr); } .two { grid-template-columns: 1fr; } }
+@media (max-width: 520px) { .kpis { grid-template-columns: 1fr; } }
+
+/* call of the day */
+.call { background: var(--callout); border-color: var(--border); }
+.call .lead { font-size: 18px; font-weight: 650; margin: 2px 0 10px; line-height: 1.35; }
+.moves { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.move { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 13px; }
+.move b { font-size: 15px; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); padding: 6px 12px; }
+button:hover:not(:disabled) { background: var(--hover); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
+button.primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.1); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* kpis */
+.kpi .label { color: var(--ink-2); font-size: 13px; }
+.kpi .val { font-size: 30px; font-weight: 650; line-height: 1.15; margin-top: 4px; }
+.kpi .val small { font-size: 14px; font-weight: 500; color: var(--ink-2); }
+.kpi .delta { font-size: 12.5px; color: var(--ink-2); margin-top: 2px; }
+.kpi svg { display: block; margin-top: 8px; }
+.bad { color: var(--ink); font-weight: 600; }
+.badge { display: inline-block; width: 1.1em; text-align: center; }
+
+/* table */
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 880px; }
+th { text-align: left; font-weight: 500; color: var(--ink-2); font-size: 12.5px; padding: 6px 10px; border-bottom: 1px solid var(--axis); white-space: nowrap; }
+td { padding: 10px; border-bottom: 1px solid var(--grid); vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+td .q { font-weight: 600; } td .t { color: var(--ink-2); font-size: 12px; }
+.stepper { display: inline-flex; align-items: center; gap: 6px; }
+.stepper button { width: 28px; height: 28px; padding: 0; line-height: 1; font-size: 16px; }
+.stepper .num { min-width: 22px; text-align: center; font-weight: 650; font-size: 16px; font-variant-numeric: tabular-nums; }
+.stepper .was { color: var(--ink-3); font-size: 12px; min-width: 38px; }
+.loadcell { min-width: 190px; }
+.bar { position: relative; height: 10px; background: var(--grid); border-radius: 3px; margin-top: 6px; }
+.bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 4px 4px 0; border-radius: 3px 4px 4px 3px; }
+.bar u { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); opacity: .7; text-decoration: none; }
+.status { font-size: 12.5px; color: var(--ink); white-space: nowrap; }
+.status svg { vertical-align: -2px; margin-right: 4px; }
+.pool { font-size: 13px; color: var(--ink-2); }
+.pool b { color: var(--ink); }
+tfoot td { font-weight: 600; border-top: 1px solid var(--axis); }
+
+/* chart */
+.legend { display: flex; gap: 16px; font-size: 13px; color: var(--ink-2); margin: 6px 0 4px; flex-wrap: wrap; }
+.legend span::before { content: ""; display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; background: var(--c); }
+#chart { position: relative; }
+#chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--axis); border-radius: 8px; padding: 6px 10px; font-size: 12.5px; box-shadow: 0 2px 8px rgba(0,0,0,.15); white-space: nowrap; display: none; z-index: 2; }
+.tip .row::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--c); margin-right: 6px; }
+.link { background: none; border: 0; color: var(--accent); padding: 0; font-size: 13px; text-decoration: underline; }
+.link:hover:not(:disabled) { background: none; }
+
+/* escalations */
+.esc { list-style: none; margin: 8px 0 0; padding: 0; }
+.esc li { padding: 10px 0; border-bottom: 1px solid var(--grid); display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; }
+.esc li:last-child { border-bottom: 0; }
+.esc .who { font-weight: 600; }
+.esc .arr { color: var(--ink-2); font-weight: 400; font-size: 12.5px; }
+.esc .why { color: var(--ink-2); font-size: 13px; grid-column: 1; }
+.esc .eta { text-align: right; font-weight: 650; font-variant-numeric: tabular-nums; }
+.esc .eta small { display: block; font-weight: 400; color: var(--ink-2); font-size: 12px; }
+.note { color: var(--ink-3); font-size: 12px; margin-top: 16px; line-height: 1.5; }
+.sr { position: absolute; left: -9999px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Support staffing briefing</h1>
+      <div class="sub">Tuesday, Oct 28 · data as of 7:45 AM PT · 37 of 40 agents in today (2 PTO, 1 sick)</div>
+    </div>
+    <div class="sub">Targets: first response ≤ 30 min · SLA ≥ 95% · CSAT ≥ 90%</div>
+  </header>
+
+  <section class="card call" aria-live="polite">
+    <div class="sub">Recommendation for today</div>
+    <div class="lead" id="lead"></div>
+    <div class="moves" id="moves"></div>
+    <div class="btns">
+      <button class="primary" id="apply">Apply recommended plan</button>
+      <button id="reset">Reset to current staffing</button>
+      <span class="sub" id="impact"></span>
+    </div>
+  </section>
+
+  <section class="grid kpis" id="kpis" aria-label="Key metrics"></section>
+
+  <section class="card" style="margin-top:16px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px">
+      <h2>Staffing by queue</h2>
+      <span class="pool" id="pool"></span>
+    </div>
+    <div class="sub" style="margin-bottom:6px">Load = work due today ÷ what the assigned agents can close. Use − / + to try a different split; the load bars update live.</div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th>Queue</th><th class="n">Agents today</th><th class="n">Open backlog</th><th class="n">Inbound forecast</th>
+          <th class="n">SLA at risk</th><th class="n">Oldest ticket</th><th class="loadcell">Load (100% = covered)</th><th>Status</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+        <tfoot id="foot"></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <section class="grid two">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+        <h2>Inbound vs. staffed capacity, by hour</h2>
+        <button class="link" id="toggleTbl">View as table</button>
+      </div>
+      <div class="sub">All queues, tickets per hour (PT). Capacity dips at lunch and shift change.</div>
+      <div class="legend"><span style="--c:var(--s1)">Forecast inbound</span><span style="--c:var(--s2)">Staffed capacity</span></div>
+      <div id="chart"><div class="tip" id="tip"></div></div>
+      <div id="chartTable" hidden></div>
+    </div>
+    <div class="card">
+      <h2>Escalations closest to breach</h2>
+      <div class="sub">Named accounts that need a senior agent before lunch.</div>
+      <ul class="esc" id="esc"></ul>
+    </div>
+  </section>
+
+  <p class="note">How the numbers work: work due today = forecast inbound + 35% of open backlog (the burn-down target). Capacity = agents × queue throughput (tickets closed per agent per day, trailing 4-week average: Enterprise 9, API 12, Billing 22, Onboarding 16, How-to 28, SSO/Security 11). The recommended plan moves one agent at a time from the least-loaded queue to the most-loaded one, keeps at least 2 agents per queue, and stops when a move no longer lowers the peak load. Move Enterprise and Security agents only if they are certified for the target queue.</p>
+</div>
+
+<script>
+const Q = [
+  { id:'ent',  name:'Enterprise escalations', tier:'Tier 3 · named accounts', agents:5, rate:9,  backlog:61,  inbound:42,  risk:9,  oldest:'31h', oldestWas:'22h' },
+  { id:'api',  name:'API & integrations',     tier:'Tier 2 · technical',      agents:7, rate:12, backlog:96,  inbound:78,  risk:14, oldest:'52h', oldestWas:'30h' },
+  { id:'bill', name:'Billing & subscriptions',tier:'Tier 1–2',                agents:5, rate:22, backlog:54,  inbound:88,  risk:3,  oldest:'14h', oldestWas:'12h' },
+  { id:'onb',  name:'Onboarding & setup',     tier:'Tier 1–2',                agents:7, rate:16, backlog:40,  inbound:71,  risk:2,  oldest:'9h',  oldestWas:'11h' },
+  { id:'how',  name:'How-to & general',       tier:'Tier 1',                  agents:9, rate:28, backlog:120, inbound:190, risk:6,  oldest:'22h', oldestWas:'19h' },
+  { id:'sso',  name:'SSO & security',         tier:'Tier 2 · certified',      agents:4, rate:11, backlog:22,  inbound:27,  risk:1,  oldest:'7h',  oldestWas:'8h' },
+];
+const BURN = 0.35, MIN = 2, AVAIL = 37;
+const current = Object.fromEntries(Q.map(q => [q.id, q.agents]));
+let plan = { ...current };
+
+const due = q => q.inbound + BURN * q.backlog;
+const load = (q, n) => n ? due(q) / (n * q.rate) : Infinity;
+const pct = x => Math.round(x * 100) + '%';
+
+function status(l) {
+  if (l > 1.2)  return { k:'Understaffed', c:'var(--crit)',    shape:'<path d="M7 1.5 13 12.5H1Z" fill="var(--crit)"/><path d="M7 5.5v3.2M7 10v.1" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>' };
+  if (l > 1.05) return { k:'Stretched',    c:'var(--serious)', shape:'<rect x="2" y="2" width="10" height="10" rx="2" transform="rotate(45 7 7)" fill="var(--serious)"/>' };
+  if (l >= .85) return { k:'Balanced',     c:'var(--good)',    shape:'<circle cx="7" cy="7" r="5.5" fill="var(--good)"/><path d="M4.5 7.2 6.3 9l3.2-3.6" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round"/>' };
+  return { k:'Spare capacity', c:'var(--ink-3)', shape:'<circle cx="7" cy="7" r="5" fill="none" stroke="var(--ink-3)" stroke-width="1.8"/>' };
+}
+const icon = s => `<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">${s.shape}</svg>`;
+
+/* greedy rebalance: shift one agent at a time from the least-loaded to the most-loaded queue */
+function recommend() {
+  const a = { ...current };
+  for (let i = 0; i < 20; i++) {
+    const r = Q.reduce((m, q) => load(q, a[q.id]) > load(m, a[m.id]) ? q : m);
+    const cands = Q.filter(q => q !== r && a[q.id] > MIN);
+    if (!cands.length) break;
+    const d = cands.reduce((m, q) => load(q, a[q.id]-1) < load(m, a[m.id]-1) ? q : m);
+    const before = load(r, a[r.id]);
+    const after = Math.max(load(r, a[r.id]+1), load(d, a[d.id]-1));
+    if (after >= before - 0.005) break;
+    a[d.id]--; a[r.id]++;
+  }
+  return a;
+}
+const rec = recommend();
+const peak = p => Math.max(...Q.map(q => load(q, p[q.id])));
+
+function movesList(p) {
+  const from = Q.filter(q => p[q.id] < current[q.id]).map(q => ({ q, n: current[q.id]-p[q.id] }));
+  const to   = Q.filter(q => p[q.id] > current[q.id]).map(q => ({ q, n: p[q.id]-current[q.id] }));
+  const out = [];
+  for (const t of to) for (const f of from) {
+    const n = Math.min(t.n, f.n); if (n > 0) { out.push({ from:f.q, to:t.q, n }); t.n -= n; f.n -= n; }
+  }
+  return out;
+}
+
+function renderCall() {
+  const mv = movesList(rec);
+  const total = mv.reduce((s, m) => s + m.n, 0);
+  const worst = Q.reduce((m, q) => load(q, current[q.id]) > load(m, current[m.id]) ? q : m);
+  const lead = document.getElementById('lead');
+  if (!total) lead.textContent = 'Current staffing is as balanced as it can get. Hold the line.';
+  else lead.textContent = `Move ${total} agent${total>1?'s':''} before 9:00. ${worst.name} is the most overloaded queue (${pct(load(worst, current[worst.id]))} load).`;
+  document.getElementById('moves').innerHTML = mv.map(m =>
+    `<div class="move"><b>${m.n}</b> · ${m.from.name} <span aria-label="to">→</span> <b>${m.to.name}</b></div>`).join('');
+  const b = peak(current), a = peak(rec);
+  document.getElementById('impact').textContent = total ? `Peak queue load ${pct(b)} → ${pct(a)}. ` + (a > 1.05 ? `Still over capacity overall: ${Math.ceil(Q.reduce((s,q)=>s+due(q)/q.rate,0)) - AVAIL} more agent(s) or overtime needed.` : '') : '';
+}
+
+function renderRows() {
+  const used = Object.values(plan).reduce((s, n) => s + n, 0);
+  const free = AVAIL - used;
+  document.getElementById('pool').innerHTML = `Unassigned: <b>${free}</b> of ${AVAIL} available agents`;
+  document.getElementById('rows').innerHTML = Q.map(q => {
+    const n = plan[q.id], l = load(q, n), l0 = load(q, current[q.id]), s = status(l);
+    const diff = n - current[q.id];
+    const was = diff ? `was ${current[q.id]} (${diff>0?'+':''}${diff})` : '';
+    const w = Math.min(l, 2) / 2 * 100;
+    return `<tr>
+      <td><div class="q">${q.name}</div><div class="t">${q.tier}</div></td>
+      <td class="n"><span class="stepper">
+        <button data-q="${q.id}" data-d="-1" aria-label="Remove an agent from ${q.name}" ${n<=0?'disabled':''}>−</button>
+        <span class="num" aria-live="polite">${n}</span>
+        <button data-q="${q.id}" data-d="1" aria-label="Add an agent to ${q.name}" ${free<=0?'disabled':''}>+</button>
+        <span class="was">${was}</span></span></td>
+      <td class="n">${q.backlog}</td>
+      <td class="n">${q.inbound}</td>
+      <td class="n">${q.risk ? `<b>${q.risk}</b>` : q.risk}</td>
+      <td class="n">${q.oldest}</td>
+      <td class="loadcell"><b>${n ? pct(l) : '—'}</b>${diff ? ` <span class="t">(was ${pct(l0)})</span>` : ''}
+        <div class="bar" role="img" aria-label="Load ${pct(l)}"><i style="width:${w}%;background:${s.c}"></i><u style="left:50%"></u></div></td>
+      <td><span class="status">${icon(s)}${s.k}</span></td></tr>`;
+  }).join('');
+  const sum = k => Q.reduce((t, q) => t + q[k], 0);
+  document.getElementById('foot').innerHTML = `<tr><td>All queues</td><td class="n">${used}</td><td class="n">${sum('backlog')}</td><td class="n">${sum('inbound')}</td><td class="n">${sum('risk')}</td><td></td><td colspan="2" class="t">Peak load ${pct(peak(plan))}</td></tr>`;
+  document.getElementById('apply').disabled = Q.every(q => plan[q.id] === rec[q.id]);
+  document.getElementById('reset').disabled = Q.every(q => plan[q.id] === current[q.id]);
+}
+
+document.getElementById('rows').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || b.disabled) return;
+  plan[b.dataset.q] += +b.dataset.d;
+  const f = document.activeElement && document.activeElement.dataset;
+  renderRows();
+  const again = document.querySelector(`button[data-q="${b.dataset.q}"][data-d="${b.dataset.d}"]`);
+  if (again && !again.disabled) again.focus();
+});
+document.getElementById('apply').onclick = () => { plan = { ...rec }; renderRows(); };
+document.getElementById('reset').onclick = () => { plan = { ...current }; renderRows(); };
+
+/* KPIs */
+const KP = [
+  { label:'Open backlog', val:'393', delta:'▲ 51 vs. last Tue (342)', note:true,
+    spark:[318,326,331,322,340,352,349,344,338,347,355,361,372,393] },
+  { label:'Tickets close to SLA breach', val:'35', small:' within 2h', delta:'▲ 11 vs. yesterday 7:45 AM', note:true,
+    spark:[18,22,19,24,21,17,20,23,26,22,24,28,24,35] },
+  { label:'Median first response', val:'38', small:' min', delta:'Target 30 · ▲ 6 vs. 7-day avg', note:true,
+    spark:[27,29,26,31,33,28,30,32,35,34,31,36,33,38] },
+  { label:'SLA attainment, 7-day', val:'93.4', small:'%', delta:'Target 95 · ▼ 1.1 pts vs. prior week', note:true,
+    spark:[96.1,95.8,95.2,95.6,94.9,94.7,95.0,94.4,94.1,94.3,93.8,93.9,93.6,93.4] },
+  { label:'CSAT, 7-day', val:'90.2', small:'%', delta:'Target 90 · ▼ 0.4 pts vs. prior week', note:false,
+    spark:[91.4,91.0,90.8,91.2,90.9,90.5,90.7,90.6,90.1,90.4,90.3,90.6,90.4,90.2] },
+];
+function spark(d) {
+  const w = 200, h = 28, lo = Math.min(...d), hi = Math.max(...d);
+  const pts = d.map((v, i) => [i/(d.length-1)*(w-6)+3, h-4-(v-lo)/(hi-lo||1)*(h-8)]);
+  const last = pts[pts.length-1];
+  return `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="14-day trend">
+    <polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    </svg>`;
+}
+document.getElementById('kpis').innerHTML = KP.map(k => `
+  <div class="card kpi"><div class="label">${k.label}</div>
+  <div class="val">${k.val}<small>${k.small||''}</small></div>
+  <div class="delta ${k.note?'bad':''}">${k.delta}</div>${spark(k.spark)}
+  <div class="delta" style="margin-top:2px">14-day trend</div></div>`).join('');
+
+/* hourly chart */
+const HRS = ['8a','9a','10a','11a','12p','1p','2p','3p','4p','5p'];
+const wIn = [.08,.11,.14,.13,.08,.07,.10,.11,.10,.08];
+const totalIn = Q.reduce((s,q)=>s+q.inbound,0);
+const inbound = wIn.map(w => +(w*totalIn).toFixed(1));
+const frac = [.6,.95,1,1,.7,.85,1,1,.95,.7];
+const capTotal = Q.reduce((s,q)=>s+current[q.id]*q.rate,0);
+const capHr = capTotal / frac.reduce((a,b)=>a+b,0);
+const capacity = frac.map(f => +(f*capHr).toFixed(1));
+const series = [{ name:'Forecast inbound', c:'--s1', d:inbound }, { name:'Staffed capacity', c:'--s2', d:capacity }];
+
+function drawChart() {
+  const host = document.getElementById('chart');
+  const W = Math.max(host.clientWidth, 320), H = 250, m = { l:34, r:92, t:10, b:26 };
+  const ymax = 100, x = i => m.l + i/(HRS.length-1)*(W-m.l-m.r), y = v => m.t + (1-v/ymax)*(H-m.t-m.b);
+  let g = '';
+  for (let v = 0; v <= ymax; v += 25) g += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="${v?'var(--grid)':'var(--axis)'}"/><text x="${m.l-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--ink-3)">${v}</text>`;
+  HRS.forEach((h, i) => g += `<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--ink-3)">${h}</text>`);
+  series.forEach(s => {
+    g += `<polyline fill="none" stroke="var(${s.c})" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${s.d.map((v,i)=>x(i)+','+y(v)).join(' ')}"/>`;
+    const last = s.d.length-1;
+    g += `<text x="${x(last)+8}" y="${y(s.d[last])+4}" font-size="12" fill="var(--ink-2)">${s.name.split(' ')[1].replace(/^./,c=>c.toUpperCase())} ${Math.round(s.d[last])}</text>`;
+  });
+  /* label the inbound peak */
+  const pk = inbound.indexOf(Math.max(...inbound));
+  g += `<text x="${x(pk)}" y="${y(inbound[pk])-10}" text-anchor="middle" font-size="12" fill="var(--ink)" font-weight="600">Peak ${Math.round(inbound[pk])}/hr</text>`;
+  g += `<line id="xh" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink-3)" stroke-dasharray="3 3" visibility="hidden"/>`;
+  g += `<circle id="d0" r="5" fill="var(--s1)" stroke="var(--surface)" stroke-width="2" visibility="hidden"/><circle id="d1" r="5" fill="var(--s2)" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>`;
+  g += `<rect id="hit" x="${m.l}" y="${m.t}" width="${W-m.l-m.r}" height="${H-m.t-m.b}" fill="transparent"/>`;
+  const tip = document.getElementById('tip');
+  host.querySelector('svg')?.remove();
+  host.insertAdjacentHTML('afterbegin', `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Line chart of forecast inbound tickets per hour against staffed capacity. Inbound peaks at 10 AM; capacity is lowest at 8 AM, noon and 5 PM.">${g}</svg>`);
+  const svg = host.querySelector('svg'), hit = svg.querySelector('#hit');
+  const show = i => {
+    const xi = x(i);
+    svg.querySelector('#xh').setAttribute('x1', xi); svg.querySelector('#xh').setAttribute('x2', xi); svg.querySelector('#xh').setAttribute('visibility','visible');
+    [0,1].forEach(k => { const c = svg.querySelector('#d'+k); c.setAttribute('cx', xi); c.setAttribute('cy', y(series[k].d[i])); c.setAttribute('visibility','visible'); });
+    const gap = capacity[i] - inbound[i];
+    tip.innerHTML = `<b>${HRS[i]}</b> hour<div class="row" style="--c:var(--s1)">Inbound ${inbound[i].toFixed(0)}</div><div class="row" style="--c:var(--s2)">Capacity ${capacity[i].toFixed(0)}</div><div>${gap>=0?'Headroom '+gap.toFixed(0):'Short '+(-gap).toFixed(0)} tickets/hr</div>`;
+    tip.style.display = 'block';
+    const left = xi + 14 + tip.offsetWidth > W ? xi - 14 - tip.offsetWidth : xi + 14;
+    tip.style.left = left + 'px'; tip.style.top = '20px';
+  };
+  hit.addEventListener('mousemove', e => {
+    const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * (W / r.width);
+    show(Math.max(0, Math.min(HRS.length-1, Math.round((px - m.l) / ((W-m.l-m.r)/(HRS.length-1))))));
+  });
+  hit.addEventListener('mouseleave', () => { tip.style.display = 'none'; svg.querySelectorAll('#xh,#d0,#d1').forEach(n => n.setAttribute('visibility','hidden')); });
+}
+document.getElementById('chartTable').innerHTML = `<table style="min-width:0;margin-top:8px"><thead><tr><th>Hour</th><th class="n">Inbound</th><th class="n">Capacity</th><th class="n">Headroom</th></tr></thead><tbody>${
+  HRS.map((h,i)=>`<tr><td>${h}</td><td class="n">${inbound[i].toFixed(0)}</td><td class="n">${capacity[i].toFixed(0)}</td><td class="n">${(capacity[i]-inbound[i]).toFixed(0)}</td></tr>`).join('')}</tbody></table>`;
+document.getElementById('toggleTbl').onclick = e => {
+  const t = document.getElementById('chartTable'), c = document.getElementById('chart');
+  t.hidden = !t.hidden; c.hidden = !t.hidden; e.target.textContent = t.hidden ? 'View as table' : 'View as chart';
+  if (t.hidden) drawChart();
+};
+
+/* escalations */
+const ESC = [
+  { who:'Brightwell Health',  arr:'$286k', why:'SAML cert expired – 140 users locked out of the app', q:'SSO & security', eta:'1h 05m' ,m:65 },
+  { who:'Halvorsen Logistics',arr:'$412k', why:'Webhook deliveries failing since 02:10 UTC; dispatch delayed', q:'Enterprise', eta:'38m', m:38 },
+  { who:'Pallisade Retail',   arr:'$198k', why:'429 rate-limit errors during flash sale', q:'API & integrations', eta:'52m', m:52 },
+  { who:'Corvane Financial',  arr:'$540k', why:'3rd escalation this month; renewal in 19 days', q:'Enterprise', eta:'1h 40m', m:100 },
+  { who:'Nimbus Freight',     arr:'$174k', why:'Duplicate invoice charge, finance asking for refund', q:'Billing', eta:'2h 10m', m:130 },
+].sort((a,b)=>a.m-b.m);
+document.getElementById('esc').innerHTML = ESC.map(e => `<li>
+  <div class="who">${e.who} <span class="arr">${e.arr} ARR</span></div>
+  <div class="eta">${e.eta}<small>to breach</small></div>
+  <div class="why">${e.why} · <span style="color:var(--ink-3)">${e.q}</span></div></li>`).join('');
+
+renderCall(); renderRows(); drawChart();
+let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (!document.getElementById('chart').hidden) drawChart(); }, 100); });
+</script>
+</body>
+</html>

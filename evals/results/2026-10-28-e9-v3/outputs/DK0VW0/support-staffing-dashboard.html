@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Staffing Today</title>
+<!--
+Direction: cool lilac-grey canvas, white 24px-radius cards, indigo as the data accent, near-black anchor card, lime for the one hero moment (projected breaches).
+Hero: "agents to move before the morning peak" as a 72px number on the ink card; the planner below lets the VP adjust and publish.
+Job: VP of Support, every morning, ~2 minutes: where do the 40 agents go today?
+URL state: ?plan=6,7,8,6,3,4,4 (agents per queue, in table order) and ?state=loading|error|empty to preview states.
+-->
+<style>
+:root{
+  --canvas:#e9e8f1; --card:#fff; --ink:#15131f; --ink-2:#47445d; --muted:#65627a; --line:#ececf4; --track:#eeedf6;
+  --accent:#4338ca; --accent-soft:#e8e6fb; --lime:#d8f56a; --on-ink:#fff; --on-ink-2:#cbc8de;
+  --bad:#b42318; --bad-bg:#fde8e6; --warn:#8a5300; --warn-bg:#fdf0d5; --ok:#1b6b3a; --ok-bg:#dff3e6; --spare:#2f5088; --spare-bg:#e2ebfa;
+  --r:24px; --gap:20px;
+  --font:"Inter","Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{background:var(--canvas)}
+body{margin:0;font:14px/1.45 var(--font);color:var(--ink);background:var(--canvas);-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--accent);text-underline-offset:3px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+.ink :focus-visible{outline-color:var(--lime)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wrap{max-width:1440px;margin:0 auto;padding:28px 32px 48px}
+
+/* header */
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:20px}
+h1{margin:0;font-size:clamp(32px,4vw,48px);line-height:1.05;letter-spacing:-.03em;font-weight:700}
+.fresh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;color:var(--ink-2);font-size:13px}
+.pill-btn{display:inline-flex;align-items:center;gap:8px;border:1px solid #d6d4e6;background:#fff;border-radius:999px;padding:7px 14px;font-weight:600;font-size:13px;min-height:32px}
+.pill-btn:hover{background:#f6f5fb}
+.pill-btn.dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pill-btn.dark:hover{background:#2a2740}
+.hdr-right{display:flex;gap:10px;align-items:center;color:var(--ink-2);font-size:13px}
+select{font:inherit;border:1px solid #d6d4e6;border-radius:999px;padding:6px 12px;background:#fff;color:var(--ink);min-height:32px}
+
+/* incident */
+.incident{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#fff4e0;border:1px solid #f3d9a4;border-radius:20px;padding:12px 18px;margin-bottom:var(--gap);color:#5b3a00}
+.incident b{color:#3d2700}
+.incident .tag{background:#8a5300;color:#fff;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.incident a{margin-left:auto;font-weight:600;color:#5b3a00}
+
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:var(--gap)}
+.card{background:var(--card);border-radius:var(--r);padding:24px 26px;min-width:0;position:relative}
+.card.ink{background:var(--ink);color:var(--on-ink)}
+.card.lime{background:var(--lime);color:#1a2300}
+.s5{grid-column:span 5}.s7{grid-column:span 7}.s12{grid-column:span 12}.s6{grid-column:span 6}
+.kpis{grid-column:span 7;display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+.card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px}
+h2{margin:0;font-size:19px;letter-spacing:-.01em;font-weight:650}
+.sub{color:var(--muted);font-size:13px;margin-top:2px}
+.ink .sub,.ink .label{color:var(--on-ink-2)}
+.lime .sub,.lime .label{color:#3b4a05}
+.label{font-size:12.5px;color:var(--muted);font-weight:550;letter-spacing:.01em}
+.big{font-size:clamp(52px,6vw,72px);line-height:1;font-weight:650;letter-spacing:-.04em}
+.kpi-n{font-size:clamp(34px,3.6vw,46px);line-height:1.05;font-weight:650;letter-spacing:-.035em;margin:8px 0 6px}
+.kpi-n small{font-size:.48em;font-weight:600;letter-spacing:0;color:inherit;opacity:.75;margin-left:3px}
+.delta{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;background:var(--track);border-radius:999px;padding:3px 10px}
+.delta.bad{background:var(--bad-bg);color:var(--bad)}
+.lime .delta{background:rgba(26,35,0,.12);color:#1a2300}
+.kpi{display:flex;flex-direction:column;justify-content:space-between}
+.kpi .note{font-size:13px;color:var(--ink-2);margin-top:10px}
+.lime .note{color:#2c3804}
+.link-pill{font-size:12.5px;font-weight:600;border:1px solid #d6d4e6;border-radius:999px;padding:5px 12px;text-decoration:none;color:var(--ink);white-space:nowrap;background:#fff}
+.link-pill:hover{background:#f6f5fb}
+
+/* hero */
+.hero{display:flex;flex-direction:column}
+.hero .row{display:flex;align-items:flex-end;gap:14px;margin:10px 0 12px}
+.hero .unit{font-size:20px;font-weight:600;padding-bottom:8px;color:var(--on-ink-2)}
+.hero p{margin:0 0 16px;color:var(--on-ink-2);font-size:14.5px;max-width:46ch}
+.hero p b{color:#fff}
+.moves{list-style:none;margin:0 0 20px;padding:0;display:flex;flex-direction:column;gap:8px}
+.moves li{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.08);border-radius:14px;padding:9px 12px;font-size:13.5px}
+.moves .n{background:var(--lime);color:#1a2300;border-radius:999px;font-weight:700;min-width:30px;text-align:center;padding:2px 8px}
+.moves .arrow{opacity:.7}
+.hero .actions{margin-top:auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn-primary{background:var(--lime);color:#1a2300;border:0;border-radius:999px;padding:12px 22px;font-weight:700;font-size:14.5px;min-height:44px}
+.btn-primary:hover{background:#e4fb8a}
+.btn-ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:11px 18px;font-weight:600;min-height:44px}
+.btn-ghost:hover{background:rgba(255,255,255,.1)}
+
+/* mini bars */
+.mini{display:flex;align-items:flex-end;gap:4px;height:34px;margin-top:10px}
+.mini i{flex:1;background:#d9d6ee;border-radius:5px 5px 2px 2px;display:block}
+.mini i:last-child{background:var(--accent)}
+
+/* planner table */
+.tbl-wrap{overflow-x:auto;margin:0 -8px;padding:0 8px}
+table{width:100%;border-collapse:separate;border-spacing:0;min-width:980px}
+th{font-size:12px;font-weight:600;color:var(--muted);text-align:left;padding:0 10px 10px;white-space:nowrap}
+th.r,td.r{text-align:right}
+td{padding:11px 10px;border-top:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+tbody tr:hover td{background:#faf9fe}
+tbody tr td:first-child{border-radius:14px 0 0 14px}
+tbody tr td:last-child{border-radius:0 14px 14px 0}
+td .qname{font-weight:650;font-size:14.5px;white-space:normal;min-width:150px;display:block}
+td .qsub{font-size:12px;color:var(--muted);display:block}
+.frt{font-size:13px}
+.frt.over{color:var(--bad);font-weight:700}
+.stepper{display:inline-flex;align-items:center;gap:6px;background:var(--track);border-radius:999px;padding:3px}
+.stepper button{width:30px;height:30px;border-radius:50%;border:0;background:#fff;font-size:18px;line-height:1;font-weight:600}
+.stepper button:hover:not(:disabled){background:var(--ink);color:#fff}
+.stepper button:disabled{opacity:.35;cursor:not-allowed}
+.stepper output{min-width:26px;text-align:center;font-weight:700;font-size:15px}
+.stepper.changed{box-shadow:0 0 0 2px var(--accent)}
+.load{display:flex;align-items:center;gap:10px;min-width:170px}
+.bar{position:relative;flex:1;height:12px;background:var(--track);border-radius:999px;overflow:visible}
+.bar b{display:block;height:100%;border-radius:999px;transition:width .25s}
+.bar s{position:absolute;left:66.67%;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.55;border-radius:2px}
+.pct{font-weight:700;min-width:44px;text-align:right}
+.status{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:4px 11px 4px 9px;font-size:12.5px;font-weight:700}
+.status::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.st-short{background:var(--bad-bg);color:var(--bad)}
+.st-tight{background:var(--warn-bg);color:var(--warn)}
+.st-ok{background:var(--ok-bg);color:var(--ok)}
+.st-spare{background:var(--spare-bg);color:var(--spare)}
+.fill-short{background:var(--bad)}.fill-tight{background:#c47a00}.fill-ok{background:var(--accent)}.fill-spare{background:#8aa3cf}
+.outlook{font-size:13px;color:var(--ink-2);white-space:normal;min-width:130px}
+.foot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);color:var(--ink-2);font-size:13px}
+.pool{font-weight:700}
+.pool.warn{color:var(--warn)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.legend .a::before{background:var(--accent)}.legend .b::before{background:#c9c5ee}.legend .c::before{background:var(--ink);width:3px;height:12px;border-radius:2px}
+
+/* hourly chart */
+svg text{font-family:var(--font)}
+details.tv{margin-top:12px;font-size:13px;color:var(--ink-2)}
+details.tv summary{cursor:pointer;font-weight:600}
+details.tv table{min-width:0;margin-top:8px}
+details.tv td,details.tv th{padding:5px 8px}
+
+/* accounts */
+.acct{display:grid;grid-template-columns:1fr auto;gap:4px 16px;padding:13px 0;border-top:1px solid var(--line)}
+.acct:first-of-type{border-top:0;padding-top:0}
+.acct a.nm{font-weight:650;color:var(--ink);font-size:14.5px}
+.acct .arr{font-weight:700;text-align:right}
+.acct .iss{color:var(--ink-2);font-size:13px}
+.acct .meta{font-size:12.5px;color:var(--muted);text-align:right}
+.chip{display:inline-block;background:var(--accent-soft);color:#2e2799;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:600;margin-right:6px}
+
+/* states */
+.skel{border-radius:12px;background:linear-gradient(90deg,#eeedf6 25%,#f7f6fc 50%,#eeedf6 75%);background-size:200% 100%;animation:sh 1.3s infinite linear}
+.ink .skel{background:linear-gradient(90deg,#2a2740 25%,#37334f 50%,#2a2740 75%);background-size:200% 100%}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skel{animation:none}.bar b{transition:none}}
+.msg{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:28px 12px;color:var(--ink-2);min-height:160px}
+.msg b{color:var(--ink);font-size:15px}
+.ink .msg,.ink .msg b{color:#fff}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:999px;padding:10px 12px 10px 20px;display:flex;align-items:center;gap:16px;box-shadow:0 10px 30px rgba(21,19,31,.3);z-index:10;max-width:calc(100vw - 32px)}
+.toast button{background:var(--lime);color:#1a2300;border:0;border-radius:999px;padding:7px 16px;font-weight:700}
+.toast[hidden]{display:none}
+
+@media (max-width:1100px){
+  .s5,.s7,.kpis,.s6{grid-column:span 12}
+  .wrap{padding:20px 16px 40px}
+}
+@media (max-width:560px){.kpis{grid-template-columns:1fr}.card{padding:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Where agents should be today</h1>
+      <div class="fresh">
+        <span>Wed 28 Oct 2026 · today 06:00–17:00 PT · 38 of 40 agents on shift</span>
+        <span aria-hidden="true">·</span>
+        <span id="asof" class="num">Data as of 08:10 PT</span>
+        <button class="pill-btn" id="refresh" type="button">↻ Refresh</button>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <label for="stateSel">Preview state</label>
+      <select id="stateSel">
+        <option value="live">Live data</option>
+        <option value="loading">Loading</option>
+        <option value="error">Error</option>
+        <option value="empty">Empty lists</option>
+      </select>
+    </div>
+  </header>
+
+  <div class="incident" role="status" id="incident">
+    <span class="tag">INCIDENT</span>
+    <span><b>Webhook delivery delays</b> since 06:42 PT — 63 tickets linked, Integrations &amp; API volume 2.1× a normal Wednesday.</span>
+    <a href="#inc-2291">Open INC-2291 →</a>
+  </div>
+
+  <main class="grid">
+    <section class="card ink hero s5" id="hero" aria-labelledby="heroLbl"></section>
+    <div class="kpis" id="kpis"></div>
+    <section class="card s12" id="planner" aria-labelledby="plH"></section>
+    <section class="card s5" id="hourly" aria-labelledby="hrH"></section>
+    <section class="card s7" id="accounts" aria-labelledby="acH"></section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" hidden>
+  <span id="toastMsg"></span><button type="button" id="undo">Undo</button>
+</div>
+<div class="sr" aria-live="polite" id="live"></div>
+
+<script>
+/* ---------- Data (as of 08:10 PT, Wed 28 Oct 2026) ---------- */
+const NOW = 8*60+10, END = 17*60;
+const QUEUES = [
+  {id:'int', name:'Integrations & API',   sub:'Tier 2 · incident INC-2291', waiting:62, arriving:88,  perAgent:18,   frt:47, sla:30, oldest:'6h 12m', agents:6},
+  {id:'bil', name:'Billing & Invoices',   sub:'Tier 1–2',                   waiting:41, arriving:140, perAgent:27,   frt:24, sla:30, oldest:'1h 48m', agents:7},
+  {id:'onb', name:'Onboarding & Setup',   sub:'Tier 1 · new-customer',      waiting:18, arriving:92,  perAgent:22.5, frt:18, sla:60, oldest:'0h 52m', agents:8},
+  {id:'esc', name:'Enterprise Escalations',sub:'Tier 3 · named accounts',   waiting:19, arriving:33,  perAgent:9,    frt:52, sla:60, oldest:'3h 40m', agents:6},
+  {id:'sec', name:'Security & Compliance',sub:'Tier 2 · SSO, SOC 2, DPAs',  waiting:12, arriving:17,  perAgent:11.25,frt:15, sla:30, oldest:'1h 05m', agents:3},
+  {id:'rep', name:'Reporting & Analytics',sub:'Tier 2',                     waiting:31, arriving:52,  perAgent:19.5, frt:41, sla:45, oldest:'4h 20m', agents:4},
+  {id:'gen', name:'General / How-to',     sub:'Tier 1 · help center gaps',  waiting:38, arriving:62,  perAgent:37.5, frt:9,  sla:60, oldest:'0h 31m', agents:4},
+];
+const TOTAL_AGENTS = 38;
+const HOURS = [ // arrivals per hour: actual through 07:59, forecast after; typical = 12-wk Wednesday median
+  ['06',21,14,true],['07',41,28,true],['08',52,40],['09',68,52],['10',76,58],['11',70,54],
+  ['12',44,36],['13',48,38],['14',50,40],['15',40,32],['16',36,24]
+];
+const ACCOUNTS = [
+  {n:'Tessera Bank',     arr:640, q:'Security & Compliance', i:'Audit-log export missing SOC 2 evidence; auditor deadline Fri', w:'1h 30m', o:'Dana Whitfield'},
+  {n:'Northwind Logistics',arr:412,q:'Integrations & API', i:'Webhooks failing for 3 days; renewal in 19 days', w:'6h 12m', o:'Priya Raman'},
+  {n:'Halvorsen Health', arr:286, q:'Security & Compliance', i:'SSO login loop after IdP certificate rotation', w:'3h 40m', o:'Marcus Lee'},
+  {n:'Brightline Retail',arr:198, q:'Billing & Invoices', i:'Double-charged $19,800; disputing with their bank', w:'2h 05m', o:'Sofia Alvarez'},
+  {n:'Orbit Freight',    arr:154, q:'Reporting & Analytics', i:'90-day dashboards time out for 140 users', w:'4h 20m', o:'Tom Becker'},
+];
+const BASE_BACKLOG_SPARK = [168,152,181,174,159,166,187,221]; // 08:00 backlog, last 8 mornings
+
+/* ---------- Model ---------- */
+const need = q => Math.ceil((q.waiting+q.arriving)/q.perAgent);
+const cap  = (q,a) => a*q.perAgent;
+function calc(q,a){
+  const demand=q.waiting+q.arriving, c=cap(q,a), util=c? demand/c : 9.99;
+  let st = util>1?'short': util>=.95?'tight': util>=.70?'ok':'spare';
+  let breach=null;
+  if(util>1){ breach = NOW + Math.round((END-NOW)*(c/demand)); }
+  return {demand,c,util,st,breach,need:need(q),spare:a-need(q)};
+}
+const fmt = m => String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let baseline = QUEUES.map(q=>q.agents);   // as published
+let plan = baseline.slice();
+let view = 'loading';                       // loading | live | error | empty
+let asofMin = NOW;
+let lastBaseline = null, toastTimer;
+
+/* ---------- URL state ---------- */
+function readUrl(){
+  const p = new URLSearchParams(location.search);
+  const pl = (p.get('plan')||'').split(',').map(Number);
+  if(pl.length===QUEUES.length && pl.every(n=>Number.isInteger(n)&&n>=0) && pl.reduce((a,b)=>a+b,0)<=TOTAL_AGENTS) plan = pl;
+  const s = p.get('state'); return ['loading','error','empty'].includes(s)? s : 'live';
+}
+function writeUrl(){
+  const p = new URLSearchParams(location.search);
+  if(plan.join()===baseline.join()) p.delete('plan'); else p.set('plan',plan.join(','));
+  if(view==='live') p.delete('state'); else if(view!=='loading') p.set('state',view);
+  const q = p.toString();
+  try{ history.replaceState(null,'',location.pathname+(q?'?'+q:'')); }catch(e){}
+}
+
+/* ---------- Rendering ---------- */
+const $ = id => document.getElementById(id);
+const pool = () => TOTAL_AGENTS - plan.reduce((a,b)=>a+b,0);
+
+function recommendedMoves(){
+  const diffs = QUEUES.map((q,i)=>({q,d:plan[i]-need(q)}));
+  const give = diffs.filter(x=>x.d>0).map(x=>({name:x.q.name,n:x.d}));
+  if(pool()>0) give.push({name:'Unassigned',n:pool()});
+  const take = diffs.filter(x=>x.d<0).map(x=>({name:x.q.name,n:-x.d}));
+  const moves=[]; give.sort((a,b)=>b.n-a.n); take.sort((a,b)=>b.n-a.n);
+  for(const t of take){ while(t.n>0 && give.length){ const g=give[0]; const k=Math.min(g.n,t.n); moves.push({k,from:g.name,to:t.name}); g.n-=k;t.n-=k; if(!g.n) give.shift(); } }
+  return moves;
+}
+
+function skel(h){ return `<div class="skel" style="height:${h}px;margin-bottom:12px"></div>`; }
+function errBlock(what){
+  return `<div class="msg" role="alert"><b>Couldn’t load ${what}</b><span>The ticketing API didn’t respond. Nothing else on this page is affected.</span><button class="pill-btn" data-act="retry" type="button">Retry</button></div>`;
+}
+
+function renderHero(){
+  const el=$('hero');
+  if(view==='loading'){ el.innerHTML=`<div class="skel" style="height:14px;width:40%;margin-bottom:22px"></div><div class="skel" style="height:72px;width:30%;margin-bottom:22px"></div>${skel(16)}${skel(16)}${skel(44)}${skel(44)}`; return; }
+  if(view==='error'){ el.innerHTML=errBlock('the recommendation'); return; }
+  const moves = recommendedMoves(), n = moves.reduce((a,m)=>a+m.k,0);
+  const rows = QUEUES.map((q,i)=>({q,c:calc(q,plan[i])}));
+  const worst = rows.slice().sort((a,b)=>b.c.util-a.c.util)[0];
+  const donor = rows.slice().sort((a,b)=>b.c.spare-a.c.spare)[0];
+  let text;
+  if(n===0) text = `Every queue is staffed to today’s forecast. <b>No queue is projected to breach SLA.</b> Publish the plan so team leads can move agents before 09:00.`;
+  else if(worst.c.util>1) text = `<b>${esc(worst.q.name)}</b> is at <b>${Math.round(worst.c.util*100)}%</b> of capacity and will outrun staffing around <b>${fmt(worst.c.breach)}</b>. ${donor.c.spare>0?`<b>${esc(donor.q.name)}</b> can spare ${donor.c.spare}.`:''} Volume peaks 10:00–10:59.`;
+  else text = `No queue is over capacity, but the plan differs from the forecast-based recommendation.`;
+  el.innerHTML = `
+    <div class="label" id="heroLbl">Recommendation · move before the 10:00 peak</div>
+    <div class="row"><div class="big num">${n}</div><div class="unit">${n===1?'agent':'agents'} ${n?'to move':'out of place'}</div></div>
+    <p>${text}</p>
+    ${n? `<ul class="moves" aria-label="Recommended moves">${moves.map(m=>`<li><span class="n num">${m.k}</span><span>${esc(m.from)}</span><span class="arrow" aria-hidden="true">→</span><span>${esc(m.to)}</span></li>`).join('')}</ul>`:''}
+    <div class="actions">
+      ${n? `<button class="btn-primary" data-act="apply" type="button">Apply recommended plan</button>`
+         : `<button class="btn-primary" data-act="publish" type="button" ${plan.join()===baseline.join()?'disabled aria-disabled="true" style="opacity:.5;cursor:not-allowed"':''}>Publish to team leads</button>`}
+      ${n && plan.join()!==baseline.join()? `<button class="btn-ghost" data-act="reset" type="button">Reset to current</button>`:''}
+    </div>`;
+}
+
+function renderKpis(){
+  const el=$('kpis');
+  if(view==='loading'){ el.innerHTML=[0,1,2,3].map(()=>`<div class="card kpi">${skel(12)}${skel(44)}${skel(24)}</div>`).join(''); return; }
+  if(view==='error'){ el.innerHTML=`<div class="card" style="grid-column:span 2">${errBlock('headline metrics')}</div>`; return; }
+  const rows = QUEUES.map((q,i)=>({q,c:calc(q,plan[i])}));
+  const short = rows.filter(r=>r.c.st==='short');
+  const backlog = QUEUES.reduce((a,q)=>a+q.waiting,0);
+  const sp = BASE_BACKLOG_SPARK, mx=Math.max(...sp);
+  el.innerHTML = `
+    <article class="card kpi">
+      <div><div class="label">Waiting for a first reply</div>
+      <div class="kpi-n num">${backlog}<small>tickets</small></div>
+      <span class="delta bad">▲ ${backlog-187} vs yesterday 08:00</span></div>
+      <div class="mini" role="img" aria-label="Backlog at 08:00 over the last 8 mornings: ${sp.join(', ')}">${sp.map(v=>`<i style="height:${Math.round(v/mx*100)}%"></i>`).join('')}</div>
+    </article>
+    <article class="card kpi">
+      <div><div class="label">First-response SLA · last 24h</div>
+      <div class="kpi-n num">91.4<small>% · target 95%</small></div>
+      <span class="delta bad">▼ 3.1 pts vs 7-day avg</span></div>
+      <div class="note">Integrations &amp; API is the largest drag at 54%.</div>
+    </article>
+    <article class="card kpi lime">
+      <div><div class="label">Queues projected to breach today</div>
+      <div class="kpi-n num">${short.length}<small>of ${QUEUES.length} queues</small></div>
+      <span class="delta">${short.length?'▲ at current plan':'✓ with this plan'}</span></div>
+      <div class="note">${short.length? short.map(r=>`${esc(r.q.name)} ≈${fmt(r.c.breach)}`).join(' · ') : 'Every queue clears its forecast before 17:00.'}</div>
+    </article>
+    <article class="card kpi">
+      <div><div class="label">Agents on shift</div>
+      <div class="kpi-n num">38<small>of 40</small></div>
+      <span class="delta">2 out · PTO</span></div>
+      <div class="note">M. Okafor, L. Brandt out. 4 in training 13:00–14:30; 3 part-timers leave 14:00 (both modelled in capacity).</div>
+    </article>`;
+}
+
+function renderPlanner(){
+  const el=$('planner');
+  const head = `<div class="card-head"><div><h2 id="plH">Staffing plan by queue</h2><div class="sub">Capacity = agents × tickets each can close by 17:00. Marker on each bar = 100% of forecast demand.</div></div>
+    <div style="display:flex;gap:8px"><button class="pill-btn" data-act="reset" type="button">Reset to current</button><button class="pill-btn dark" data-act="apply" type="button">Apply recommended</button></div></div>`;
+  if(view==='loading'){ el.innerHTML = `<div class="card-head"><div class="skel" style="height:22px;width:240px"></div></div>${[0,1,2,3,4,5,6].map(()=>skel(40)).join('')}`; return; }
+  if(view==='error'){ el.innerHTML = `<div class="card-head"><h2 id="plH">Staffing plan by queue</h2></div>${errBlock('queue data')}`; return; }
+  const p = pool();
+  const body = QUEUES.map((q,i)=>{
+    const a=plan[i], c=calc(q,a), over=q.frt>q.sla;
+    const w = Math.min(c.util,1.5)/1.5*100;
+    const outlook = c.st==='short' ? `Breach ≈ ${fmt(c.breach)} · needs +${-c.spare}`
+      : c.st==='tight' ? `No slack · ${c.spare>=0?'at':'needs +'+(-c.spare)} minimum`
+      : c.st==='spare' ? `${c.spare} spare could move` : `Clears with ${Math.max(c.spare,0)} to spare`;
+    const label = {short:'Short',tight:'Tight',ok:'On track',spare:'Surplus'}[c.st];
+    return `<tr>
+      <td><a class="qname" href="#queue-${q.id}">${esc(q.name)}</a><span class="qsub">${esc(q.sub)}</span></td>
+      <td class="r num">${q.waiting}<span class="qsub">oldest ${q.oldest}</span></td>
+      <td class="r num">${q.arriving}</td>
+      <td class="r num frt ${over?'over':''}">${q.frt}m<span class="qsub">${over?'▲ over ':'target '}${q.sla}m</span></td>
+      <td class="r"><div class="stepper ${a!==baseline[i]?'changed':''}" role="group" aria-label="Agents on ${esc(q.name)}">
+        <button type="button" data-act="dec" data-i="${i}" aria-label="Remove one agent from ${esc(q.name)}" ${a<=0?'disabled':''}>−</button>
+        <output class="num" aria-live="polite">${a}</output>
+        <button type="button" data-act="inc" data-i="${i}" aria-label="Add one agent to ${esc(q.name)}" ${p<=0?'disabled title="No unassigned agents. Remove one from another queue first."':''}>+</button></div></td>
+      <td class="r num">${c.need}</td>
+      <td><div class="load"><div class="bar" role="img" aria-label="${Math.round(c.util*100)}% of capacity used"><b class="fill-${c.st}" style="width:${w}%"></b><s></s></div><span class="pct num">${c.util>=9?'>200':Math.round(c.util*100)}%</span></div></td>
+      <td><span class="status st-${c.st}">${label}</span></td>
+      <td class="outlook">${outlook}</td>
+    </tr>`;
+  }).join('');
+  el.innerHTML = head + `<div class="tbl-wrap" tabindex="0" role="region" aria-label="Staffing plan table, scrolls horizontally on small screens"><table>
+    <thead><tr><th scope="col">Queue</th><th scope="col" class="r">Waiting now</th><th scope="col" class="r">Still to arrive</th><th scope="col" class="r">First reply now</th><th scope="col" class="r">Agents</th><th scope="col" class="r">Needed</th><th scope="col">Load vs capacity</th><th scope="col">Status</th><th scope="col">Outlook</th></tr></thead>
+    <tbody>${body}</tbody></table></div>
+    <div class="foot"><span class="pool ${p>0?'warn':''} num">${p>0?`${p} unassigned — assign before publishing`:`All ${TOTAL_AGENTS} agents assigned`} · ${plan.reduce((a,b)=>a+b,0)}/${TOTAL_AGENTS}</span>
+    <span>2 further agents out today (PTO) are not counted.</span></div>`;
+}
+
+function renderHourly(){
+  const el=$('hourly');
+  const head=`<div class="card-head"><div><h2 id="hrH">Arrivals by hour</h2><div class="sub">New tickets per hour, all queues · peak 10:00–10:59</div></div></div>`;
+  if(view==='loading'){ el.innerHTML=head.replace(/<h2.*?<\/div><\/div>/,'<div class="skel" style="height:22px;width:200px"></div></div>')+skel(220); return; }
+  if(view==='error'){ el.innerHTML=`<div class="card-head"><h2 id="hrH">Arrivals by hour</h2></div>${errBlock('the forecast')}`; return; }
+  const W=480,H=230,pl=34,pb=26,pt=8, bw=(W-pl)/HOURS.length, max=80;
+  const y=v=>pt+(H-pt-pb)*(1-v/max);
+  let g='';
+  [0,20,40,60,80].forEach(v=>{ g+=`<line x1="${pl}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#ececf4"/><text x="${pl-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="#65627a">${v}</text>`; });
+  HOURS.forEach((h,i)=>{
+    const x=pl+i*bw+bw*.17, w=bw*.66, top=y(h[1]), isPeak=h[0]==='10', isNow=h[0]==='08';
+    const fill = h[3]? '#4338ca' : (isPeak? '#4338ca' : '#c9c5ee');
+    g+=`<g tabindex="0" role="img" aria-label="${h[0]}:00 ${h[3]?'actual':'forecast'} ${h[1]} tickets, typical Wednesday ${h[2]}">
+      <title>${h[0]}:00 — ${h[3]?'actual':'forecast'} ${h[1]} (typical Wed ${h[2]})</title>
+      <rect x="${x}" y="${pt}" width="${w}" height="${H-pt-pb}" rx="9" fill="#f3f2fa"/>
+      <rect x="${x}" y="${top}" width="${w}" height="${y(0)-top}" rx="9" fill="${fill}"/>
+      <rect x="${x-3}" y="${y(h[2])-1.5}" width="${w+6}" height="3" rx="1.5" fill="#15131f"/>
+      <text x="${x+w/2}" y="${H-8}" text-anchor="middle" font-size="11" fill="#47445d" ${isNow?'font-weight="700"':''}>${h[0]}</text>
+      <text x="${x+w/2}" y="${top-5}" text-anchor="middle" font-size="11" font-weight="700" fill="#15131f">${isPeak||h[3]?h[1]:''}</text></g>`;
+  });
+  el.innerHTML = head + `<svg viewBox="0 0 ${W} ${H}" width="100%" role="group" aria-label="Hourly ticket arrivals">${g}</svg>
+    <div class="legend" style="margin-top:8px"><span class="a">Actual / peak hour</span><span class="b">Forecast</span><span class="c">Typical Wednesday (12-wk median)</span></div>
+    <details class="tv"><summary>View as table</summary><table><thead><tr><th>Hour</th><th class="r">Tickets</th><th class="r">Typical</th><th></th></tr></thead><tbody>${HOURS.map(h=>`<tr><td>${h[0]}:00</td><td class="r num">${h[1]}</td><td class="r num">${h[2]}</td><td>${h[3]?'actual':'forecast'}</td></tr>`).join('')}</tbody></table></details>`;
+}
+
+function renderAccounts(){
+  const el=$('accounts');
+  const head=(extra='')=>`<div class="card-head"><div><h2 id="acH">Accounts needing a human today</h2><div class="sub">Escalated or renewal-sensitive · sorted by ARR</div></div>${extra}</div>`;
+  if(view==='loading'){ el.innerHTML=`<div class="card-head"><div class="skel" style="height:22px;width:260px"></div></div>${[0,1,2,3].map(()=>skel(48)).join('')}`; return; }
+  if(view==='error'){ el.innerHTML=head()+errBlock('escalated accounts'); return; }
+  if(view==='empty'){ el.innerHTML=head()+`<div class="msg"><b>No escalated accounts right now</b><span>Accounts appear here when a ticket is flagged by a CSM or breaches 2× its SLA.</span></div>`; return; }
+  el.innerHTML = head(`<a class="link-pill" href="#accounts-all">View all 14 →</a>`) + ACCOUNTS.map(a=>`
+    <div class="acct"><div><a class="nm" href="#acct-${esc(a.n.toLowerCase().replace(/\s+/g,'-'))}">${esc(a.n)}</a></div><div class="arr num">$${a.arr}K <span class="qsub" style="display:inline">ARR</span></div>
+    <div class="iss"><span class="chip">${esc(a.q)}</span>${esc(a.i)}</div><div class="meta num">waiting ${a.w} · CSM ${esc(a.o)}</div></div>`).join('');
+}
+
+function renderAll(){ renderHero(); renderKpis(); renderPlanner(); renderHourly(); renderAccounts(); $('stateSel').value = view==='loading'?'live':view; writeUrl(); }
+
+/* ---------- Actions ---------- */
+function setPlan(next,announce){ plan=next; renderHero(); renderKpis(); renderPlanner(); writeUrl(); if(announce) $('live').textContent=announce; }
+function toast(msg,undo){ $('toastMsg').textContent=msg; $('undo').hidden=!undo; $('toast').hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>$('toast').hidden=true,9000); }
+
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]'); if(!b||b.disabled) return;
+  const act=b.dataset.act, i=+b.dataset.i;
+  if(act==='inc'||act==='dec'){
+    const n=plan.slice(); n[i]+= act==='inc'?1:-1;
+    setPlan(n, `${QUEUES[i].name}: ${n[i]} agents`);
+    const again=document.querySelector(`[data-act="${act}"][data-i="${i}"]`); (again&&!again.disabled?again:document.querySelector(`[data-act="${act==='inc'?'dec':'inc'}"][data-i="${i}"]`))?.focus();
+  } else if(act==='apply'){
+    const n=QUEUES.map(need); setPlan(n,'Recommended plan applied');
+    document.querySelector('#hero [data-act]')?.focus();
+  } else if(act==='reset'){
+    setPlan(baseline.slice(),'Plan reset to current assignments');
+  } else if(act==='publish'){
+    lastBaseline=baseline.slice(); baseline=plan.slice();
+    const moved = lastBaseline.reduce((s,v,i)=>s+Math.max(0,baseline[i]-v),0);
+    renderAll(); toast(`Plan published to 7 team leads · ${moved} agents reassigned`,true);
+  } else if(act==='retry'){ load(); }
+});
+$('undo').addEventListener('click',()=>{ if(lastBaseline){ baseline=lastBaseline; plan=baseline.slice(); lastBaseline=null; renderAll(); $('toast').hidden=true; $('live').textContent='Publish undone'; }});
+$('stateSel').addEventListener('change',e=>{ const v=e.target.value; if(v==='live') load(); else { view=v; renderAll(); } });
+$('refresh').addEventListener('click',()=>load(true));
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('toast').hidden=true; });
+
+function load(bump){
+  view='loading'; renderAll();
+  setTimeout(()=>{ view='live'; if(bump){ asofMin+=1; } $('asof').textContent='Data as of '+fmt(asofMin)+' PT'; renderAll(); },bump?700:600);
+}
+
+/* ---------- Boot ---------- */
+const initial = readUrl();
+if(initial==='live') load(); else { view=initial; renderAll(); }
+</script>
+</body>
+</html>

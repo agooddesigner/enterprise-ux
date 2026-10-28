@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usage &amp; billing · Ledgerly</title>
+<link rel="stylesheet" href="acme-ds.css">
+<style>
+  /* Page layout only; all colour, type, spacing and radius values come from acme-ds.css tokens. */
+  *{box-sizing:border-box}
+  body{margin:0;line-height:1.5}
+  .page{max-width:1080px;margin:0 auto;padding:var(--ds-space-8) var(--ds-space-4) 64px}
+  h1,h2,h3,p{margin:0}
+  h1{font-size:var(--ds-text-2xl);font-weight:600;line-height:1.2}
+  h2{font-size:var(--ds-text-lg);font-weight:600}
+  .muted{color:var(--ds-color-text-muted)}
+  .small{font-size:var(--ds-text-sm)}
+  .num{font-variant-numeric:tabular-nums}
+  .btn-link{display:inline-flex;align-items:center;text-decoration:none}
+
+  .page-head{display:flex;flex-wrap:wrap;gap:var(--ds-space-4);align-items:flex-start;justify-content:space-between;margin-bottom:var(--ds-space-6)}
+  .page-head p{margin-top:var(--ds-space-1)}
+  .head-actions{display:flex;gap:var(--ds-space-2);flex-wrap:wrap}
+
+  .notice{display:flex;gap:var(--ds-space-3);align-items:flex-start;padding:var(--ds-space-3) var(--ds-space-4);margin-bottom:var(--ds-space-6);border:1px solid var(--ds-color-border);border-left:4px solid var(--ds-color-success);border-radius:var(--ds-radius-lg);background:var(--ds-color-surface)}
+  .notice strong{font-weight:600}
+
+  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--ds-space-4);margin-bottom:var(--ds-space-6)}
+  .summary .ds-card{padding:var(--ds-space-4) var(--ds-space-6)}
+  .label{font-size:var(--ds-text-sm);color:var(--ds-color-text-muted)}
+  .value{font-size:var(--ds-text-2xl);font-weight:600;line-height:1.2;margin:var(--ds-space-1) 0}
+  .value small{font-size:var(--ds-text-md);font-weight:400;color:var(--ds-color-text-muted)}
+
+  .meter{height:8px;border-radius:var(--ds-radius-sm);background:var(--ds-color-surface-raised);border:1px solid var(--ds-color-border);overflow:hidden;margin:var(--ds-space-2) 0}
+  .meter > span{display:block;height:100%;background:var(--ds-color-brand)}
+  .meter.warn > span{background:var(--ds-color-warning)}
+
+  section{margin-bottom:var(--ds-space-6)}
+  .sec-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:var(--ds-space-2);margin-bottom:var(--ds-space-3)}
+  .ds-card.flush{padding:0;overflow-x:auto}
+  .ds-card.flush .ds-table th:first-child,.ds-card.flush .ds-table td:first-child{padding-left:var(--ds-space-6)}
+  .ds-card.flush .ds-table th:last-child,.ds-card.flush .ds-table td:last-child{padding-right:var(--ds-space-6)}
+  .ds-table tbody tr:last-child td,.ds-table tfoot td{border-bottom:0}
+  .ds-table tfoot td{font-weight:600;border-top:1px solid var(--ds-color-border-strong)}
+  .r{text-align:right !important}
+  .ds-table .meter{min-width:96px;margin:0}
+  .cell-use{display:flex;align-items:center;gap:var(--ds-space-3)}
+  .cell-use .meter{flex:1}
+  .cell-use span.num{min-width:3.5em;text-align:right;font-size:var(--ds-text-sm)}
+
+  .chart-wrap{display:flex;flex-wrap:wrap;gap:var(--ds-space-2) var(--ds-space-6);align-items:baseline;justify-content:space-between}
+  #chart{width:100%;height:auto;display:block;margin-top:var(--ds-space-4)}
+  #chart text{font:var(--ds-text-xs) var(--ds-font);fill:var(--ds-color-text-muted)}
+
+  .two{display:grid;grid-template-columns:2fr 1fr;gap:var(--ds-space-4);align-items:start}
+  dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:var(--ds-space-2) var(--ds-space-4)}
+  dt{color:var(--ds-color-text-muted)}
+  dd{margin:0;text-align:right}
+  .card-actions{margin-top:var(--ds-space-4);display:flex;gap:var(--ds-space-2);flex-wrap:wrap}
+  .ds-btn.sm{height:32px;padding:0 var(--ds-space-3);font-size:var(--ds-text-sm)}
+  a{color:var(--ds-color-brand)}
+  a:focus-visible{outline:2px solid var(--ds-color-focus);outline-offset:2px}
+  @media (max-width:800px){.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main class="page">
+
+  <header class="page-head">
+    <div>
+      <h1>Usage &amp; billing</h1>
+      <p class="muted">Acme Holdings workspace · Business plan · Current period Oct 1 – Oct 31, 2026</p>
+    </div>
+    <div class="head-actions">
+      <button class="ds-btn" type="button">Change plan</button>
+      <button class="ds-btn ds-btn--primary" type="button">Add seats</button>
+    </div>
+  </header>
+
+  <div class="notice" role="status">
+    <div>
+      <strong>You're on track.</strong>
+      <span class="muted">At the current pace you'll use about 456,000 of your 500,000 included transactions this period, so no overage charges are expected.</span>
+    </div>
+  </div>
+
+  <div class="summary" aria-label="Billing summary">
+    <div class="ds-card">
+      <div class="label">Estimated next invoice</div>
+      <div class="value num">$1,055.00</div>
+      <div class="small muted">Charged Nov 1 to Visa ending 4242</div>
+    </div>
+    <div class="ds-card">
+      <div class="label">Seats</div>
+      <div class="value num">42 <small>of 50</small></div>
+      <div class="meter" role="progressbar" aria-label="Seats used" aria-valuenow="42" aria-valuemin="0" aria-valuemax="50"><span style="width:84%"></span></div>
+      <div class="small muted">8 seats available</div>
+    </div>
+    <div class="ds-card">
+      <div class="label">Transactions synced</div>
+      <div class="value num">412,300 <small>of 500,000</small></div>
+      <div class="meter" role="progressbar" aria-label="Transactions used" aria-valuenow="82" aria-valuemin="0" aria-valuemax="100"><span style="width:82.5%"></span></div>
+      <div class="small muted">82% used · resets Nov 1</div>
+    </div>
+  </div>
+
+  <section aria-labelledby="usage-h">
+    <div class="sec-head">
+      <h2 id="usage-h">Usage this period</h2>
+      <span class="small muted">Updated Oct 28, 6:00 AM UTC</span>
+    </div>
+    <div class="ds-card flush">
+      <table class="ds-table">
+        <thead>
+          <tr>
+            <th scope="col">Resource</th>
+            <th scope="col" class="r">Used</th>
+            <th scope="col" class="r">Included</th>
+            <th scope="col" style="min-width:200px">Share of limit</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Seats</td><td class="r num">42</td><td class="r num">50</td>
+            <td><div class="cell-use"><div class="meter" aria-hidden="true"><span style="width:84%"></span></div><span class="num">84%</span></div></td>
+            <td><span class="ds-badge ds-badge--success">Within limit</span></td>
+          </tr>
+          <tr>
+            <td>Transactions synced</td><td class="r num">412,300</td><td class="r num">500,000</td>
+            <td><div class="cell-use"><div class="meter" aria-hidden="true"><span style="width:82.5%"></span></div><span class="num">82%</span></div></td>
+            <td><span class="ds-badge ds-badge--success">Within limit</span></td>
+          </tr>
+          <tr>
+            <td>Connected bank accounts</td><td class="r num">37</td><td class="r num">40</td>
+            <td><div class="cell-use"><div class="meter warn" aria-hidden="true"><span style="width:92.5%"></span></div><span class="num">93%</span></div></td>
+            <td><span class="ds-badge ds-badge--warning">Near limit</span></td>
+          </tr>
+          <tr>
+            <td>API requests</td><td class="r num">1.9M</td><td class="r num">5M</td>
+            <td><div class="cell-use"><div class="meter" aria-hidden="true"><span style="width:38%"></span></div><span class="num">38%</span></div></td>
+            <td><span class="ds-badge ds-badge--success">Within limit</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted" style="margin-top:var(--ds-space-2)">Going over: extra transactions are billed at $0.40 per 1,000; extra bank accounts at $6 each per month. Seats and API requests can't exceed the plan limit.</p>
+  </section>
+
+  <section aria-labelledby="daily-h">
+    <div class="ds-card">
+      <div class="chart-wrap">
+        <h2 id="daily-h">Transactions synced per day</h2>
+        <span class="small muted">Oct 1 – Oct 28 · avg <span class="num">14,725</span>/day</span>
+      </div>
+      <svg id="chart" role="img" aria-label="Bar chart of transactions synced per day, October 1 to 28. Typical weekdays are 15,000 to 19,000; weekends are 7,000 to 9,000; peak was 19,000 on Oct 8."></svg>
+    </div>
+  </section>
+
+  <section aria-labelledby="charges-h">
+    <div class="sec-head">
+      <h2 id="charges-h">Estimated charges</h2>
+      <span class="small muted">Billed monthly in advance for seats, in arrears for overage</span>
+    </div>
+    <div class="ds-card flush">
+      <table class="ds-table">
+        <thead>
+          <tr><th scope="col">Item</th><th scope="col" class="r">Quantity</th><th scope="col" class="r">Rate</th><th scope="col" class="r">Amount</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Business plan base fee</td><td class="r num">1</td><td class="r num">$299.00</td><td class="r num">$299.00</td></tr>
+          <tr><td>Seats</td><td class="r num">42</td><td class="r num">$18.00</td><td class="r num">$756.00</td></tr>
+          <tr><td>Transaction overage</td><td class="r num">0</td><td class="r num">$0.40 / 1,000</td><td class="r num">$0.00</td></tr>
+          <tr><td>Extra bank accounts</td><td class="r num">0</td><td class="r num">$6.00</td><td class="r num">$0.00</td></tr>
+        </tbody>
+        <tfoot>
+          <tr><td colspan="3">Estimated total (excl. tax)</td><td class="r num">$1,055.00</td></tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+
+  <div class="two">
+    <section aria-labelledby="inv-h" style="margin:0">
+      <div class="sec-head"><h2 id="inv-h">Invoices</h2></div>
+      <div class="ds-card flush">
+        <table class="ds-table">
+          <thead>
+            <tr><th scope="col">Invoice</th><th scope="col">Date</th><th scope="col" class="r">Amount</th><th scope="col">Status</th><th scope="col"><span class="sr-only" style="position:absolute;left:-9999px">Download</span></th></tr>
+          </thead>
+          <tbody>
+            <tr><td>INV-2026-010</td><td>Oct 1, 2026</td><td class="r num">$1,055.00</td><td><span class="ds-badge ds-badge--success">Paid</span></td><td><a href="#" aria-label="Download invoice INV-2026-010">PDF</a></td></tr>
+            <tr><td>INV-2026-009</td><td>Sep 1, 2026</td><td class="r num">$1,019.20</td><td><span class="ds-badge ds-badge--success">Paid</span></td><td><a href="#" aria-label="Download invoice INV-2026-009">PDF</a></td></tr>
+            <tr><td>INV-2026-008</td><td>Aug 1, 2026</td><td class="r num">$1,001.00</td><td><span class="ds-badge ds-badge--success">Paid</span></td><td><a href="#" aria-label="Download invoice INV-2026-008">PDF</a></td></tr>
+            <tr><td>INV-2026-007</td><td>Jul 1, 2026</td><td class="r num">$983.00</td><td><span class="ds-badge ds-badge--danger">Failed, retried</span></td><td><a href="#" aria-label="Download invoice INV-2026-007">PDF</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small" style="margin-top:var(--ds-space-2)"><a href="#">View all invoices</a></p>
+    </section>
+
+    <section aria-labelledby="pay-h" style="margin:0">
+      <div class="sec-head"><h2 id="pay-h">Payment &amp; billing contact</h2></div>
+      <div class="ds-card">
+        <dl>
+          <dt>Card</dt><dd>Visa ending 4242</dd>
+          <dt>Expires</dt><dd>09 / 2027</dd>
+          <dt>Invoices to</dt><dd>finance@acmeholdings.example</dd>
+          <dt>Tax ID</dt><dd>US 12-3456789</dd>
+        </dl>
+        <div class="card-actions">
+          <button class="ds-btn sm" type="button">Update card</button>
+          <button class="ds-btn sm" type="button">Edit details</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+</main>
+
+<script>
+  // Sample data: Oct 1–28, 2026 (Oct 1 is a Thursday). Replace with the real daily series.
+  var daily = [16200,17100,8100,7400,18300,17800,16900,19000,17400,8800,7900,18600,16400,17700,18000,18800,8300,7100,17900,18200,16800,17300,16100,8600,7600,17400,16700,15900];
+  var svg = document.getElementById('chart');
+  var W = 960, H = 220, L = 40, B = 24, T = 8, max = 25000;
+  var bw = (W - L) / daily.length, ns = 'http://www.w3.org/2000/svg';
+  function el(n, a, t){ var e = document.createElementNS(ns, n); for (var k in a) e.setAttribute(k, a[k]); if (t != null) e.textContent = t; svg.appendChild(e); return e; }
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  [0, 10000, 20000].forEach(function(v){
+    var y = T + (H - T - B) * (1 - v / max);
+    el('line', {x1: L, x2: W, y1: y, y2: y}).style.stroke = 'var(--ds-color-border)';
+    el('text', {x: L - 6, y: y + 4, 'text-anchor': 'end'}, v ? (v / 1000) + 'k' : '0');
+  });
+  daily.forEach(function(v, i){
+    var h = (H - T - B) * v / max, x = L + i * bw;
+    var wd = (new Date(Date.UTC(2026, 9, i + 1))).getUTCDay(), weekend = wd === 0 || wd === 6;
+    var r = el('rect', {x: x + 3, y: H - B - h, width: bw - 6, height: h, rx: 2});
+    r.style.fill = weekend ? 'var(--ds-color-brand-subtle)' : 'var(--ds-color-brand)';
+    if (weekend) r.style.stroke = 'var(--ds-color-brand)';
+    var t = document.createElementNS(ns, 'title');
+    t.textContent = 'Oct ' + (i + 1) + ': ' + v.toLocaleString('en-US') + ' transactions';
+    r.appendChild(t);
+    if (i % 3 === 0) el('text', {x: x + bw / 2, y: H - 6, 'text-anchor': 'middle'}, 'Oct ' + (i + 1));
+  });
+</script>
+</body>
+</html>

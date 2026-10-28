@@ -1,0 +1,853 @@
+<!doctype html>
+<!--
+  Relay · Agent ticket queue
+  Assumed: support agents working the queue all day (daily power users) · process a queue ·
+           hundreds of tickets at p95 (260 seeded; server paging assumed) · roles: agent + view-only
+  Direction: lead Data-dense utility (no design system found; ops/queue context) · light + dark ·
+             borrow Restraint's single accent + status-only colour; table-first workspace with a preview panel (D8)
+  State preview: ?state=loading | error | empty | noaccess | readonly   (also in the sidebar footer)
+  URL state: view, q, status, priority, channel, sort, dir, page, t (open ticket)
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ticket queue · Relay</title>
+<style>
+:root{
+  --bg:#f3f4f7; --surface:#fff; --surface-2:#f7f8fa; --hover:#eef1f6; --line:#e1e4ea; --line-strong:#c9ced8;
+  --text:#1a1f2c; --muted:#596175; --accent:#2c4bd3; --accent-ink:#fff; --accent-soft:#e7ecff;
+  --red:#b3261e; --red-soft:#fdeceb; --amber:#8a5200; --amber-soft:#fff2d3; --green:#1d7440; --green-soft:#e2f4e8;
+  --ink:#171b26; --ink-text:#f2f4f8; --shadow:0 8px 24px rgba(20,27,45,.16);
+  --row:32px; --radius:6px;
+  --font:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans JP",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0e1117; --surface:#161a22; --surface-2:#1b2029; --hover:#222834; --line:#2a303c; --line-strong:#3b4352;
+  --text:#e6e9f0; --muted:#9ba4b6; --accent:#93a5ff; --accent-ink:#0e1117; --accent-soft:#222b4f;
+  --red:#ff9a91; --red-soft:#3b1f1f; --amber:#f3bb55; --amber-soft:#3a2d12; --green:#6bd596; --green-soft:#16301f;
+  --ink:#e6e9f0; --ink-text:#11151c; --shadow:0 8px 28px rgba(0,0,0,.5);
+  color-scheme:dark;
+}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 var(--font);-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:8px;top:-48px;background:var(--surface);padding:8px 12px;border-radius:var(--radius);z-index:100;border:1px solid var(--line-strong)}
+.skip:focus{top:8px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:inherit}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* shell */
+.app{display:grid;grid-template-columns:224px minmax(0,1fr);height:100vh}
+.side{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:12px 10px;gap:4px;min-height:0}
+.ws{display:flex;align-items:center;gap:10px;width:100%;padding:8px;border:0;background:none;border-radius:var(--radius);cursor:pointer;text-align:left;margin-bottom:8px}
+.ws:hover{background:var(--hover)}
+.logo{width:28px;height:28px;border-radius:8px;background:var(--ink);color:var(--ink-text);display:grid;place-items:center;font-weight:700;font-size:14px;flex:none}
+.ws b{display:block;font-size:13px;line-height:1.2}.ws small{color:var(--muted);font-size:12px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:0 10px;height:34px;border-radius:var(--radius);text-decoration:none;color:var(--muted);font-weight:500}
+.nav a:hover{background:var(--hover);color:var(--text)}
+.nav a[aria-current=page]{background:var(--accent-soft);color:var(--text);font-weight:600;box-shadow:inset 3px 0 0 var(--accent)}
+.nav .badge{margin-left:auto}
+.side .grow{flex:1}
+.preview{border-top:1px solid var(--line);padding-top:10px;font-size:12px;color:var(--muted)}
+.preview label{display:block;margin-bottom:4px}
+.preview select{width:100%}
+.col{display:flex;flex-direction:column;min-width:0;min-height:0}
+.top{display:flex;align-items:center;gap:12px;height:52px;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--line);flex:none}
+.gsearch{flex:1;max-width:520px;display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border:1px solid var(--line-strong);background:var(--surface-2);border-radius:var(--radius);color:var(--muted);cursor:pointer;text-align:left}
+.gsearch:hover{border-color:var(--muted)}
+.gsearch kbd{margin-left:auto}
+kbd{font:600 11px var(--font);border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--surface);color:var(--muted);min-width:20px;display:inline-block;text-align:center}
+.top .sp{flex:1}
+.icon{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:var(--radius);border:0;background:none;cursor:pointer;color:var(--muted);position:relative}
+.icon:hover{background:var(--hover);color:var(--text)}
+.dot{position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:var(--red);border:2px solid var(--surface)}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--text);display:inline-grid;place-items:center;font-size:11px;font-weight:700;border:1px solid var(--line-strong)}
+.acct{display:flex;align-items:center;gap:8px;border:0;background:none;padding:2px 6px 2px 2px;border-radius:99px;cursor:pointer}
+.acct:hover{background:var(--hover)}
+.pop{position:absolute;right:20px;top:48px;width:320px;background:var(--surface);border:1px solid var(--line-strong);border-radius:10px;box-shadow:var(--shadow);z-index:40;padding:6px}
+.pop h2{font-size:12px;color:var(--muted);margin:6px 8px;font-weight:600}
+.pop button.item{display:block;width:100%;text-align:left;padding:8px;border:0;background:none;border-radius:var(--radius);cursor:pointer}
+.pop button.item:hover{background:var(--hover)}
+.pop button.item small{display:block;color:var(--muted)}
+
+/* page */
+main{display:flex;flex-direction:column;min-height:0;flex:1}
+.head{padding:14px 20px 0;background:var(--surface);flex:none}
+.titlerow{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.crumbs{font-size:12px;color:var(--muted);margin-bottom:2px}
+h1{font-size:20px;line-height:1.25;margin:0;font-weight:650;letter-spacing:-.01em}
+.fresh{color:var(--muted);font-size:12px;margin-top:2px;display:flex;align-items:center;gap:6px}
+.live{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.titlerow .sp{flex:1}
+.views{display:flex;gap:2px;margin-top:10px;overflow-x:auto}
+.views a{display:flex;align-items:center;gap:8px;padding:8px 12px;text-decoration:none;color:var(--muted);font-weight:500;border-bottom:2px solid transparent;white-space:nowrap}
+.views a:hover{color:var(--text);background:var(--hover)}
+.views a[aria-current=page]{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
+.badge{font-size:11px;font-weight:600;min-width:20px;padding:0 6px;border-radius:99px;background:var(--hover);color:var(--muted);text-align:center;line-height:18px;font-variant-numeric:tabular-nums}
+.views a[aria-current=page] .badge{background:var(--accent-soft);color:var(--text)}
+.badge.risk{background:var(--red-soft);color:var(--red)}
+.btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:var(--radius);border:1px solid var(--line-strong);background:var(--surface);cursor:pointer;font-weight:550;text-decoration:none;white-space:nowrap}
+.btn:hover{background:var(--hover)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{border-color:var(--red);color:var(--red)}
+.btn.ghost{border-color:transparent;background:none;color:var(--muted)}
+.btn.ghost:hover{background:var(--hover);color:var(--text)}
+.btn[aria-disabled=true],.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn.small{height:24px;padding:0 8px;font-size:12px}
+
+.toolbar{display:flex;align-items:center;gap:8px;min-height:48px;padding:8px 20px;background:var(--surface);border-bottom:1px solid var(--line);flex:none;flex-wrap:wrap}
+.field{height:32px;border:1px solid var(--line-strong);border-radius:var(--radius);background:var(--surface);padding:0 8px}
+.search{display:flex;align-items:center;gap:6px;width:280px;padding:0 8px;color:var(--muted)}
+.search input{border:0;outline:0;background:none;flex:1;min-width:0;height:30px;color:var(--text)}
+.search:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+select.field.on{border-color:var(--accent);background:var(--accent-soft)}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:var(--radius);overflow:hidden}
+.seg button{border:0;background:var(--surface);height:30px;padding:0 10px;cursor:pointer;color:var(--muted)}
+.seg button[aria-pressed=true]{background:var(--accent-soft);color:var(--text);font-weight:600}
+.toolbar .sp{flex:1}
+#bulk{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap}
+#bulk[hidden],#filters[hidden]{display:none}
+#filters{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap}
+.bulkcount{font-weight:650;margin-right:4px}
+.selnote{padding:6px 20px;background:var(--accent-soft);border-bottom:1px solid var(--line);flex:none;display:flex;gap:10px;align-items:center}
+.selnote[hidden]{display:none}
+.linkbtn{border:0;background:none;color:var(--accent);text-decoration:underline;cursor:pointer;padding:0;font-weight:600}
+.notice{display:flex;gap:10px;align-items:flex-start;padding:8px 20px;border-bottom:1px solid var(--line);background:var(--amber-soft);color:var(--text);flex:none}
+.notice[hidden]{display:none}
+
+.work{flex:1;display:flex;min-height:0}
+.list{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+.scroller{flex:1;overflow:auto;background:var(--surface);scroll-padding-top:var(--row)}
+table{border-collapse:separate;border-spacing:0;width:100%;table-layout:fixed;min-width:1120px}
+th,td{height:var(--row);padding:0 8px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:1px solid var(--line)}
+thead th{position:sticky;top:0;z-index:3;background:var(--surface-2);font-weight:600;font-size:12px;color:var(--muted);height:34px}
+th button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:4px;height:100%;padding:0 2px;border-radius:4px}
+th button:hover{color:var(--text)}
+th button:focus-visible{outline:2px solid var(--accent)}
+th .sort{width:12px;height:12px;opacity:.35}
+th[aria-sort] .sort{opacity:1;color:var(--text)}
+th[aria-sort=descending] .sort{transform:rotate(180deg)}
+.c-chk{width:36px;padding:0 0 0 12px}.c-pri{width:104px}.c-id{width:84px}.c-status{width:104px}.c-req{width:190px}.c-asg{width:164px}.c-sla{width:132px}.c-upd{width:84px}
+input[type=checkbox]{width:16px;height:16px;margin:0;accent-color:var(--accent);cursor:pointer}
+tbody tr{background:var(--surface);cursor:default}
+tbody tr:hover{background:var(--hover)}
+tbody tr.sel{background:var(--accent-soft)}
+tbody tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+tbody tr:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.subjwrap{display:flex;align-items:center;gap:8px;min-width:0}
+a.subj{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:550;text-decoration:none;min-width:0}
+a.subj:hover{text-decoration:underline}
+.tag{font-size:11px;font-weight:650;padding:0 6px;border-radius:4px;background:var(--accent-soft);color:var(--text);border:1px solid var(--accent);line-height:16px;flex:none}
+.req small{color:var(--muted);margin-left:6px}
+.pri{display:inline-flex;align-items:center;gap:6px}
+.pri svg{width:14px;height:14px}
+.pri.urgent{color:var(--red);font-weight:650}.pri.high{color:var(--amber);font-weight:600}
+.st{display:inline-flex;align-items:center;gap:6px}
+.st::before{content:"";width:8px;height:8px;border-radius:50%;border:2px solid currentColor;flex:none}
+.st.new{color:var(--accent);font-weight:600}.st.new::before{background:currentColor}
+.st.open::before{border-color:var(--text)}
+.st.pending{color:var(--muted)}.st.pending::before{border-style:dotted}
+.st.hold{color:var(--muted)}.st.hold::before{border-radius:2px}
+.st.closed{color:var(--muted)}.st.closed::before{background:currentColor;opacity:.5}
+.sla{display:inline-flex;align-items:center;gap:6px}
+.sla.breach{color:var(--red);font-weight:650}.sla.risk{color:var(--amber);font-weight:650}.sla.paused{color:var(--muted)}
+.unassigned{color:var(--muted);display:inline-flex;align-items:center;gap:8px}
+.you{font-weight:600}
+
+.pager{display:flex;align-items:center;gap:8px;padding:6px 20px;background:var(--surface);border-top:1px solid var(--line);flex:none;min-height:44px}
+.pager .sp{flex:1}
+.newbar{position:absolute;left:50%;top:44px;transform:translateX(-50%);z-index:6}
+.newbar[hidden]{display:none}
+.newbar .btn{box-shadow:var(--shadow);background:var(--ink);color:var(--ink-text);border-color:var(--ink);border-radius:99px;height:32px}
+
+/* states */
+.statebox{flex:1;display:grid;place-items:center;padding:32px;background:var(--surface);overflow:auto}
+.statebox[hidden]{display:none}
+.state{max-width:440px;text-align:center}
+.state .art{width:48px;height:48px;border-radius:14px;background:var(--hover);display:grid;place-items:center;margin:0 auto 14px;color:var(--muted)}
+.state .art svg{width:24px;height:24px}
+.state.err .art{background:var(--red-soft);color:var(--red)}
+.state h2{margin:0 0 6px;font-size:16px}
+.state p{margin:0 0 16px;color:var(--muted)}
+.state .acts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.skel td{padding:0 8px}
+.bar{height:10px;border-radius:5px;background:linear-gradient(90deg,var(--hover),var(--line),var(--hover));background-size:200% 100%;animation:sh 1.4s linear infinite}
+@keyframes sh{to{background-position:-200% 0}}
+
+/* panel */
+.panel{width:420px;flex:none;background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.panel[hidden]{display:none}
+.p-head{display:flex;align-items:center;justify-content:space-between;padding:8px 8px 8px 16px;border-bottom:1px solid var(--line);flex:none}
+.p-body{flex:1;overflow:auto;padding:16px}
+.p-body h2{font-size:16px;line-height:1.35;margin:0 0 12px;outline:none}
+.p-body h3{font-size:12px;color:var(--muted);text-transform:none;margin:20px 0 6px;font-weight:600}
+.slabox{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius);background:var(--surface-2);border:1px solid var(--line);margin-bottom:14px}
+.slabox.breach{background:var(--red-soft);border-color:var(--red)}.slabox.risk{background:var(--amber-soft);border-color:var(--amber)}
+.props{display:grid;grid-template-columns:96px 1fr;gap:8px 12px;margin:0;align-items:center}
+.props dt{color:var(--muted)}.props dd{margin:0;min-width:0}
+.props select{width:100%}
+blockquote{margin:0;padding:10px 12px;background:var(--surface-2);border-left:3px solid var(--line-strong);border-radius:0 var(--radius) var(--radius) 0;white-space:pre-line}
+.p-foot{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line);flex:none}
+
+/* toast + dialogs */
+#toasts{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;align-items:center;z-index:60;width:max-content;max-width:calc(100vw - 32px)}
+.toast{display:flex;align-items:center;gap:12px;background:var(--ink);color:var(--ink-text);padding:8px 8px 8px 16px;border-radius:99px;box-shadow:var(--shadow)}
+.toast button{border:0;background:none;color:inherit;cursor:pointer;border-radius:99px;height:28px;padding:0 10px;font-weight:650}
+.toast button.undo{text-decoration:underline}
+.toast button:hover{background:rgba(127,127,127,.25)}
+.toast :focus-visible{outline-color:var(--ink-text)}
+dialog{border:1px solid var(--line-strong);border-radius:12px;background:var(--surface);color:var(--text);box-shadow:var(--shadow);padding:0;max-width:calc(100vw - 32px)}
+dialog::backdrop{background:rgba(10,14,24,.5)}
+.dlg{padding:20px;width:440px;max-width:100%}
+.dlg h2{margin:0 0 8px;font-size:16px}.dlg p{margin:0 0 18px;color:var(--muted)}
+.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
+.palette{width:560px;padding:0}
+.palette input{width:100%;height:48px;border:0;border-bottom:1px solid var(--line);background:none;padding:0 16px;font-size:15px;outline:none}
+.palette ul{list-style:none;margin:0;padding:6px;max-height:340px;overflow:auto}
+.palette li button{display:flex;gap:10px;width:100%;text-align:left;padding:8px 10px;border:0;background:none;border-radius:var(--radius);cursor:pointer}
+.palette li button:hover,.palette li button:focus-visible{background:var(--hover)}
+.palette li small{color:var(--muted);margin-left:auto}
+.palette .none{padding:16px;color:var(--muted)}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0 0 16px}.keys dt{text-align:right}.keys dd{margin:0;color:var(--muted)}
+
+@media (max-width:1180px){.panel{position:fixed;right:0;top:0;bottom:0;z-index:30;width:min(440px,100%);box-shadow:var(--shadow)}}
+@media (max-width:980px){.app{grid-template-columns:56px minmax(0,1fr)}.side .lbl,.ws span,.preview{display:none}.nav a{justify-content:center;padding:0}.nav .badge{display:none}}
+@media (prefers-reduced-motion:reduce){.bar{animation:none}}
+</style>
+</head>
+<body>
+<a class="skip" href="#tableScroll">Skip to ticket list</a>
+<div class="app">
+  <aside class="side" aria-label="Relay">
+    <button class="ws" type="button" data-stub="Workspace switcher"><span class="logo" aria-hidden="true">R</span><span><b>Northwind Support</b><small>Relay workspace</small></span></button>
+    <nav class="nav" aria-label="Primary">
+      <a href="#" aria-current="page"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 9.5l1.7-5.5h8.6L14 9.5V13H2zM2 9.5h3.5l1 1.5h3l1-1.5H14"/></svg><span class="lbl">Queue</span><span class="badge" id="navCount">0</span></a>
+      <a href="#customers" data-stub="Customers"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 7.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM1.5 13.5C1.5 11.3 3.5 10 6 10s4.5 1.300 4.500 3.500M11 3a2.300 2.300 0 010 4.500M12.500 10.300c1.200.5 2 1.500 2 3.200"/></svg><span class="lbl">Customers</span></a>
+      <a href="#reports" data-stub="Reports"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.500 13.500v-7M6.500 13.500v-9M10.500 13.500V8M14 13.500H1.500"/></svg><span class="lbl">Reports</span></a>
+      <a href="#kb" data-stub="Knowledge base"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2.500h8a2 2 0 012 2v9H5a2 2 0 01-2-2zM3 11.500a2 2 0 012-2h8"/></svg><span class="lbl">Knowledge base</span></a>
+      <a href="#settings" data-stub="Settings"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 10a2 2 0 100-4 2 2 0 000 4zM8 1.500v2M8 12.500v2M1.500 8h2M12.500 8h2M3.400 3.400l1.400 1.400M11.200 11.200l1.400 1.400M3.400 12.600l1.400-1.400M11.200 4.800l1.400-1.400"/></svg><span class="lbl">Settings</span></a>
+    </nav>
+    <div class="grow"></div>
+    <div class="preview"><label for="statePick">Preview state (design review)</label>
+      <select id="statePick" class="field"><option value="">Live data</option><option value="loading">Loading</option><option value="error">Load error</option><option value="empty">First-use empty</option><option value="readonly">View-only role</option><option value="noaccess">No access</option></select></div>
+  </aside>
+
+  <div class="col">
+    <header class="top">
+      <button class="gsearch" type="button" id="gsearch" aria-haspopup="dialog"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M7 12a5 5 0 100-10 5 5 0 000 10zM14 14l-3.500-3.500"/></svg><span>Search tickets, customers, articles</span><kbd>⌘K</kbd></button>
+      <span class="sp"></span>
+      <button class="icon" type="button" id="bellBtn" aria-label="Notifications, 2 unread" aria-expanded="false" aria-controls="bellPop"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 11V7a4 4 0 118 0v4l1.500 1.500h-11zM6.500 14h3"/></svg><span class="dot" aria-hidden="true"></span></button>
+      <button class="acct" type="button" id="acctBtn" aria-expanded="false" aria-controls="acctPop"><span class="avatar" aria-hidden="true">PR</span><span>Priya Raman</span><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg></button>
+      <div class="pop" id="bellPop" hidden><h2>Notifications</h2><div id="bellItems"></div></div>
+      <div class="pop" id="acctPop" hidden style="width:240px"><h2>Priya Raman · Agent</h2>
+        <button class="item" type="button" data-stub="Availability">Availability: <b>Available</b><small>Away stops new assignments</small></button>
+        <button class="item" type="button" data-stub="Profile">Profile and preferences</button>
+        <button class="item" type="button" data-stub="Sign out">Sign out</button></div>
+    </header>
+
+    <main id="main">
+      <div class="head">
+        <div class="titlerow">
+          <div>
+            <div class="crumbs">Queue / <span id="crumb">My open</span></div>
+            <h1>Ticket queue</h1>
+            <div class="fresh"><span class="live" aria-hidden="true"></span><span id="fresh">Updated —</span></div>
+          </div>
+          <span class="sp"></span>
+          <button class="btn ghost" type="button" id="helpBtn" aria-haspopup="dialog"><kbd>?</kbd> Shortcuts</button>
+          <button class="btn primary" type="button" id="pickNext" aria-describedby="roNote">Pick up next</button>
+        </div>
+        <nav class="views" id="views" aria-label="Queue views"></nav>
+      </div>
+
+      <div class="notice" id="roNote" hidden><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14A6 6 0 108 2a6 6 0 000 12zM8 7.500V11M8 5.200v.01"/></svg><span>You have view-only access to this queue, so assigning, status changes and closing are off. Ask a workspace admin (Dana Kowalczyk) to make you an agent.</span></div>
+
+      <div class="toolbar" id="toolbar">
+        <div id="filters">
+          <label class="field search"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M7 12a5 5 0 100-10 5 5 0 000 10zM14 14l-3.500-3.500"/></svg><span class="sr">Search this view</span><input id="q" type="search" placeholder="Search ID, subject, requester" autocomplete="off"><kbd aria-hidden="true">/</kbd></label>
+          <label class="sr" for="fStatus">Status</label>
+          <select class="field" id="fStatus"><option value="">Status: any open</option><option value="new">New</option><option value="open">Open</option><option value="pending">Pending (waiting on customer)</option><option value="hold">On hold</option><option value="closed">Closed</option></select>
+          <label class="sr" for="fPriority">Priority</label>
+          <select class="field" id="fPriority"><option value="">Priority: any</option><option value="urgent">Urgent</option><option value="high">High</option><option value="normal">Normal</option><option value="low">Low</option></select>
+          <label class="sr" for="fChannel">Channel</label>
+          <select class="field" id="fChannel"><option value="">Channel: any</option><option>Email</option><option>Chat</option><option>Web form</option><option>Phone</option></select>
+          <button class="btn ghost" type="button" id="clearFilters" hidden>Clear filters</button>
+        </div>
+        <div id="bulk" role="region" aria-label="Bulk actions" hidden>
+          <span class="bulkcount" id="bulkCount"></span>
+          <button class="btn" type="button" id="bMe">Assign to me</button>
+          <label class="sr" for="bAssign">Assign selected to</label>
+          <select class="field" id="bAssign"></select>
+          <label class="sr" for="bStatus">Set status of selected</label>
+          <select class="field" id="bStatus"><option value="" selected disabled>Set status…</option><option value="open">Open</option><option value="pending">Pending</option><option value="hold">On hold</option></select>
+          <label class="sr" for="bPri">Set priority of selected</label>
+          <select class="field" id="bPri"><option value="" selected disabled>Set priority…</option><option value="urgent">Urgent</option><option value="high">High</option><option value="normal">Normal</option><option value="low">Low</option></select>
+          <button class="btn danger" type="button" id="bClose">Close tickets</button>
+          <button class="btn ghost" type="button" id="bClear">Clear selection</button>
+        </div>
+        <span class="sp"></span>
+        <div class="seg" role="group" aria-label="Row density"><button type="button" data-density="compact" aria-pressed="true">Compact</button><button type="button" data-density="default" aria-pressed="false">Default</button></div>
+      </div>
+      <div class="selnote" id="selNote" hidden></div>
+
+      <div class="work">
+        <section class="list" aria-label="Tickets">
+          <div class="newbar" id="newBar" hidden><button class="btn" type="button" id="newBtn"></button></div>
+          <div class="scroller" id="tableScroll" tabindex="-1">
+            <table id="tbl">
+              <caption class="sr" id="cap"></caption>
+              <thead><tr id="thr"></tr></thead>
+              <tbody id="tb"></tbody>
+            </table>
+          </div>
+          <div class="statebox" id="stateBox" hidden></div>
+          <div class="pager" id="pager"></div>
+        </section>
+        <aside class="panel" id="panel" aria-label="Ticket preview" hidden></aside>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="toasts" role="status" aria-live="polite"></div>
+<div class="sr" id="live" role="status" aria-live="polite"></div>
+
+<dialog id="confirmDlg" aria-labelledby="cTitle"><form method="dialog" class="dlg"><h2 id="cTitle"></h2><p id="cBody"></p><div class="acts"><button class="btn" value="cancel" autofocus>Cancel</button><button class="btn danger" value="ok" id="cOk"></button></div></form></dialog>
+<dialog id="helpDlg" aria-labelledby="hTitle"><form method="dialog" class="dlg"><h2 id="hTitle">Keyboard shortcuts</h2>
+  <dl class="keys"><dt><kbd>J</kbd> <kbd>K</kbd></dt><dd>Next / previous ticket</dd><dt><kbd>Enter</kbd></dt><dd>Open preview</dd><dt><kbd>X</kbd></dt><dd>Select or deselect the ticket</dd><dt><kbd>A</kbd></dt><dd>Assign the ticket to me</dd><dt><kbd>/</kbd></dt><dd>Search this view</dd><dt><kbd>⌘K</kbd></dt><dd>Search everything</dd><dt><kbd>Esc</kbd></dt><dd>Close preview, then clear selection</dd></dl>
+  <div class="acts"><button class="btn primary" value="ok" autofocus>Done</button></div></form></dialog>
+<dialog id="palette" class="palette" aria-label="Search everything"><input id="pq" type="text" role="combobox" aria-expanded="true" aria-controls="pList" placeholder="Search tickets, or jump to a view" autocomplete="off"><ul id="pList"></ul></dialog>
+
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const MIN = 60e3, HR = 36e5, DAY = 864e5, PAGE = 50;
+
+/* ---------- seed data (realistic spread: unassigned, breached, paused, long names, nulls, non-Latin) ---------- */
+let seed = 20261028;
+const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+const pick = a => a[Math.floor(rnd() * a.length)];
+const ME = 'u1';
+const AGENTS = [
+  {id:'u1', name:'Priya Raman'}, {id:'u2', name:'Tomás Echeverría'}, {id:'u3', name:'Aiko Tanaka'},
+  {id:'u4', name:'Marcus Oyelaran-Whitfield'}, {id:'u5', name:'Dana Kowalczyk'}, {id:'u6', name:'Samir Haddad'}];
+const agentName = id => (AGENTS.find(a => a.id === id) || {}).name;
+const CUST = [
+  ['Hannah Brooks','Brightwater Logistics'], ['Luis Fernández','Cobalt & Finch LLP'], ['Mei-Ling Zhou','Northgate Health Partners'],
+  ['Oluwaseun Adeyemi',null], ['Katarzyna Wójcik','Halvorsen Marine'], ['Jonas Albrecht','Albrecht & Söhne GmbH'],
+  ['田中 美咲','株式会社ミナト'], ['Priscilla Okonkwo-Reyes','Meridian Credit Union'], ['Ben Carter','Carter Dental Group'],
+  ['Sofia Marchetti','Studio Marchetti'], ['Arjun Nair','Kestrel Analytics'], ['Emily Tran',null],
+  ['Rashid Al-Farsi','Gulfstream Freight Services'], ['Greta Lindqvist','Fjällräven Outfitters'], ['Tyler Boone','Boone & Daughters Roofing'],
+  ['Amara Nwosu','Lagos Fintech Collective'], ['Chen Wei','Orchid Bay Hotels'], ['Isabelle Moreau','Maison Moreau']];
+const TPL = [
+  ['Cannot log in after password reset','I reset my password this morning and now I get "Account locked" on every attempt. I have a client call at 2pm and need access to the dashboard.'],
+  ['Invoice INV-20418 shows the wrong VAT rate','Our finance team noticed 20% VAT was applied, but we are VAT-exempt (certificate attached last March). Please reissue the invoice.'],
+  ['Webhook deliveries failing with 502 since Tuesday','Roughly a third of our ticket.updated webhooks return 502. Our endpoint is healthy. Request IDs are in the attached log.'],
+  ['Export to CSV only includes the first 1,000 rows','We have about 14,000 tickets in the date range but the export stops at 1,000 with no error.'],
+  ['Please add two more seats to our plan','We have hired two new support agents starting Monday. Can you add seats and prorate the invoice?'],
+  ['SSO login loops back to the sign-in page','After the Okta redirect we land on /login again. Started after we rotated our SAML certificate on Friday.'],
+  ['Refund request for duplicate charge on 12 Oct','We were charged twice for the annual plan (two identical lines, 12 Oct). Please refund the duplicate.'],
+  ['Automation rule "Escalate VIP" stopped firing','The rule worked until last week. No changes on our side. Several VIP tickets sat unassigned for hours.'],
+  ['How do I merge two customer profiles?','We have duplicate profiles for the same person created via chat and email. Is there a way to merge them?'],
+  ['Mobile app crashes when attaching a photo','On Android 15, tapping the camera icon in a reply closes the app immediately. Version 4.12.1.'],
+  ['Data deletion request (GDPR Art. 17) for former employee','Please delete all personal data associated with the address below and confirm in writing within 30 days.'],
+  ['Email replies are landing in spam for our customers','Replies from support@ are being flagged by Gmail. SPF passes but DKIM shows "neutral".'],
+  ['Request: dark mode for the agent console','Our night shift would love a dark theme. Is this on the roadmap?'],
+  ['Slow loading of ticket list (30s+) on Mondays','Every Monday morning the queue takes more than 30 seconds to load. Other days it is fine. Roughly 90 agents online.'],
+  ['Custom field "Contract tier" missing from reports','We added the field in September but it is not available in the report builder.'],
+  ['API returns 429 even though we are under the documented limit','We make ~40 requests/min and still get 429s. Header shows X-RateLimit-Remaining: 0.'],
+  ['再請求書の発行をお願いします','10月分の請求書に会社名の誤りがありました。正しい会社名で再発行をお願いします。'],
+  ['Cannot reassign tickets in bulk, "Assign" is greyed out','Selecting 20+ tickets disables the Assign action. Works with fewer. We are a Team plan admin.'],
+  ['Chat widget overlaps the cookie banner on mobile Safari','The widget sits on top of our consent banner so users cannot accept cookies. Screenshot attached.'],
+  ['Upgrade to Enterprise: security questionnaire and DPA','Our procurement requires a completed security questionnaire and a signed DPA before we can upgrade. Who should we send them to?'],
+  ['Attachment upload fails for files over 10 MB','Uploads of 12 MB PDFs fail with "Something went wrong". Docs say the limit is 25 MB.'],
+  ['Two-factor codes not arriving by SMS (+44 numbers)','Several of our UK agents do not get codes. Authenticator app works but we need SMS as backup.'],
+  ['Where can I find our audit log retention settings?','Our auditors ask how long we retain agent activity logs and whether we can extend it to 24 months.'],
+  ['Re: Re: Re: Fwd: Urgent – account suspended without notice and no response from billing for three weeks, need escalation to management','This is the fourth time I am writing. Our account was suspended on 3 Oct after a failed payment that our bank says never reached you. We cannot serve our customers.']];
+const CHANNELS = ['Email','Email','Email','Chat','Chat','Web form','Phone'];
+const SLA_H = {urgent:1, high:4, normal:8, low:24};
+const now0 = Date.now();
+const tickets = [];
+function mk(i, forceNew) {
+  const [subject, body] = pick(TPL), [rname, company] = pick(CUST);
+  const r = rnd();
+  let status = r < .12 ? 'new' : r < .57 ? 'open' : r < .77 ? 'pending' : r < .83 ? 'hold' : 'closed';
+  if (forceNew) status = 'new';
+  const rp = rnd(), priority = rp < .06 ? 'urgent' : rp < .26 ? 'high' : rp < .80 ? 'normal' : 'low';
+  const elapsed = forceNew ? rnd() * 10 * MIN : Math.pow(rnd(), 2) * SLA_H[priority] * 1.25 * HR + 4 * MIN;
+  const created = now0 - elapsed - (forceNew ? 0 : rnd() * 3 * DAY);
+  let assignee = null;
+  if (status !== 'closed' && !(status === 'new' && rnd() < .85) && !forceNew) assignee = rnd() < .13 ? null : rnd() < .32 ? ME : pick(AGENTS).id;
+  return {n: i, id: 'RLY-' + i, subject, body, requester: rname, company, priority, status, assignee, channel: pick(CHANNELS),
+    created, updatedAt: now0 - elapsed * Math.pow(rnd(), 1.5), due: now0 - elapsed + SLA_H[priority] * HR, mention: false};
+}
+for (let i = 0; i < 260; i++) tickets.push(mk(3920 + i));
+tickets.sort((a, b) => a.created - b.created).forEach((t, i) => { t.n = 3920 + i; t.id = 'RLY-' + t.n; });
+tickets.filter(t => t.status !== 'closed').filter((_, i) => i % 29 === 3).forEach(t => t.mention = true);
+let nextN = 3920 + tickets.length;
+const byId = new Map(tickets.map(t => [t.id, t]));
+
+/* ---------- query state (lives in the URL) ---------- */
+const VIEWS = {
+  mine:       {label:'My open',    test: t => t.assignee === ME && t.status !== 'closed'},
+  unassigned: {label:'Unassigned', test: t => !t.assignee && t.status !== 'closed'},
+  mentions:   {label:'Mentions',   test: t => t.mention && t.status !== 'closed'},
+  all:        {label:'All open',   test: t => t.status !== 'closed'},
+  risk:       {label:'At risk',    test: t => t.status !== 'closed' && slaState(t).k !== 'ok' && slaState(t).k !== 'paused' && slaState(t).k !== 'none'}
+};
+const PRI_RANK = {urgent:0, high:1, normal:2, low:3}, ST_RANK = {new:0, open:1, pending:2, hold:3, closed:4};
+const STATUS_LABEL = {new:'New', open:'Open', pending:'Pending', hold:'On hold', closed:'Closed'};
+const PRI_LABEL = {urgent:'Urgent', high:'High', normal:'Normal', low:'Low'};
+const COLS = [
+  {k:'pri', label:'Priority', cls:'c-pri', sort:'priority', dir:'asc'},
+  {k:'id', label:'ID', cls:'c-id', sort:'id', dir:'desc'},
+  {k:'sub', label:'Subject', cls:'', sort:null},
+  {k:'status', label:'Status', cls:'c-status', sort:'status', dir:'asc'},
+  {k:'req', label:'Requester', cls:'c-req', sort:'requester', dir:'asc'},
+  {k:'asg', label:'Assignee', cls:'c-asg', sort:'assignee', dir:'asc'},
+  {k:'sla', label:'SLA', cls:'c-sla', sort:'sla', dir:'asc'},
+  {k:'upd', label:'Updated', cls:'c-upd', sort:'updated', dir:'desc'}];
+const defDir = s => (COLS.find(c => c.sort === s) || {dir:'asc'}).dir;
+let Q;
+function readQ() {
+  const p = new URLSearchParams(location.search);
+  const sort = COLS.some(c => c.sort === p.get('sort')) ? p.get('sort') : 'sla';
+  return {view: VIEWS[p.get('view')] ? p.get('view') : 'mine', q: p.get('q') || '', status: p.get('status') || '', priority: p.get('priority') || '',
+    channel: p.get('channel') || '', sort, dir: p.get('dir') === 'asc' || p.get('dir') === 'desc' ? p.get('dir') : defDir(sort),
+    page: Math.max(1, +p.get('page') || 1), t: p.get('t') || '', state: p.get('state') || ''};
+}
+function href(patch) {
+  const n = {...Q, ...patch}, p = new URLSearchParams();
+  if (n.view !== 'mine') p.set('view', n.view);
+  for (const k of ['q','status','priority','channel']) if (n[k]) p.set(k, n[k]);
+  if (n.sort !== 'sla') p.set('sort', n.sort);
+  if (n.dir !== defDir(n.sort)) p.set('dir', n.dir);
+  if (n.page > 1) p.set('page', n.page);
+  if (n.t) p.set('t', n.t);
+  if (n.state) p.set('state', n.state);
+  const s = p.toString();
+  return location.pathname + (s ? '?' + s : '');
+}
+const LISTKEYS = ['view','q','status','priority','channel','sort','dir','page'];
+function go(patch, {replace = false} = {}) {
+  if (LISTKEYS.some(k => k in patch)) { if (!('page' in patch)) patch.page = 1; clearSel(); }
+  const u = href(patch);
+  replace ? history.replaceState(null, '', u) : history.pushState(null, '', u);
+  Q = readQ(); render();
+}
+window.addEventListener('popstate', () => { Q = readQ(); clearSel(); render(); });
+
+/* ---------- helpers ---------- */
+const readonly = () => Q.state === 'readonly';
+const tz = new Intl.DateTimeFormat(undefined, {timeZoneName:'short'}).formatToParts(0).find(x => x.type === 'timeZoneName').value;
+const absTime = ts => new Date(ts).toLocaleString(undefined, {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', timeZoneName:'short'});
+const dur = ms => { ms = Math.abs(ms); const d = Math.floor(ms / DAY), h = Math.floor(ms % DAY / HR), m = Math.max(1, Math.floor(ms % HR / MIN));
+  return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m`; };
+const ago = ts => { const ms = Date.now() - ts; return ms < MIN ? 'just now' : dur(ms) + ' ago'; };
+const plural = (n, w) => `${n.toLocaleString()} ${w}${n === 1 ? '' : 's'}`;
+function slaState(t) {
+  if (t.status === 'closed') return {k:'none', text:'—'};
+  if (t.status === 'pending' || t.status === 'hold') return {k:'paused', text:'Paused'};
+  const ms = t.due - Date.now();
+  if (ms < 0) return {k:'breach', text:`Breached ${dur(ms)} ago`};
+  if (ms < HR) return {k:'risk', text:`${dur(ms)} left`};
+  return {k:'ok', text:`${dur(ms)} left`};
+}
+const ICON = {
+  alert:'<path d="M8 2l6.500 11.500h-13zM8 6.500v3M8 11.500v.01"/>', clock:'<path d="M8 14A6 6 0 108 2a6 6 0 000 12zM8 4.500V8l2.500 1.500"/>', pause:'<path d="M6 3.500v9M10 3.500v9"/>',
+  inbox:'<path d="M2 9.500l1.700-5.500h8.600L14 9.500V13H2zM2 9.500h3.500l1 1.500h3l1-1.500H14"/>', warn:'<path d="M8 14A6 6 0 108 2a6 6 0 000 12zM8 5v3.500M8 10.800v.01"/>',
+  lock:'<path d="M4 7.500h8V13H4zM5.500 7.500V5a2.500 2.500 0 015 0v2.500"/>', search:'<path d="M7 12a5 5 0 100-10 5 5 0 000 10zM14 14l-3.500-3.500"/>', x:'<path d="M3.500 3.500l9 9M12.500 3.500l-9 9"/>',
+  sort:'<path d="M4 6l4-3.500L12 6M4 10l4 3.500L12 10"/>', up:'<path d="M4 10l4-4 4 4"/>'};
+const svg = (n, extra = '') => `<svg class="i" viewBox="0 0 16 16" aria-hidden="true" ${extra}>${ICON[n]}</svg>`;
+function slaHtml(t) {
+  const s = slaState(t), ic = s.k === 'breach' ? 'alert' : s.k === 'risk' ? 'clock' : s.k === 'paused' ? 'pause' : null;
+  return `<span class="sla ${s.k}">${ic ? svg(ic) : ''}${s.text}</span>`;
+}
+function priHtml(t) {
+  const n = {low:1, normal:2, high:3, urgent:4}[t.priority];
+  const bars = [0,1,2,3].map(i => `<rect x="${1 + i * 3.8}" y="${13 - (i + 1) * 3}" width="2.6" height="${(i + 1) * 3}" rx=".8" fill="currentColor" ${i < n ? '' : 'opacity=".22"'}/>`).join('');
+  return `<span class="pri ${t.priority}"><svg viewBox="0 0 16 16" aria-hidden="true">${bars}</svg>${PRI_LABEL[t.priority]}</span>`;
+}
+const statusHtml = t => `<span class="st ${t.status}">${STATUS_LABEL[t.status]}</span>`;
+const announce = m => { const l = $('#live'); l.textContent = ''; setTimeout(() => l.textContent = m, 30); };
+
+/* ---------- selection ---------- */
+let sel = new Set(), allMatching = false, activeId = '', lastIdx = -1;
+function clearSel() { sel = new Set(); allMatching = false; lastIdx = -1; }
+
+/* ---------- derive rows ---------- */
+function filtered() {
+  const q = Q.q.trim().toLowerCase();
+  let rows = tickets.filter(VIEWS[Q.view].test);
+  if (Q.status) rows = tickets.filter(t => t.status === Q.status && (Q.view === 'all' || VIEWS[Q.view].test({...t, status: t.status === 'closed' ? 'open' : t.status})));
+  if (Q.priority) rows = rows.filter(t => t.priority === Q.priority);
+  if (Q.channel) rows = rows.filter(t => t.channel === Q.channel);
+  if (q) rows = rows.filter(t => (t.id + ' ' + t.subject + ' ' + t.requester + ' ' + (t.company || '')).toLowerCase().includes(q));
+  const key = {
+    priority: t => PRI_RANK[t.priority], id: t => t.n, status: t => ST_RANK[t.status], requester: t => t.requester.toLowerCase(),
+    assignee: t => (agentName(t.assignee) || '~').toLowerCase(), updated: t => t.updatedAt,
+    sla: t => (t.status === 'closed' || t.status === 'pending' || t.status === 'hold') ? Infinity : t.due}[Q.sort];
+  const m = Q.dir === 'asc' ? 1 : -1;
+  return rows.sort((a, b) => { const x = key(a), y = key(b); return (x < y ? -1 : x > y ? 1 : 0) * m || (a.due - b.due) || (a.n - b.n); });
+}
+let rows = [], pageRows = [];
+
+/* ---------- render ---------- */
+let booted = false, lastSync = Date.now(), pending = [];
+function render() {
+  const st = Q.state;
+  const loading = st === 'loading' || !booted;
+  rows = (st === 'empty') ? [] : filtered();
+  const pages = Math.max(1, Math.ceil(rows.length / PAGE));
+  if (Q.page > pages) { Q.page = pages; history.replaceState(null, '', href({page: pages})); }
+  pageRows = rows.slice((Q.page - 1) * PAGE, Q.page * PAGE);
+  if (!pageRows.some(t => t.id === activeId)) activeId = pageRows[0] ? pageRows[0].id : '';
+
+  // views + counts (computed over all data, independent of other filters)
+  $('#views').innerHTML = Object.entries(VIEWS).map(([k, v]) => {
+    const c = st === 'empty' ? 0 : tickets.filter(v.test).length;
+    return `<a href="${href({view:k, q:'', status:'', priority:'', channel:'', page:1, t:''})}" data-view="${k}" ${Q.view === k ? 'aria-current="page"' : ''}>${v.label}<span class="badge ${k === 'risk' && c ? 'risk' : ''}">${c}</span></a>`;
+  }).join('');
+  $('#crumb').textContent = VIEWS[Q.view].label;
+  $('#navCount').textContent = st === 'empty' ? 0 : tickets.filter(VIEWS.mine.test).length;
+  $('#fresh').textContent = `Updated ${new Date(lastSync).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} ${tz}`;
+
+  // permissions
+  const ro = readonly();
+  $('#roNote').hidden = !ro;
+  const pn = $('#pickNext'); pn.setAttribute('aria-disabled', ro ? 'true' : 'false');
+
+  // filters
+  $('#q').value = Q.q; $('#fStatus').value = Q.status; $('#fPriority').value = Q.priority; $('#fChannel').value = Q.channel;
+  for (const id of ['fStatus','fPriority','fChannel']) $('#' + id).classList.toggle('on', !!$('#' + id).value);
+  $('#clearFilters').hidden = !(Q.q || Q.status || Q.priority || Q.channel);
+  $('#statePick').value = st;
+
+  // state boxes
+  const box = $('#stateBox'), scroller = $('#tableScroll');
+  let boxHtml = '';
+  if (st === 'noaccess') boxHtml = stateHtml('lock', 'You don’t have access to this queue', 'Queue access is managed by your workspace admins. Request access and Dana Kowalczyk will be notified.', `<button class="btn primary" type="button" data-stub="Request access">Request access</button>`);
+  else if (st === 'error') boxHtml = stateHtml('warn', 'Couldn’t load tickets', 'Relay didn’t get a response, so the queue is not shown. Your tickets haven’t changed. Check your connection and retry.', `<button class="btn primary" type="button" id="retry">Retry</button><a class="btn" href="#status" data-stub="Relay status page">Check Relay status</a>`, 'err');
+  else if (!loading && rows.length === 0) {
+    if (st === 'empty') boxHtml = stateHtml('inbox', 'Your queue is empty', 'Tickets from email, chat and your web form will appear here as soon as they arrive. Connect a channel to get started.', `<button class="btn primary" type="button" data-stub="Connect a channel">Connect a channel</button>`);
+    else if (Q.q || Q.status || Q.priority || Q.channel) boxHtml = stateHtml('search', 'No tickets match these filters', `Nothing in ${VIEWS[Q.view].label} fits ${[Q.q && `“${esc(Q.q)}”`, Q.status && STATUS_LABEL[Q.status], Q.priority && PRI_LABEL[Q.priority], Q.channel].filter(Boolean).join(' · ')}. Try fewer filters.`, `<button class="btn" type="button" id="zeroClear">Clear filters</button>`);
+    else if (Q.view === 'mine') boxHtml = stateHtml('inbox', 'You’re all caught up', `Nothing is assigned to you right now. ${plural(tickets.filter(VIEWS.unassigned.test).length, 'ticket')} waiting in Unassigned.`, `<a class="btn primary" href="${href({view:'unassigned', t:''})}" data-view="unassigned">Go to Unassigned</a>`);
+    else boxHtml = stateHtml('inbox', `No tickets in ${VIEWS[Q.view].label}`, 'New matches show up here automatically.', '');
+  }
+  const tableShown = !boxHtml;
+  scroller.hidden = !tableShown; box.hidden = tableShown; box.innerHTML = boxHtml;
+  $('#toolbar').hidden = st === 'noaccess';
+  $('#pager').hidden = !tableShown || loading;
+
+  if (tableShown) {
+    $('#cap').textContent = `${VIEWS[Q.view].label}, sorted by ${Q.sort} ${Q.dir === 'asc' ? 'ascending' : 'descending'}`;
+    $('#thr').innerHTML = (ro ? '' : `<th class="c-chk" scope="col"><input type="checkbox" id="selAll" aria-label="Select all tickets on this page"></th>`) +
+      COLS.map(c => c.sort
+        ? `<th scope="col" class="${c.cls}" ${Q.sort === c.sort ? `aria-sort="${Q.dir === 'asc' ? 'ascending' : 'descending'}"` : ''}><button type="button" data-sort="${c.sort}">${c.label}<svg class="sort i" viewBox="0 0 16 16" aria-hidden="true">${Q.sort === c.sort ? ICON.up : ICON.sort}</svg></button></th>`
+        : `<th scope="col" class="${c.cls}">${c.label}</th>`).join('');
+    $('#tb').innerHTML = loading
+      ? Array.from({length: 14}, (_, i) => `<tr class="skel" aria-hidden="true">${ro ? '' : '<td class="c-chk"></td>'}${COLS.map(c => `<td><div class="bar" style="width:${c.k === 'sub' ? 40 + (i * 13 % 45) : 55}%"></div></td>`).join('')}</tr>`).join('')
+      : pageRows.map(rowHtml).join('');
+    $('#tableScroll').setAttribute('aria-busy', loading);
+  }
+  $('#pager').innerHTML = pagerHtml(pages);
+  refreshSel();
+  renderPanel();
+  if (loading && st !== 'loading') return;
+  if (booted) announce(`${plural(rows.length, 'ticket')} in ${VIEWS[Q.view].label}`);
+}
+const stateHtml = (ic, h, p, acts, cls = '') => `<div class="state ${cls}"><div class="art">${svg(ic)}</div><h2>${h}</h2><p>${p}</p><div class="acts">${acts}</div></div>`;
+function rowHtml(t) {
+  const ro = readonly(), mineT = t.assignee === ME;
+  const asg = t.assignee
+    ? `<span class="${mineT ? 'you' : ''}">${esc(agentName(t.assignee))}${mineT ? ' (you)' : ''}</span>`
+    : `<span class="unassigned">Unassigned${ro ? '' : `<button class="btn small" type="button" data-take aria-label="Assign ${t.id} to me">Take</button>`}</span>`;
+  return `<tr data-id="${t.id}" tabindex="${t.id === activeId ? 0 : -1}" ${t.id === Q.t ? 'aria-current="true"' : ''}>
+    ${ro ? '' : `<td class="c-chk"><input type="checkbox" data-sel aria-label="Select ${t.id}: ${esc(t.subject)}"></td>`}
+    <td class="c-pri">${priHtml(t)}</td>
+    <td class="c-id num">${t.id}</td>
+    <td><div class="subjwrap"><a class="subj" href="${href({t:t.id})}" data-open title="${esc(t.subject)}">${esc(t.subject)}</a>${t.mention ? '<span class="tag">@you</span>' : ''}</div></td>
+    <td class="c-status">${statusHtml(t)}</td>
+    <td class="c-req req" title="${esc(t.requester)}${t.company ? ', ' + esc(t.company) : ''}">${esc(t.requester)}<small>${t.company ? esc(t.company) : '—'}</small></td>
+    <td class="c-asg">${asg}</td>
+    <td class="c-sla num" data-sla title="${t.status === 'closed' ? '' : 'Due ' + absTime(t.due)}">${slaHtml(t)}</td>
+    <td class="c-upd num" data-upd title="${absTime(t.updatedAt)}">${ago(t.updatedAt)}</td></tr>`;
+}
+function pagerHtml(pages) {
+  const a = rows.length ? (Q.page - 1) * PAGE + 1 : 0, b = Math.min(Q.page * PAGE, rows.length);
+  return `<span class="num">${a}–${b} of ${rows.length.toLocaleString()}</span><span class="sp"></span>
+    <button class="btn" type="button" data-page="${Q.page - 1}" ${Q.page <= 1 ? 'disabled' : ''}>Previous</button>
+    <span class="num muted">Page ${Q.page} of ${pages}</span>
+    <button class="btn" type="button" data-page="${Q.page + 1}" ${Q.page >= pages ? 'disabled' : ''}>Next</button>`;
+}
+function refreshSel() {
+  const n = allMatching ? rows.length : sel.size, ro = readonly();
+  for (const tr of $$('#tb tr[data-id]')) {
+    const on = allMatching || sel.has(tr.dataset.id);
+    tr.classList.toggle('sel', on);
+    tr.classList.toggle('cur', tr.dataset.id === Q.t);
+    const cb = $('[data-sel]', tr); if (cb) cb.checked = on;
+  }
+  const all = $('#selAll');
+  if (all) { const c = pageRows.filter(t => allMatching || sel.has(t.id)).length; all.checked = c > 0 && c === pageRows.length; all.indeterminate = c > 0 && c < pageRows.length; }
+  const bulk = n > 0 && !ro;
+  $('#bulk').hidden = !bulk; $('#filters').hidden = bulk;
+  $('#bulkCount').textContent = `${n.toLocaleString()} selected`;
+  const note = $('#selNote');
+  const pageAll = pageRows.length && pageRows.every(t => sel.has(t.id));
+  if (allMatching) { note.hidden = false; note.innerHTML = `All ${rows.length.toLocaleString()} matching tickets are selected. <button class="linkbtn" type="button" id="clearAll">Clear selection</button>`; }
+  else if (pageAll && rows.length > pageRows.length) { note.hidden = false; note.innerHTML = `All ${pageRows.length} tickets on this page are selected. <button class="linkbtn" type="button" id="selectAllN">Select all ${rows.length.toLocaleString()} matching tickets</button>`; }
+  else note.hidden = true;
+  const bA = $('#bAssign');
+  if (!bA.options.length) bA.innerHTML = `<option value="" selected disabled>Assign to…</option>` + AGENTS.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('') + `<option value="-">Unassigned</option>`;
+}
+
+/* ---------- ticket preview panel ---------- */
+function renderPanel() {
+  const p = $('#panel'), t = byId.get(Q.t);
+  if (!t || Q.state === 'noaccess' || Q.state === 'error' || Q.state === 'loading') { p.hidden = true; p.innerHTML = ''; return; }
+  const ro = readonly(), dis = ro ? 'disabled' : '', s = slaState(t);
+  const opts = (map, cur) => Object.entries(map).map(([k, v]) => `<option value="${k}" ${k === cur ? 'selected' : ''}>${v}</option>`).join('');
+  const was = p.dataset.id; p.dataset.id = t.id; p.hidden = false;
+  p.innerHTML = `<div class="p-head"><span><span class="num"><b>${t.id}</b></span> <span class="muted">· ${t.channel}</span></span><button class="icon" type="button" data-close aria-label="Close preview">${svg('x')}</button></div>
+  <div class="p-body">
+    <h2 id="pTitle" tabindex="-1">${esc(t.subject)}</h2>
+    <div class="slabox ${s.k}"><b>SLA</b> ${slaHtml(t)} ${t.status === 'closed' ? '' : `<span class="muted">· due ${absTime(t.due)}</span>`}</div>
+    <dl class="props">
+      <dt><label for="pStatus">Status</label></dt><dd><select id="pStatus" class="field" ${dis}>${opts(STATUS_LABEL, t.status)}</select></dd>
+      <dt><label for="pPri">Priority</label></dt><dd><select id="pPri" class="field" ${dis}>${opts(PRI_LABEL, t.priority)}</select></dd>
+      <dt><label for="pAsg">Assignee</label></dt><dd><select id="pAsg" class="field" ${dis}><option value="-">Unassigned</option>${AGENTS.map(a => `<option value="${a.id}" ${a.id === t.assignee ? 'selected' : ''}>${esc(a.name)}${a.id === ME ? ' (you)' : ''}</option>`).join('')}</select></dd>
+      <dt>Requester</dt><dd>${esc(t.requester)}<br><span class="muted">${t.company ? esc(t.company) : '—'}</span></dd>
+      <dt>Created</dt><dd class="num" title="${absTime(t.created)}">${absTime(t.created)}</dd>
+    </dl>
+    ${ro ? '<p class="muted">Fields are read-only with your view-only access.</p>' : ''}
+    <h3>Latest message from ${esc(t.requester.split(' ')[0])}</h3>
+    <blockquote>${esc(t.body)}</blockquote>
+  </div>
+  <div class="p-foot"><a class="btn primary" href="#ticket" data-stub="Ticket workspace">Open ticket</a>${t.assignee === ME || ro ? '' : '<button class="btn" type="button" data-pme>Assign to me</button>'}</div>`;
+  return was;
+}
+
+/* ---------- operations (+ undo) ---------- */
+function applyOp(ids, fn) {
+  const prev = []; let skipped = 0;
+  for (const id of ids) { const t = byId.get(id); if (!t) continue; const snap = {...t}; if (fn(t) === false) skipped++; else { prev.push(snap); t.updatedAt = Date.now(); } }
+  return {changed: prev.length, skipped, prev};
+}
+function commit(res, msg, skipMsg) {
+  if (!res.changed) { toast(skipMsg || 'Nothing changed.'); return; }
+  const prev = res.prev;
+  toast(msg + (res.skipped ? ` ${skipMsg}` : ''), () => { prev.forEach(s => Object.assign(byId.get(s.id), s)); render(); announce('Change undone'); });
+  const fid = document.activeElement && document.activeElement.id;
+  clearSel(); render();
+  const same = fid && document.getElementById(fid); if (same && !same.disabled) same.focus();
+  rescueFocus();
+}
+const targets = () => allMatching ? rows.map(t => t.id) : [...sel];
+function assign(ids, uid, label) {
+  const res = applyOp(ids, t => t.assignee === uid ? false : (t.assignee = uid, true));
+  const who = uid === ME ? 'you' : uid ? agentName(uid) : null;
+  commit(res, who ? `Assigned ${plural(res.changed, 'ticket')} to ${who}.` : `Unassigned ${plural(res.changed, 'ticket')}.`,
+    `${res.skipped} ${res.skipped === 1 ? 'was' : 'were'} already ${who === 'you' ? 'yours' : who ? 'assigned to ' + who : 'unassigned'}.`);
+}
+function setField(ids, field, val, label) {
+  const res = applyOp(ids, t => t[field] === val ? false : (t[field] = val, true));
+  commit(res, `Set ${plural(res.changed, 'ticket')} to ${label}.`, `${res.skipped} already ${res.skipped === 1 ? 'was' : 'were'} ${label}.`);
+}
+async function closeTickets(ids) {
+  if (ids.length > 25 && !(await confirmDlg(`Close ${ids.length.toLocaleString()} tickets?`, `They leave every open view and customers aren’t emailed. You can undo right after.`, `Close ${ids.length.toLocaleString()} tickets`))) return;
+  const res = applyOp(ids, t => t.status === 'closed' ? false : (t.status = 'closed', true));
+  commit(res, `Closed ${plural(res.changed, 'ticket')}.`, `${res.skipped} already closed.`);
+}
+function pickNext() {
+  if (readonly()) return;
+  const c = tickets.filter(VIEWS.unassigned.test).sort((a, b) => a.due - b.due)[0];
+  if (!c) { toast('No unassigned tickets right now.'); return; }
+  const res = applyOp([c.id], t => (t.assignee = ME, true));
+  const prev = res.prev;
+  toast(`${c.id} is yours: ${c.subject.length > 48 ? c.subject.slice(0, 47) + '…' : c.subject}`, () => { Object.assign(byId.get(c.id), prev[0]); render(); });
+  activeId = c.id; go({view: 'mine', q: '', status: '', priority: '', channel: '', t: c.id}); focusPanel();
+}
+function confirmDlg(title, body, label) {
+  return new Promise(res => { $('#cTitle').textContent = title; $('#cBody').textContent = body; $('#cOk').textContent = label;
+    const d = $('#confirmDlg'); d.returnValue = ''; d.addEventListener('close', () => res(d.returnValue === 'ok'), {once: true}); d.showModal(); });
+}
+function toast(msg, undo) {
+  const el = document.createElement('div'); el.className = 'toast';
+  el.innerHTML = `<span>${esc(msg)}</span>${undo ? '<button class="undo" type="button">Undo</button>' : ''}<button type="button" aria-label="Dismiss">${svg('x')}</button>`;
+  const box = $('#toasts'); while (box.children.length >= 3) box.firstChild.remove(); box.append(el);
+  let timer; const kill = () => { clearTimeout(timer); el.remove(); };
+  const arm = () => { clearTimeout(timer); timer = setTimeout(kill, undo ? 10000 : 6000); };
+  arm(); el.addEventListener('mouseenter', () => clearTimeout(timer)); el.addEventListener('mouseleave', arm);
+  el.addEventListener('focusin', () => clearTimeout(timer)); el.addEventListener('focusout', arm);
+  $('button:last-child', el).onclick = kill;
+  if (undo) $('.undo', el).onclick = () => { undo(); kill(); };
+}
+
+/* ---------- focus ---------- */
+function focusActive() { const r = $(`#tb tr[data-id="${activeId}"]`); if (r) { r.tabIndex = 0; r.focus({preventScroll: false}); } }
+function rescueFocus() { const a = document.activeElement; if (!a || a === document.body || !a.isConnected || a.closest('[hidden]')) focusActive(); }
+function focusPanel() { const h = $('#pTitle'); if (h) h.focus(); }
+function setActive(id, focus = true) {
+  activeId = id; for (const r of $$('#tb tr[data-id]')) r.tabIndex = r.dataset.id === id ? 0 : -1;
+  if (focus) focusActive();
+}
+function openTicket(id, focus) {
+  go({t: id}, {replace: !!Q.t}); setActive(id, false);
+  if (focus) focusPanel();
+}
+function closePanel() { const id = Q.t; go({t: ''}, {replace: true}); if (id) { setActive(id); } }
+
+/* ---------- events ---------- */
+document.addEventListener('click', e => {
+  const stub = e.target.closest('[data-stub]');
+  if (stub) { e.preventDefault(); toast(`${stub.dataset.stub} isn’t part of this screen.`); return; }
+  const v = e.target.closest('a[data-view]');
+  if (v) { e.preventDefault(); go({view: v.dataset.view, q: '', status: '', priority: '', channel: '', t: ''}); return; }
+  if (!e.target.closest('.pop,#bellBtn,#acctBtn')) closePops();
+});
+$('#tb').addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-id]'); if (!tr) return;
+  const id = tr.dataset.id;
+  if (e.target.closest('[data-take]')) { assign([id], ME); return; }
+  if (e.target.matches('[data-sel]')) {
+    const idx = pageRows.findIndex(t => t.id === id);
+    if (e.shiftKey && lastIdx > -1) { const [a, b] = [Math.min(idx, lastIdx), Math.max(idx, lastIdx)]; pageRows.slice(a, b + 1).forEach(t => sel.add(t.id)); }
+    else e.target.checked ? sel.add(id) : sel.delete(id);
+    if (allMatching) { allMatching = false; sel = new Set(rows.map(t => t.id)); e.target.checked ? sel.add(id) : sel.delete(id); }
+    lastIdx = idx; refreshSel(); return;
+  }
+  setActive(id, false);
+  if (e.target.closest('a[data-open]')) e.preventDefault();
+  openTicket(id, !!e.target.closest('a[data-open]'));
+});
+$('#thr').addEventListener('click', e => {
+  const b = e.target.closest('[data-sort]');
+  if (b) { const s = b.dataset.sort; go({sort: s, dir: Q.sort === s ? (Q.dir === 'asc' ? 'desc' : 'asc') : defDir(s)}); $(`[data-sort="${s}"]`).focus(); return; }
+  if (e.target.id === 'selAll') { const full = pageRows.every(t => sel.has(t.id)); if (allMatching) clearSel(); pageRows.forEach(t => full ? sel.delete(t.id) : sel.add(t.id)); refreshSel(); }
+});
+$('#pager').addEventListener('click', e => { const b = e.target.closest('[data-page]'); if (b && !b.disabled) { go({page: +b.dataset.page}); $('#tableScroll').scrollTop = 0; } });
+$('#selNote').addEventListener('click', e => {
+  if (e.target.id === 'selectAllN') { allMatching = true; refreshSel(); announce(`All ${rows.length} matching tickets selected`); }
+  if (e.target.id === 'clearAll') { clearSel(); refreshSel(); }
+});
+$('#stateBox').addEventListener('click', e => {
+  if (e.target.id === 'zeroClear') go({q: '', status: '', priority: '', channel: ''});
+  if (e.target.id === 'retry') { go({state: ''}); }
+});
+$('#clearFilters').onclick = () => { go({q: '', status: '', priority: '', channel: ''}); };
+let qt; $('#q').addEventListener('input', e => { clearTimeout(qt); qt = setTimeout(() => go({q: e.target.value}, {replace: true}), 160); });
+$('#q').addEventListener('keydown', e => { if (e.key === 'Escape') { if ($('#q').value) { $('#q').value = ''; go({q: ''}, {replace: true}); } else { $('#q').blur(); focusActive(); } } });
+for (const [id, k] of [['fStatus','status'],['fPriority','priority'],['fChannel','channel']]) $('#' + id).onchange = e => go({[k]: e.target.value});
+$('#statePick').onchange = e => { if (e.target.value === 'loading') { go({state: 'loading'}); } else go({state: e.target.value, t: Q.t}); };
+$$('[data-density]').forEach(b => b.onclick = () => setDensity(b.dataset.density));
+function setDensity(d) {
+  document.documentElement.style.setProperty('--row', d === 'compact' ? '32px' : '40px');
+  $$('[data-density]').forEach(b => b.setAttribute('aria-pressed', b.dataset.density === d));
+  try { localStorage.setItem('relay.density', d); } catch (_) {}
+}
+try { setDensity(localStorage.getItem('relay.density') || 'compact'); } catch (_) { setDensity('compact'); }
+
+$('#bMe').onclick = () => assign(targets(), ME);
+$('#bAssign').onchange = e => { const v = e.target.value; e.target.selectedIndex = 0; assign(targets(), v === '-' ? null : v); };
+$('#bStatus').onchange = e => { const v = e.target.value; e.target.selectedIndex = 0; setField(targets(), 'status', v, STATUS_LABEL[v]); };
+$('#bPri').onchange = e => { const v = e.target.value; e.target.selectedIndex = 0; setField(targets(), 'priority', v, PRI_LABEL[v]); };
+$('#bClose').onclick = () => closeTickets(targets());
+$('#bClear').onclick = () => { clearSel(); refreshSel(); focusActive(); };
+$('#pickNext').onclick = e => { if (readonly()) { toast('Picking up tickets needs agent access. Ask a workspace admin.'); return; } pickNext(); };
+
+$('#panel').addEventListener('click', e => {
+  if (e.target.closest('[data-close]')) closePanel();
+  if (e.target.closest('[data-pme]')) assign([Q.t], ME);
+});
+$('#panel').addEventListener('change', e => {
+  const id = Q.t, v = e.target.value;
+  if (e.target.id === 'pStatus') { setField([id], 'status', v, STATUS_LABEL[v]); }
+  if (e.target.id === 'pPri') { setField([id], 'priority', v, PRI_LABEL[v]); }
+  if (e.target.id === 'pAsg') assign([id], v === '-' ? null : v);
+});
+
+/* popovers */
+function closePops() { for (const [b, p] of [['#bellBtn','#bellPop'],['#acctBtn','#acctPop']]) { $(p).hidden = true; $(b).setAttribute('aria-expanded', 'false'); } }
+for (const [b, p] of [['#bellBtn','#bellPop'],['#acctBtn','#acctPop']]) $(b).onclick = e => { e.stopPropagation(); const open = $(p).hidden; closePops(); $(p).hidden = !open; $(b).setAttribute('aria-expanded', open); if (open) $('button', $(p))?.focus(); };
+$('#bellItems').innerHTML = [['Dana Kowalczyk mentioned you', 'Can you take a look at this one? Customer is on Enterprise.'], ['SLA at risk', 'Three of your tickets are due within the hour.']].map(([a, b]) => `<button class="item" type="button" data-bell>${a}<small>${b}</small></button>`).join('');
+$('#bellItems').addEventListener('click', e => { if (e.target.closest('[data-bell]')) { closePops(); go({view: 'risk', q: '', status: '', priority: '', channel: '', t: ''}); } });
+$$('.pop').forEach(p => p.addEventListener('keydown', e => { if (e.key === 'Escape') { closePops(); $('#bellBtn').focus(); } }));
+
+/* global search / palette */
+const pal = $('#palette');
+function openPalette() { if (pal.open) return; $('#pq').value = ''; paletteList(''); pal.showModal(); $('#pq').focus(); }
+function paletteList(q) {
+  q = q.trim().toLowerCase();
+  const items = [];
+  Object.entries(VIEWS).forEach(([k, v]) => { if (!q || v.label.toLowerCase().includes(q)) items.push({l: 'Go to ' + v.label, h: 'View', run: () => go({view: k, q: '', status: '', priority: '', channel: '', t: ''})}); });
+  if (q) tickets.filter(t => (t.id + ' ' + t.subject + ' ' + t.requester + ' ' + (t.company || '')).toLowerCase().includes(q)).slice(0, 8)
+    .forEach(t => items.push({l: `${t.id} · ${t.subject}`, h: t.requester, run: () => { const inView = Object.keys(VIEWS).find(k => VIEWS[k].test(t)) || 'all'; go({view: VIEWS[Q.view].test(t) ? Q.view : inView, q: '', status: t.status === 'closed' ? 'closed' : '', priority: '', channel: '', t: t.id}); setActive(t.id, false); focusPanel(); }}));
+  $('#pList').innerHTML = items.length ? items.map((it, i) => `<li><button type="button" data-i="${i}"><span>${esc(it.l)}</span><small>${esc(it.h)}</small></button></li>`).join('') : `<li class="none">No matches for “${esc(q)}”. Try a ticket ID or requester name.</li>`;
+  pal._items = items;
+}
+$('#pq').addEventListener('input', e => paletteList(e.target.value));
+$('#pq').addEventListener('keydown', e => { if (e.key === 'Enter') { const it = pal._items[0]; if (it) { pal.close(); it.run(); } } if (e.key === 'ArrowDown') { e.preventDefault(); $('#pList button')?.focus(); } });
+$('#pList').addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (b) { const it = pal._items[+b.dataset.i]; pal.close(); it.run(); } });
+$('#pList').addEventListener('keydown', e => { const bs = $$('#pList button'), i = bs.indexOf(document.activeElement);
+  if (e.key === 'ArrowDown') { e.preventDefault(); bs[Math.min(i + 1, bs.length - 1)].focus(); } if (e.key === 'ArrowUp') { e.preventDefault(); i ? bs[i - 1].focus() : $('#pq').focus(); } });
+$('#gsearch').onclick = openPalette; $('#helpBtn').onclick = () => $('#helpDlg').showModal();
+
+/* keyboard */
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); return; }
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target, typing = t.matches('input,select,textarea') || t.isContentEditable;
+  if (document.querySelector('dialog[open]') || typing) return;
+  if (e.key === 'Escape') { if (Q.t) closePanel(); else if (sel.size || allMatching) { clearSel(); refreshSel(); } return; }
+  if (e.key === '/') { e.preventDefault(); $('#q').focus(); $('#q').select(); return; }
+  if (e.key === '?') { $('#helpDlg').showModal(); return; }
+  if (!pageRows.length || $('#tableScroll').hidden) return;
+  const i = Math.max(0, pageRows.findIndex(r => r.id === activeId));
+  const inTable = t.closest('#tb') || t === document.body || t.closest('#tableScroll');
+  if (!inTable && !['j','k'].includes(e.key)) return;
+  if (e.key === 'j' || (e.key === 'ArrowDown' && t.closest('#tb') && t.matches('tr'))) { e.preventDefault(); step(Math.min(i + 1, pageRows.length - 1)); }
+  else if (e.key === 'k' || (e.key === 'ArrowUp' && t.closest('#tb') && t.matches('tr'))) { e.preventDefault(); step(Math.max(i - 1, 0)); }
+  else if (e.key === 'x' && !readonly()) { const id = pageRows[i].id; if (allMatching) { allMatching = false; sel = new Set(rows.map(r => r.id)); } sel.has(id) ? sel.delete(id) : sel.add(id); lastIdx = i; refreshSel(); }
+  else if (e.key === 'a' && !readonly()) { assign([activeId], ME); }
+  else if (e.key === 'Enter' && t.matches('tr')) { e.preventDefault(); openTicket(activeId, true); }
+});
+function step(i) { const id = pageRows[i].id; setActive(id); if (Q.t) { history.replaceState(null, '', href({t: id})); Q = readQ(); refreshSel(); renderPanel(); } }
+
+/* ---------- live behaviour: sync, new-ticket buffer, ticking clocks ---------- */
+function newBar() {
+  const b = $('#newBar'); b.hidden = !pending.length || Q.state === 'error' || Q.state === 'noaccess';
+  $('#newBtn').textContent = `↑ ${plural(pending.length, 'new ticket')} · Show`;
+}
+$('#newBtn').onclick = () => { pending.forEach(t => { tickets.push(t); byId.set(t.id, t); }); const n = pending.length; pending = []; newBar(); render(); $('#tableScroll').scrollTop = 0; announce(`${n} new tickets added`); };
+let polls = 0;
+setInterval(() => {
+  if (Q.state === 'loading' || Q.state === 'error') return;
+  lastSync = Date.now(); polls++;
+  if (polls === 1 || rnd() < .4) { const t = mk(nextN++, true); t.mention = false; pending.push(t); }
+  $('#fresh').textContent = `Updated ${new Date(lastSync).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} ${tz}`;
+  newBar();
+  for (const tr of $$('#tb tr[data-id]')) { const t = byId.get(tr.dataset.id); if (!t) continue; $('[data-sla]', tr).innerHTML = slaHtml(t); $('[data-upd]', tr).textContent = ago(t.updatedAt); }
+}, 20000);
+
+/* ---------- boot ---------- */
+Q = readQ();
+render();
+setTimeout(() => { booted = true; render(); if (Q.t) { /* keep panel in sync with URL on load */ } }, 650);
+})();
+</script>
+</body>
+</html>

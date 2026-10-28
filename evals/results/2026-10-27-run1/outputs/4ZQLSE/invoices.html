@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Invoices · Payables</title>
+<style>
+:root{
+  --bg:#f5f6f8;--surface:#fff;--surface-2:#f8f9fb;--border:#dfe3e8;--border-strong:#c3cad4;
+  --text:#171c26;--muted:#586172;--link:#1d4ed8;
+  --primary:#1d4ed8;--primary-h:#1e40af;--on-primary:#fff;
+  --danger:#b42318;--danger-solid:#b42318;--danger-bg:#fdecea;
+  --ok:#067647;--ok-bg:#e6f6ec;--warn:#93370d;--warn-bg:#fff1d6;--info:#1849a9;--info-bg:#e8effe;--neutral:#3d4656;--neutral-bg:#eceff3;
+  --sel:#e8effe;--hover:#f1f4f8;--focus:#1d4ed8;--row-h:44px;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0e1117;--surface:#161a22;--surface-2:#1b202a;--border:#2a303c;--border-strong:#3c4454;
+  --text:#e7eaf0;--muted:#a0a9b8;--link:#8aabff;
+  --primary:#3b6cf0;--primary-h:#5380f3;--on-primary:#fff;
+  --danger:#ff9087;--danger-solid:#d92d20;--danger-bg:#3a1a18;
+  --ok:#62d796;--ok-bg:#12301f;--warn:#fdb55a;--warn-bg:#35260f;--info:#9bb8ff;--info-bg:#17264a;--neutral:#c5ccd8;--neutral-bg:#252b36;
+  --sel:#1c2c52;--hover:#1d232e;--focus:#8aabff;
+}}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Noto Sans",sans-serif}
+body.compact{--row-h:32px}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.app{height:100vh;display:flex;flex-direction:column}
+.top{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:baseline;gap:20px;flex-wrap:wrap}
+.top h1{font-size:18px;margin:0}
+.top .summary{color:var(--muted);flex:1}
+.top .summary b{color:var(--text);font-variant-numeric:tabular-nums}
+.top .who{color:var(--muted);font-size:13px}
+main{flex:1;min-height:0;display:flex;padding:0 24px}
+.list{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin:12px 0}
+.tabs{display:flex;gap:4px;padding:0 8px;border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:10px 10px 9px;cursor:pointer;color:var(--muted);font-weight:500;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab[aria-selected=true]{color:var(--text);border-bottom-color:var(--primary)}
+.tab .n{margin-left:6px;font-variant-numeric:tabular-nums;background:var(--neutral-bg);color:var(--neutral);border-radius:10px;padding:0 7px;font-size:12px}
+.tools{display:flex;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);min-height:52px;flex-wrap:wrap}
+.tools .sp{flex:1}
+.field{height:32px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);padding:0 8px}
+.search{position:relative;width:280px}
+.search svg{position:absolute;left:9px;top:8px;color:var(--muted)}
+.search input{width:100%;padding-left:30px}
+.btn{height:32px;padding:0 12px;border:1px solid var(--border-strong);background:var(--surface);border-radius:6px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{background:var(--hover)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+.btn.primary:hover{background:var(--primary-h)}
+.btn.danger{background:var(--danger-solid);border-color:var(--danger-solid);color:#fff}
+.btn.danger-o{color:var(--danger)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--hover)}
+.btn.sm{height:26px;padding:0 8px;font-size:13px}
+.btn.icon{width:32px;padding:0;justify-content:center}
+.btn.sm.icon{width:26px}
+.btn[aria-disabled=true],.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn[aria-disabled=true]:hover,.btn:disabled:hover{background:inherit}
+.btn.primary[aria-disabled=true]:hover{background:var(--primary)}
+.seg{display:inline-flex}
+.seg .btn{border-radius:0}.seg .btn:first-child{border-radius:6px 0 0 6px}.seg .btn:last-child{border-radius:0 6px 6px 0;margin-left:-1px}
+.seg .btn[aria-pressed=true]{background:var(--sel);border-color:var(--primary);position:relative;z-index:1}
+.bulk{background:var(--sel);border-bottom:1px solid var(--border);padding:8px 12px;display:flex;gap:8px;align-items:center;min-height:52px;flex-wrap:wrap}
+.bulk .cnt{font-weight:600}
+.bulk .sub{color:var(--muted);font-variant-numeric:tabular-nums}
+.banner{padding:6px 12px;background:var(--surface-2);border-bottom:1px solid var(--border);font-size:13px;text-align:center}
+.link{background:none;border:0;padding:0;color:var(--link);cursor:pointer;font-weight:500}
+.link:hover{text-decoration:underline}
+.tablearea{flex:1;min-height:0;overflow:auto;position:relative;transition:opacity .15s}
+.tablearea.dim{opacity:.5;pointer-events:none}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:1180px;table-layout:fixed}
+th{position:sticky;top:0;z-index:3;background:var(--surface-2);border-bottom:1px solid var(--border);text-align:left;font-weight:600;font-size:12px;color:var(--muted);height:34px;padding:0 8px;white-space:nowrap}
+th .sortbtn{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+th .sortbtn:hover{color:var(--text)}
+th[aria-sort] .sortbtn{color:var(--text)}
+th.num,td.num{text-align:right}
+th.num .sortbtn{flex-direction:row-reverse}
+td{height:var(--row-h);padding:0 8px;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--row-bg)}
+tr.row{--row-bg:var(--surface)}
+tr.row:hover,tr.row:focus-within{--row-bg:var(--hover)}
+tr.row.sel{--row-bg:var(--sel)}
+tr.row.active td:first-child{box-shadow:inset 3px 0 0 var(--primary)}
+tr.row.deleted td:not(.c-act){color:var(--muted)}
+tr.row{scroll-margin-top:36px}
+.c-chk,th.c-chk{width:40px;position:sticky;left:0;z-index:2;text-align:center}
+th.c-chk{z-index:5}
+.c-inv,th.c-inv{width:168px;position:sticky;left:40px;z-index:2;box-shadow:1px 0 0 var(--border)}
+th.c-inv{z-index:5}
+.c-amt{width:130px}.c-due{width:200px}.c-st{width:150px}.c-chk2{width:190px}.c-sub{width:110px}.c-act{width:210px;text-align:right}
+td.num{font-variant-numeric:tabular-nums}
+td.neg{color:var(--danger)}
+.mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}
+input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--primary)}
+.badge{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:11px;font-size:12px;font-weight:600}
+.b-pending{background:var(--info-bg);color:var(--info)}.b-approved{background:var(--ok-bg);color:var(--ok)}.b-rejected{background:var(--danger-bg);color:var(--danger)}.b-deleted{background:var(--neutral-bg);color:var(--neutral)}
+.tag{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 6px;border-radius:4px;font-size:12px;margin-right:4px;background:var(--warn-bg);color:var(--warn);font-weight:500}
+.tag.n{background:var(--neutral-bg);color:var(--neutral)}
+.od{color:var(--danger);font-weight:600}.soon{color:var(--warn);font-weight:600}
+.m{color:var(--muted)}
+.c-act .acts{display:inline-flex;gap:4px;opacity:0}
+tr.row:hover .acts,tr.row:focus-within .acts,tr.row.active .acts{opacity:1}
+.skel{height:12px;border-radius:4px;background:linear-gradient(90deg,var(--neutral-bg),var(--hover),var(--neutral-bg));background-size:200% 100%;animation:sh 1.2s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skel{animation:none}}
+.statebox{max-width:460px;margin:64px auto;text-align:center;padding:0 16px}
+.statebox h2{font-size:16px;margin:8px 0 6px}
+.statebox p{color:var(--muted);margin:0 0 16px}
+.statebox .ic{width:40px;height:40px;border-radius:20px;display:inline-grid;place-items:center;background:var(--neutral-bg);color:var(--neutral)}
+.statebox .ic svg{width:20px;height:20px}
+.statebox.err .ic{background:var(--danger-bg);color:var(--danger)}
+.statebox.ok .ic{background:var(--ok-bg);color:var(--ok)}
+.statebox code{font-size:12px;background:var(--neutral-bg);padding:1px 6px;border-radius:4px}
+.foot{display:flex;align-items:center;gap:12px;padding:8px 12px;border-top:1px solid var(--border);color:var(--muted);font-size:13px;flex-wrap:wrap}
+.foot .sp{flex:1}
+.foot b{color:var(--text);font-variant-numeric:tabular-nums}
+.pager{display:inline-flex;gap:4px;align-items:center}
+.panel{width:420px;flex:none;margin:12px 0 12px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;overflow:hidden}
+.panel[hidden]{display:none}
+.panel header{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border)}
+.panel header .t{flex:1;min-width:0}
+.panel header .t div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.panel .pb{flex:1;overflow:auto;padding:14px 16px}
+.panel .amt{font-size:26px;font-weight:650;font-variant-numeric:tabular-nums;margin-right:10px}
+.panel h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:18px 0 6px}
+.panel dl{display:grid;grid-template-columns:110px 1fr;gap:6px 8px;margin:0}
+.panel dt{color:var(--muted)}.panel dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.panel table{min-width:0;table-layout:auto}
+.panel td{height:30px;white-space:normal}
+.alert{display:flex;gap:8px;padding:8px 10px;border-radius:6px;margin-top:10px;background:var(--warn-bg);color:var(--warn);font-size:13px}
+.alert.d{background:var(--danger-bg);color:var(--danger)}
+.alert .link{color:inherit;text-decoration:underline}
+.act{list-style:none;padding:0;margin:0}
+.act li{padding:6px 0 6px 12px;border-left:2px solid var(--border);font-size:13px}
+.act time{display:block;color:var(--muted);font-size:12px}
+.panel footer{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--border);align-items:center}
+.panel footer .sp{flex:1}
+.menu{position:fixed;z-index:50;background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:4px;min-width:190px}
+.menu button{display:flex;width:100%;gap:8px;align-items:center;background:none;border:0;padding:7px 10px;border-radius:5px;cursor:pointer;text-align:left}
+.menu button:hover,.menu button:focus-visible{background:var(--hover)}
+.menu button.d{color:var(--danger)}
+.menu button[aria-disabled=true]{opacity:.5;cursor:not-allowed}
+.menu hr{border:0;border-top:1px solid var(--border);margin:4px 0}
+dialog{border:1px solid var(--border-strong);border-radius:10px;background:var(--surface);color:var(--text);padding:0;width:min(480px,92vw)}
+dialog::backdrop{background:rgba(10,14,22,.5)}
+.dlgbox{padding:18px 20px}
+.dlgbox h2{font-size:16px;margin:0 0 8px}
+.dlgbody p{margin:0 0 12px;color:var(--muted)}
+.dlgbody p b{color:var(--text)}
+.dlgbody label{display:block;font-weight:600;margin:10px 0 4px}
+.dlgbody select,.dlgbody textarea{width:100%;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);padding:6px 8px}
+.dlgbody textarea{min-height:72px;resize:vertical}
+.dlgbody [aria-invalid=true]{border-color:var(--danger)}
+.dlgbody .err{color:var(--danger);font-size:13px;margin-top:4px}
+.dlgfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.dlgbox table{border-collapse:collapse;min-width:0;width:100%}
+.dlgbox td{height:28px;padding:0 6px;border-bottom:1px solid var(--border);background:none}
+kbd{font:12px ui-monospace,Menlo,Consolas,monospace;border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--surface-2)}
+#toast{position:fixed;left:50%;bottom:56px;transform:translateX(-50%);z-index:60;background:#1b212c;color:#fff;border-radius:8px;padding:10px 12px 10px 16px;display:flex;gap:12px;align-items:center;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:min(760px,94vw)}
+#toast[hidden]{display:none}
+#toast .btn{background:transparent;color:#cfe0ff;border-color:#4a5568;height:28px}
+#toast .btn:hover{background:#2a3342}
+#toast .x{color:#aab3c2;border:0}
+.dev{border-top:1px dashed var(--border-strong);background:var(--surface-2);padding:6px 24px;font-size:12px;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.dev select{font-size:12px;height:24px}
+@media (max-width:1100px){
+  .panel{position:fixed;right:0;top:0;bottom:0;margin:0;border-radius:0;width:min(420px,100vw);z-index:40;box-shadow:-8px 0 24px rgba(0,0,0,.2)}
+  main,.top,.dev{padding-left:12px;padding-right:12px}
+  .search{width:100%}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <h1>Invoices</h1>
+    <div class="summary" id="summary" aria-live="polite"></div>
+    <div class="who">Priya Nair · Finance admin · times in <span id="tzlabel"></span></div>
+  </div>
+
+  <main>
+    <section class="list" aria-label="Invoice list">
+      <div class="tabs" role="tablist" id="tabs" aria-label="Invoice status"></div>
+      <div id="toolbar"></div>
+      <div id="banner"></div>
+      <div class="tablearea" id="area"></div>
+      <div class="foot" id="foot"></div>
+    </section>
+    <aside class="panel" id="panel" hidden aria-label="Invoice details"></aside>
+  </main>
+
+  <div class="dev" role="group" aria-label="Prototype controls">
+    <strong>Prototype controls</strong>
+    <label>Data state
+      <select id="devData"><option value="live">Live (212 invoices)</option><option value="loading">Loading</option><option value="error">Error</option><option value="empty">First use (no invoices)</option></select>
+    </label>
+    <label>Role
+      <select id="devRole"><option value="admin">Finance admin</option><option value="viewer">Viewer (read-only)</option></select>
+    </label>
+    <label><input type="checkbox" id="devFail"> Fail 2 invoices (ERP sync) on next bulk action</label>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite" hidden></div>
+<dialog id="dlg" aria-labelledby="dlgTitle"></dialog>
+
+<script>
+"use strict";
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const IC={
+ check:'<polyline points="20 6 9 17 4 12"/>',
+ x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+ clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+ trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>',
+ dots:'<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>',
+ search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+ refresh:'<polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10"/>',
+ left:'<polyline points="15 18 9 12 15 6"/>',right:'<polyline points="9 18 15 12 9 6"/>',
+ up:'<polyline points="18 15 12 9 6 15"/>',down:'<polyline points="6 9 12 15 18 9"/>',
+ warn:'<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+ download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+ undo:'<polyline points="1 4 1 10 7 10"/><path d="M3.5 15a9 9 0 1 0 2.1-9.4L1 10"/>',
+ inbox:'<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.5 5.1L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z"/>',
+ kbd:'<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>'
+};
+const ic=n=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${IC[n]}</svg>`;
+const plural=(n,w)=>`${n.toLocaleString('en-US')} ${w}${n===1?'':'s'}`;
+const TZ='America/New_York';
+const nf=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const amt=n=>(n<0?'−':'')+nf.format(Math.abs(n));
+const usd=n=>(n<0?'−$':'$')+nf.format(Math.abs(n));
+const dDue=new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'});
+const dShort=new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',timeZone:TZ});
+const dAbs=new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false,timeZone:TZ,timeZoneName:'short'});
+const NOW=Date.now(),DAY=864e5,TODAY=Math.floor(NOW/DAY)*DAY;
+function rel(t){const m=Math.round((NOW-t)/6e4);if(m<1)return'just now';if(m<60)return m+' min ago';if(m<48*60)return Math.floor(m/60)+'h ago';return dShort.format(t)}
+$('#tzlabel').textContent=dAbs.format(NOW).split(' ').pop();
+
+/* ---------- seeded data (212 invoices, deliberately awkward values) ---------- */
+function rng(s){return()=>(s=(s*1664525+1013904223)%4294967296)/4294967296}
+const R=rng(20261027);
+const V=[
+ ['Northwind Industrial Supply','NWI','Industrial fasteners and safety equipment, PO batch 7'],
+ ['Halvorsen & Brandt Logistics GmbH','HBL','Ocean freight Hamburg → Newark, 2×40ft containers'],
+ ['Cascade Office Solutions','COS','Monthly office supplies and toner'],
+ ['株式会社東和商事 (Towa Shoji Co., Ltd.)','TWS','Component sourcing — Q4 order, Osaka warehouse'],
+ ['Meridian Cloud Hosting Ltd.','MCH','Reserved compute and storage — October 2026'],
+ ['Bluepeak Facilities Management','BFM','HVAC servicing, floors 3–6'],
+ ['Okonkwo & Partners LLP','OKP','Legal services — vendor contract review (14.5 hrs)'],
+ ['Sterling Freight Services','SFS','LTL freight, week 42'],
+ ['Alder & Finch Catering','AFC',null],
+ ['Pinecrest Security Systems','PSS','Badge reader replacement and install'],
+ ['Delmar Print & Packaging','DPP','Custom packaging run, 5,000 units'],
+ ['Quantum Leap Analytics, Inc.','QLA','Analytics platform seats — annual true-up'],
+ ['Rosario Hermanos Construcción S.A. de C.V.','RHC','Warehouse dock repairs, phase 2'],
+ ['Ironbridge Staffing Group','IBS','Temp staffing, week ending Oct 23 (62 hrs)'],
+ ['Lumen Telecom Business','LTB','Dedicated internet circuit — October'],
+ ['Greenfield Janitorial Co.','GJC','Janitorial services — October'],
+ ['Atlas Legal Research Services','ALR',null],
+ ['Harborview Insurance Brokers','HIB','Commercial property premium, installment 3 of 4'],
+ ['TransPacific Customs Brokerage','TCB','Customs clearance and duties advance'],
+ ['Evergreen Office Furniture','EOF','Standing desks ×18'],
+ ['The International Association of Certified Professional Accountants and Financial Planners','IAC','Annual corporate membership dues'],
+ ['Kestrel Software Licensing','KSL','Design tools licences, 40 seats'],
+ ['Sunrise Bakery & Café','SBC','Breakfast service, all-hands'],
+ ['Voss Elektrotechnik AG','VEA','Electrical panel upgrade — Building B'],
+ ['Maple Leaf Courier Ltd.','MLC','Courier charges, Oct 1–21']
+];
+const SRC=['Vendor portal','Email to ap@ inbox','EDI feed'];
+const REASONS=['Duplicate invoice','Amount doesn’t match PO','Missing or invalid PO','Not a recognised vendor','Other'];
+const USED=new Set();
+function mkNum(p){let n;do{n=`${p}-2026-${1000+Math.floor(R()*8999)}`}while(USED.has(n));USED.add(n);return n}
+function lines(a){const net=Math.round(a/1.08*100)/100;return[{d:'Goods and services',a:net},{d:'Sales tax (8%)',a:Math.round((a-net)*100)/100}]}
+const DATA=[];
+for(let n=0;n<212;n++){
+  const v=V[Math.floor(R()*V.length)];
+  const r=R();let a=r<.35?40+R()*900:r<.75?500+R()*4500:r<.95?3000+R()*18000:15000+R()*90000;
+  a=Math.round(a*100)/100;
+  if([3,41,97].includes(n))a=-Math.round(a*30)/100;
+  const sr=R();const status=sr<.45?'pending':sr<.82?'approved':sr<.94?'rejected':'deleted';
+  const sub=NOW-(status==='pending'?R()*40*36e5:(3+R()*200)*36e5);
+  const inv={id:'i'+n,num:mkNum(v[1]),vendor:v[0],desc:v[2],amount:a,status,sub,
+    due:TODAY+(Math.floor(R()*50)-8)*DAY,po:R()<.2?null:'PO-'+(48000+Math.floor(R()*9999)),src:SRC[Math.floor(R()*3)],
+    ev:[{at:sub,who:'System',text:'Received'}]};
+  if(status==='approved')inv.ev.push({at:sub+(1+R()*2)*36e5,who:'Marcus Webb',text:'Approved'});
+  if(status==='rejected'){const rs=REASONS[Math.floor(R()*4)];inv.rej={reason:rs,note:''};inv.ev.push({at:sub+(1+R()*2)*36e5,who:'Marcus Webb',text:'Rejected — '+rs})}
+  if(status==='deleted'){inv.prev=R()<.5?'pending':'rejected';inv.ev.push({at:sub+3*36e5,who:'Marcus Webb',text:'Deleted'})}
+  DATA.push(inv);
+}
+(function dupes(){const p=DATA.filter(i=>i.status==='pending');
+  for(let k=0;k<5;k++){const a=p[k*8],b=p[k*8+3];b.vendor=a.vendor;b.desc=a.desc;b.amount=a.amount;b.num=mkNum(a.num.split('-')[0]);a.dup=b.id;b.dup=a.id}})();
+const BY={};DATA.forEach(i=>{i.lines=lines(i.amount);BY[i.id]=i});
+const VENDORS=[...new Set(DATA.map(i=>i.vendor))].sort((a,b)=>a.localeCompare(b));
+
+/* ---------- state ---------- */
+const DEF={status:'pending',q:'',vendor:'',flag:'',sort:'due',dir:'asc',page:1,size:50,open:''};
+let S={...DEF};
+const ui={data:'live',role:'admin',loading:true,refreshing:false,density:'comfortable',updated:NOW,ref:'REQ-'+Math.random().toString(16).slice(2,8).toUpperCase()};
+try{ui.density=localStorage.getItem('inv.density')||'comfortable'}catch(e){}
+document.body.classList.toggle('compact',ui.density==='compact');
+let sel=new Set(),activeId=null,LIST=[],lastClickedId=null,undoFn=null,toastTimer=null;
+const STATUS_LBL={pending:'Pending approval',approved:'Approved',rejected:'Rejected',deleted:'Deleted'};
+const STATUS_IC={pending:'clock',approved:'check',rejected:'x',deleted:'trash'};
+const SORT_LBL={num:'Invoice',vendor:'Vendor',amount:'Amount',due:'Due date',status:'Status',sub:'Submitted'};
+const SORT_ORDER={pending:0,approved:1,rejected:2,deleted:3};
+
+/* ---------- derived ---------- */
+const rows=()=>ui.data==='empty'?[]:DATA;
+function hasFlag(i,f){return f==='overdue'?i.status==='pending'&&i.due<TODAY:f==='dup'?!!i.dup:f==='nopo'?!i.po:f==='credit'?i.amount<0:true}
+function base(){const q=S.q.trim().toLowerCase();
+  return rows().filter(i=>(!q||i.num.toLowerCase().includes(q)||i.vendor.toLowerCase().includes(q)||(i.po||'').toLowerCase().includes(q))
+    &&(!S.vendor||i.vendor===S.vendor)&&(!S.flag||hasFlag(i,S.flag)))}
+function list(){const b=base().filter(i=>S.status==='all'?i.status!=='deleted':i.status===S.status);
+  const k=S.sort,d=S.dir==='asc'?1:-1;
+  const key=i=>k==='num'?i.num:k==='vendor'?i.vendor:k==='amount'?i.amount:k==='due'?i.due:k==='sub'?i.sub:SORT_ORDER[i.status];
+  return b.sort((x,y)=>{const a=key(x),c=key(y);return(typeof a==='string'?a.localeCompare(c):a-c)*d||x.num.localeCompare(y.num)})}
+const can={approve:i=>i.status==='pending',reject:i=>i.status==='pending',delete:i=>i.status==='pending'||i.status==='rejected',
+  restore:i=>i.status==='deleted',reopen:i=>i.status==='approved'||i.status==='rejected'};
+const sumAmt=a=>a.reduce((s,i)=>s+i.amount,0);
+
+/* ---------- URL state ---------- */
+function toHash(){const p=new URLSearchParams();for(const k in DEF)if(String(S[k])!==String(DEF[k]))p.set(k,S[k]);const h=p.toString();return h?'#'+h:''}
+function fromHash(){const p=new URLSearchParams(location.hash.slice(1));S={...DEF};
+  for(const k in DEF){if(p.has(k))S[k]=typeof DEF[k]==='number'?(parseInt(p.get(k),10)||DEF[k]):p.get(k)}
+  if(!['pending','approved','rejected','deleted','all'].includes(S.status))S.status='pending';
+  if(![25,50,100].includes(S.size))S.size=50;if(!SORT_LBL[S.sort])S.sort='due';if(S.dir!=='desc')S.dir='asc'}
+function syncUrl(replace){const h=toHash();if(h===location.hash)return;
+  try{(replace?history.replaceState:history.pushState).call(history,null,'',h||location.pathname+location.search)}catch(e){}}
+function go(ch,o={}){Object.assign(S,ch);if(!('page' in ch))S.page=1;
+  if(!o.keepSel)sel.clear();render(o.replace)}
+
+/* ---------- rendering ---------- */
+function stBadge(s){return`<span class="badge b-${s}">${ic(STATUS_IC[s])}${STATUS_LBL[s]}</span>`}
+function dueCell(i){const diff=Math.round((i.due-TODAY)/DAY);let x='';
+  if(i.status==='pending'){if(diff<0)x=` <span class="od">· ${-diff}d overdue</span>`;else if(diff===0)x=' <span class="soon">· due today</span>'}
+  return dDue.format(i.due)+x}
+function checks(i){let h='';
+  if(i.dup)h+=`<span class="tag" title="Same vendor and amount as ${esc(BY[i.dup].num)}">${ic('warn')}Possible duplicate</span>`;
+  if(!i.po)h+=`<span class="tag" title="No purchase order referenced — can’t be matched">No PO</span>`;
+  if(i.amount<0)h+=`<span class="tag n" title="Credit note: reduces the amount owed">Credit note</span>`;
+  return h||'<span class="m">—</span>'}
+const viewerTip=k=>`Viewers can’t ${k} invoices. Ask a Finance admin to change your role.`;
+function btnAttrs(kind,verb,elig){if(ui.role==='viewer')return` aria-disabled="true" title="${viewerTip(verb)}"`;
+  if(elig===0)return` aria-disabled="true" title="None of the selected invoices can be ${verb}d"`;return''}
+
+function render(replace){
+  const L=LIST=list();
+  const pages=Math.max(1,Math.ceil(L.length/S.size));if(S.page>pages)S.page=pages;
+  if(activeId&&!L.some(i=>i.id===activeId))activeId=null;
+  if(!activeId&&L.length)activeId=L[(S.page-1)*S.size].id;
+  renderTop();renderTabs();renderTools(L);renderTable(L);renderFoot(L,pages);renderPanel();
+  syncUrl(replace);
+}
+function renderTop(){const p=rows().filter(i=>i.status==='pending');
+  $('#summary').innerHTML=ui.data!=='live'&&ui.data!=='empty'||ui.loading?'':p.length?
+   `<b>${p.length}</b> awaiting approval · <b>${usd(sumAmt(p))}</b> · oldest submitted ${rel(Math.min(...p.map(i=>i.sub)))}`:'Nothing awaiting approval'}
+function renderTabs(){const b=ui.data==='live'&&!ui.loading?base():[];const c=s=>b.filter(i=>s==='all'?i.status!=='deleted':i.status===s).length;
+  const T=[['pending','Pending approval'],['approved','Approved'],['rejected','Rejected'],['all','All'],['deleted','Deleted']];
+  $('#tabs').innerHTML=T.map(([k,l])=>`<button class="tab" role="tab" data-act="tab" data-v="${k}" aria-selected="${S.status===k}">${l}${ui.data==='live'&&!ui.loading?`<span class="n">${c(k)}</span>`:''}</button>`).join('')}
+
+function renderTools(L){
+  const bulk=sel.size>0;let h='';
+  if(!bulk){
+    const filtered=S.q||S.vendor||S.flag;
+    h=`<div class="tools">
+     <div class="search"><span class="sr"><label for="q">Search invoices</label></span>${ic('search')}<input id="q" class="field" type="search" placeholder="Search invoice #, vendor or PO  ( / )" value="${esc(S.q)}" autocomplete="off"></div>
+     <select class="field" id="fVendor" aria-label="Vendor"><option value="">All vendors</option>${VENDORS.map(v=>`<option value="${esc(v)}"${S.vendor===v?' selected':''}>${esc(v.length>44?v.slice(0,43)+'…':v)}</option>`).join('')}</select>
+     <select class="field" id="fFlag" aria-label="Checks"><option value="">All checks</option>${[['overdue','Overdue'],['dup','Possible duplicate'],['nopo','No PO'],['credit','Credit note']].map(([k,l])=>`<option value="${k}"${S.flag===k?' selected':''}>${l}</option>`).join('')}</select>
+     ${filtered?`<button class="link" data-act="clear-filters">Clear filters</button>`:''}
+     <span class="sp"></span>
+     <button class="btn icon" data-act="refresh" aria-label="Refresh list" title="Refresh (updated ${dAbs.format(ui.updated)})">${ic('refresh')}</button>
+     <span class="seg" role="group" aria-label="Row density"><button class="btn" data-act="density" data-v="comfortable" aria-pressed="${ui.density==='comfortable'}">Comfortable</button><button class="btn" data-act="density" data-v="compact" aria-pressed="${ui.density==='compact'}">Compact</button></span>
+     <button class="btn" data-act="export"${L.length?'':' aria-disabled="true"'}>${ic('download')}Export ${L.length.toLocaleString('en-US')} row${L.length===1?'':'s'}</button>
+     <button class="btn icon" data-act="help" aria-label="Keyboard shortcuts" title="Keyboard shortcuts ( ? )">${ic('kbd')}</button>
+    </div>`;
+  }else{
+    const items=[...sel].map(id=>BY[id]);const n=items.length;
+    const e=k=>items.filter(can[k]).length;
+    const ea=e('approve'),ed=e('delete'),er=e('restore'),eo=e('reopen');
+    h=`<div class="bulk" role="toolbar" aria-label="Bulk actions">
+     <span class="cnt">${n.toLocaleString('en-US')} selected</span><span class="sub">· ${usd(sumAmt(items))}</span>
+     <span class="sp" style="flex:1"></span>
+     ${ea>0&&ea<n?`<span class="sub">Approve and reject apply to the ${ea} pending</span>`:''}
+     <button class="btn primary" data-act="approve" data-bulk="1"${btnAttrs('approve','approve',ea)}>${ic('check')}Approve${ea?` ${ea}`:''}</button>
+     <button class="btn" data-act="reject" data-bulk="1"${btnAttrs('reject','reject',ea)}>${ic('x')}Reject…</button>
+     ${eo?`<button class="btn" data-act="reopen" data-bulk="1"${btnAttrs('reopen','return to pending',eo)}>${ic('undo')}Return ${eo} to pending</button>`:''}
+     ${er?`<button class="btn" data-act="restore" data-bulk="1"${btnAttrs('restore','restore',er)}>${ic('undo')}Restore ${er}</button>`:''}
+     <button class="btn danger-o" data-act="delete" data-bulk="1"${btnAttrs('delete','delete',ed)}>${ic('trash')}Delete…</button>
+     <button class="btn ghost" data-act="clear-sel">Clear <kbd>Esc</kbd></button>
+    </div>`;
+  }
+  const t=$('#toolbar');const hadQ=document.activeElement&&document.activeElement.id==='q';
+  const pos=hadQ?document.activeElement.selectionStart:0;
+  t.innerHTML=h;
+  if(hadQ){const q=$('#q');if(q){q.focus();q.setSelectionRange(pos,pos)}}
+  // banner for select-all-matching
+  const pageIds=L.slice((S.page-1)*S.size,S.page*S.size).map(i=>i.id);
+  let b='';
+  if(bulk&&L.length>pageIds.length){
+    if(sel.size===L.length&&L.every(i=>sel.has(i.id)))b=`All ${L.length.toLocaleString('en-US')} matching invoices are selected. <button class="link" data-act="clear-sel">Clear selection</button>`;
+    else if(pageIds.every(id=>sel.has(id)))b=`All ${pageIds.length} invoices on this page are selected. <button class="link" data-act="sel-all">Select all ${L.length.toLocaleString('en-US')} matching invoices</button>`;
+  }
+  $('#banner').innerHTML=b?`<div class="banner">${b}</div>`:'';
+}
+
+function renderTable(L){
+  const area=$('#area');area.classList.toggle('dim',ui.refreshing);
+  const head=cols=>cols;
+  if(ui.loading||ui.data==='loading'){
+    area.innerHTML=`<table aria-busy="true" aria-label="Loading invoices">${colgroup()}<thead>${thead(false)}</thead><tbody>${Array.from({length:12},()=>`<tr>${Array.from({length:9},(_, c)=>`<td><div class="skel" style="width:${c===0?16:[0,70,85,60,70,75,60,55,0][c]}%"></div></td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    return}
+  if(ui.data==='error'){
+    area.innerHTML=`<div class="statebox err" role="alert"><span class="ic">${ic('warn')}</span><h2>Couldn’t load invoices</h2>
+      <p>The invoice service didn’t respond within 10 seconds. Your filters and selection are kept, and no invoices were changed. Try again, and contact Finance Systems if it keeps happening.</p>
+      <button class="btn primary" data-act="retry">${ic('refresh')}Try again</button><p style="margin:12px 0 0;font-size:12px">Reference <code>${ui.ref}</code></p></div>`;return}
+  if(ui.data==='empty'){
+    area.innerHTML=`<div class="statebox"><span class="ic">${ic('inbox')}</span><h2>No invoices yet</h2>
+      <p>Invoices appear here when vendors submit them through the vendor portal, by email to the AP inbox, or over EDI. Nothing has been received on this account.</p>
+      <button class="btn" data-act="retry">${ic('refresh')}Check again</button></div>`;return}
+  if(!L.length){
+    const filtered=S.q||S.vendor||S.flag;
+    if(filtered)area.innerHTML=`<div class="statebox"><span class="ic">${ic('search')}</span><h2>No invoices match these filters</h2><p>${S.status==='all'?'':'Showing '+STATUS_LBL[S.status].toLowerCase()+' only. '}Try a different search, or clear the filters to see everything in this tab.</p><button class="btn" data-act="clear-filters">Clear filters</button></div>`;
+    else if(S.status==='pending')area.innerHTML=`<div class="statebox ok"><span class="ic">${ic('check')}</span><h2>Queue clear</h2><p>Every submitted invoice has been approved or rejected. New invoices will show up here as vendors send them.</p><button class="btn" data-act="tab" data-v="approved">View approved invoices</button></div>`;
+    else if(S.status==='deleted')area.innerHTML=`<div class="statebox"><span class="ic">${ic('trash')}</span><h2>Nothing deleted</h2><p>Deleted invoices stay here for 30 days so they can be restored.</p></div>`;
+    else area.innerHTML=`<div class="statebox"><span class="ic">${ic('inbox')}</span><h2>No ${STATUS_LBL[S.status].toLowerCase()} invoices</h2><p>Invoices will appear here once they reach this status.</p></div>`;
+    return}
+  const page=L.slice((S.page-1)*S.size,S.page*S.size);
+  const allSel=page.every(i=>sel.has(i.id));
+  area.innerHTML=`<table aria-label="Invoices">${colgroup()}<thead>${thead(true,allSel,page.some(i=>sel.has(i.id))&&!allSel)}</thead><tbody>${page.map(rowHtml).join('')}</tbody></table>`;
+  const hc=area.querySelector('#hchk');if(hc)hc.indeterminate=hc.dataset.ind==='1';
+  const ar=area.querySelector('tr.active');if(ar&&kbdNav){ar.scrollIntoView({block:'nearest'});kbdNav=false}
+}
+let kbdNav=false;
+function colgroup(){return'<colgroup><col class="c-chk"><col class="c-inv"><col><col class="c-amt"><col class="c-due"><col class="c-st"><col class="c-chk2"><col class="c-sub"><col class="c-act"></colgroup>'}
+function thead(real,all,ind){
+  const th=(k,l,cls='')=>`<th class="${cls}" ${S.sort===k?`aria-sort="${S.dir==='asc'?'ascending':'descending'}"`:''}><button class="sortbtn" data-act="sort" data-v="${k}">${l}${S.sort===k?`<span aria-hidden="true">${S.dir==='asc'?'↑':'↓'}</span>`:''}</button></th>`;
+  return`<tr><th class="c-chk">${real?`<input type="checkbox" id="hchk" data-act="selpage" data-ind="${ind?1:0}" ${all?'checked':''} aria-label="Select all invoices on this page">`:''}</th>
+   ${th('num','Invoice','c-inv')}${th('vendor','Vendor')}${th('amount','Amount (USD)','num')}${th('due','Due date')}${th('status','Status')}<th>Checks</th>${th('sub','Submitted')}<th><span class="sr">Actions</span></th></tr>`}
+function actBtns(i){
+  const v=ui.role==='viewer';const dis=v?` aria-disabled="true" title="${viewerTip('approve or reject')}"`:'';
+  let h='';
+  if(i.status==='pending')h=`<button class="btn sm" data-act="approve"${v?dis:` title="Approve ( A )"`} aria-label="Approve ${esc(i.num)}">${ic('check')}Approve</button><button class="btn sm" data-act="reject"${v?dis:` title="Reject ( R )"`} aria-label="Reject ${esc(i.num)}">${ic('x')}Reject</button>`;
+  else if(i.status==='deleted')h=`<button class="btn sm" data-act="restore"${v?` aria-disabled="true" title="${viewerTip('restore')}"`:''} aria-label="Restore ${esc(i.num)}">${ic('undo')}Restore</button>`;
+  return`<span class="acts">${h}<button class="btn sm icon ghost" data-act="menu" aria-label="More actions for ${esc(i.num)}" aria-haspopup="menu" title="More actions">${ic('dots')}</button></span>`}
+function rowHtml(i){
+  return`<tr class="row${sel.has(i.id)?' sel':''}${i.id===activeId?' active':''}${i.status==='deleted'?' deleted':''}" data-id="${i.id}">
+   <td class="c-chk"><input type="checkbox" data-act="selrow" ${sel.has(i.id)?'checked':''} aria-label="Select ${esc(i.num)}"></td>
+   <td class="c-inv"><button class="link mono" data-act="open" title="Open ${esc(i.num)}">${esc(i.num)}</button></td>
+   <td title="${esc(i.vendor)}">${esc(i.vendor)}</td>
+   <td class="num${i.amount<0?' neg':''}">${amt(i.amount)}</td>
+   <td>${dueCell(i)}</td>
+   <td>${stBadge(i.status)}</td>
+   <td>${checks(i)}</td>
+   <td title="${dAbs.format(i.sub)}">${rel(i.sub)}</td>
+   <td class="c-act">${actBtns(i)}</td></tr>`}
+
+function renderFoot(L,pages){
+  if(ui.data!=='live'||ui.loading||!L.length){$('#foot').innerHTML=`<span>${ui.data==='live'&&!ui.loading?'0 invoices':''}</span>`;return}
+  const a=(S.page-1)*S.size+1,b=Math.min(S.page*S.size,L.length);
+  const tot=sumAmt(L);
+  $('#foot').innerHTML=`<span><b>${a}–${b}</b> of <b>${L.length.toLocaleString('en-US')}</b> · total ${usd(tot)}</span>
+   <span>Sorted by ${SORT_LBL[S.sort]}, ${S.dir==='asc'?'ascending':'descending'}</span><span class="sp"></span>
+   <span>Updated ${dAbs.format(ui.updated)}</span>
+   <label>Rows <select id="size" class="field" style="height:26px">${[25,50,100].map(n=>`<option${n===S.size?' selected':''}>${n}</option>`).join('')}</select></label>
+   <span class="pager"><button class="btn sm icon" data-act="page" data-v="1" aria-label="First page"${S.page===1?' disabled':''}>«</button><button class="btn sm icon" data-act="page" data-v="${S.page-1}" aria-label="Previous page"${S.page===1?' disabled':''}>${ic('left')}</button>
+   <span>Page <b>${S.page}</b> of <b>${pages}</b></span>
+   <button class="btn sm icon" data-act="page" data-v="${S.page+1}" aria-label="Next page"${S.page===pages?' disabled':''}>${ic('right')}</button><button class="btn sm icon" data-act="page" data-v="${pages}" aria-label="Last page"${S.page===pages?' disabled':''}>»</button></span>`}
+
+function renderPanel(){
+  const p=$('#panel');const i=S.open&&BY[S.open];
+  if(!i){p.hidden=true;p.innerHTML='';p.removeAttribute('data-id');return}
+  p.hidden=false;p.dataset.id=i.id;
+  const idx=LIST.findIndex(x=>x.id===i.id);
+  const od=i.status==='pending'&&i.due<TODAY;
+  const v=ui.role==='viewer';
+  let foot='';
+  if(i.status==='pending')foot=`<button class="btn primary" data-act="approve"${v?` aria-disabled="true" title="${viewerTip('approve')}"`:''}>${ic('check')}Approve <kbd>A</kbd></button><button class="btn" data-act="reject"${v?` aria-disabled="true" title="${viewerTip('reject')}"`:''}>${ic('x')}Reject… <kbd>R</kbd></button>`;
+  else if(i.status==='deleted')foot=`<button class="btn" data-act="restore"${v?` aria-disabled="true" title="${viewerTip('restore')}"`:''}>${ic('undo')}Restore invoice</button>`;
+  else foot=`<button class="btn" data-act="reopen"${v?` aria-disabled="true" title="${viewerTip('change decisions on')}"`:''}>${ic('undo')}Return to pending</button>`;
+  p.innerHTML=`<header><div class="t"><div class="mono"><b>${esc(i.num)}</b></div><div class="m" title="${esc(i.vendor)}">${esc(i.vendor)}</div></div>
+    <button class="btn sm icon ghost" data-act="prev" aria-label="Previous invoice" title="Previous ( K )"${idx<=0?' disabled':''}>${ic('up')}</button>
+    <button class="btn sm icon ghost" data-act="next" aria-label="Next invoice" title="Next ( J )"${idx<0||idx>=LIST.length-1?' disabled':''}>${ic('down')}</button>
+    <button class="btn sm icon ghost" data-act="close" aria-label="Close details" title="Close ( Esc )">${ic('x')}</button></header>
+   <div class="pb">
+    <div><span class="amt" style="${i.amount<0?'color:var(--danger)':''}">${usd(i.amount)}</span>${stBadge(i.status)}</div>
+    ${i.dup?`<div class="alert">${ic('warn')}<div>Possible duplicate: same vendor and amount as <button class="link" data-act="open-other" data-v="${i.dup}">${esc(BY[i.dup].num)}</button> (${STATUS_LBL[BY[i.dup].status].toLowerCase()}).</div></div>`:''}
+    ${!i.po?`<div class="alert">${ic('warn')}<div>No purchase order referenced, so this can’t be matched to a PO.</div></div>`:''}
+    ${od?`<div class="alert d">${ic('warn')}<div>Overdue by ${Math.round((TODAY-i.due)/DAY)} days. Late fees may apply.</div></div>`:''}
+    ${i.status==='rejected'&&i.rej?`<div class="alert d">${ic('x')}<div>Rejected: ${esc(i.rej.reason)}${i.rej.note?` — “${esc(i.rej.note)}”`:''}</div></div>`:''}
+    <h3>Details</h3>
+    <dl><dt>Due date</dt><dd>${dDue.format(i.due)}</dd><dt>PO number</dt><dd class="mono">${i.po?esc(i.po):'—'}</dd>
+     <dt>Received via</dt><dd>${esc(i.src)}</dd><dt>Submitted</dt><dd>${dAbs.format(i.sub)}</dd><dt>Description</dt><dd>${i.desc?esc(i.desc):'—'}</dd></dl>
+    <h3>Line items</h3>
+    <table>${i.lines.map(l=>`<tr><td>${esc(l.d)}</td><td class="num">${amt(l.a)}</td></tr>`).join('')}<tr><td><b>Total (USD)</b></td><td class="num"><b>${amt(i.amount)}</b></td></tr></table>
+    <h3>Activity</h3>
+    <ul class="act">${[...i.ev].reverse().map(e=>`<li>${esc(e.text)} · ${esc(e.who)}<time>${dAbs.format(e.at)}</time></li>`).join('')}</ul>
+   </div>
+   <footer>${foot}<span class="sp"></span><button class="btn icon ghost" data-act="menu" aria-label="More actions" aria-haspopup="menu">${ic('dots')}</button></footer>`;
+}
+
+/* ---------- toast ---------- */
+function toast(msg,actions=[],sticky=false){
+  const t=$('#toast');clearTimeout(toastTimer);
+  t.innerHTML=`<span>${msg}</span>${actions.map(a=>`<button class="btn" data-act="${a.act}">${a.label}</button>`).join('')}<button class="btn x" data-act="toast-close" aria-label="Dismiss">${ic('x')}</button>`;
+  t.hidden=false;
+  if(!sticky)toastTimer=setTimeout(()=>{t.hidden=true},actions.length?10000:5000);
+}
+
+/* ---------- decisions ---------- */
+const DONE={approve:'Approved',reject:'Rejected',delete:'Deleted',restore:'Restored',reopen:'Returned to pending'};
+function decide(ids,kind,o={}){
+  const items=ids.map(id=>BY[id]);const ok=items.filter(can[kind]);const skipped=items.length-ok.length;
+  if(!ok.length){toast('Nothing to do: none of the selected invoices can be '+DONE[kind].toLowerCase()+'.');return}
+  const idx=Math.max(0,LIST.findIndex(i=>i.id===activeId));
+  const failN=(document.getElementById('devFail').checked&&ok.length>=3)?2:0;
+  const failed=ok.slice(ok.length-failN),done=ok.slice(0,ok.length-failN);
+  if(failN)document.getElementById('devFail').checked=false;
+  const snap=done.map(i=>({i,status:i.status,rej:i.rej,prev:i.prev,ev:i.ev.length}));
+  const now=Date.now();
+  done.forEach(i=>{
+    if(kind==='approve'){i.status='approved';i.ev.push({at:now,who:'You',text:'Approved'})}
+    if(kind==='reject'){i.status='rejected';i.rej={reason:o.reason,note:o.note};i.ev.push({at:now,who:'You',text:'Rejected — '+o.reason+'; vendor notified'})}
+    if(kind==='delete'){i.prev=i.status;i.status='deleted';i.ev.push({at:now,who:'You',text:'Deleted (restorable for 30 days)'})}
+    if(kind==='restore'){i.status=i.prev||'pending';i.ev.push({at:now,who:'You',text:'Restored to '+STATUS_LBL[i.status].toLowerCase()})}
+    if(kind==='reopen'){i.status='pending';i.rej=undefined;i.ev.push({at:now,who:'You',text:'Returned to pending'})}
+    sel.delete(i.id);
+  });
+  undoFn=()=>{snap.forEach(s=>{s.i.status=s.status;s.i.rej=s.rej;s.i.prev=s.prev;s.i.ev.length=s.ev});undoFn=null;
+    toast(`Undid: ${DONE[kind].toLowerCase()} ${plural(snap.length,'invoice')}.`);refreshAfter(idx)};
+  let msg=`${DONE[kind]} <b>${plural(done.length,'invoice')}</b> · ${usd(sumAmt(done))}`;
+  if(skipped)msg+=` · ${skipped} skipped (not eligible)`;
+  const acts=done.length?[{act:'undo',label:'Undo'}]:[];
+  if(failed.length){msg+=` · <b>${failed.length} failed</b> (ERP sync timed out; ${failed.map(i=>esc(i.num)).join(', ')})`;
+    retryFn=()=>decide(failed.map(i=>i.id),kind,o);acts.push({act:'retry-failed',label:`Retry ${failed.length}`})}
+  toast(msg,acts,failed.length>0);
+  refreshAfter(idx);
+}
+let retryFn=null;
+function refreshAfter(idx){
+  const L=list();
+  if(activeId&&!L.some(i=>i.id===activeId))activeId=L.length?L[Math.min(idx,L.length-1)].id:null;
+  if(S.open&&!L.some(i=>i.id===S.open)&&BY[S.open]&&BY[S.open].status!==S.status&&S.status!=='all'){S.open=activeId||''}
+  kbdNav=true;render(true);
+}
+function guard(kind){if(ui.role==='viewer'){toast(viewerTip(kind));return false}return true}
+function targets(el){const bulk=el&&el.dataset.bulk;if(bulk||(!el&&sel.size))return[...sel];
+  const id=el&&el.closest('[data-id]')&&el.closest('[data-id]').dataset.id;if(id)return[id];
+  return sel.size?[...sel]:(activeId?[activeId]:[])}
+
+function dialog({title,body,confirm,danger,focusCancel,onConfirm}){
+  const d=$('#dlg');
+  d.innerHTML=`<form class="dlgbox" method="dialog"><h2 id="dlgTitle">${title}</h2><div class="dlgbody">${body}</div><div class="dlgfoot"><button type="button" class="btn" data-close ${focusCancel?'autofocus':''}>Cancel</button><button type="submit" class="btn ${danger?'danger':'primary'}">${confirm}</button></div></form>`;
+  d.querySelector('form').onsubmit=e=>{e.preventDefault();if(onConfirm(d)!==false)d.close()};
+  d.querySelector('[data-close]').onclick=()=>d.close();
+  d.showModal();
+}
+function openReject(ids){
+  const el=ids.map(id=>BY[id]).filter(can.reject),skip=ids.length-el.length;
+  if(!el.length){toast('None of the selected invoices are pending, so there’s nothing to reject.');return}
+  const vendors=new Set(el.map(i=>i.vendor)).size;
+  dialog({title:`Reject ${plural(el.length,'invoice')}?`,confirm:`Reject ${plural(el.length,'invoice')}`,danger:true,
+   body:`<p><b>${plural(el.length,'invoice')}</b> totalling <b>${usd(sumAmt(el))}</b> from ${el.length===1?esc(el[0].vendor):plural(vendors,'vendor')} will be returned and the vendor${vendors===1?'':'s'} notified by email with the reason below.${skip?` ${skip} not pending will be skipped.`:''} You can return them to pending later.</p>
+    <label for="rr">Reason</label><select id="rr"><option value="">Select a reason…</option>${REASONS.map(r=>`<option>${r}</option>`).join('')}</select>
+    <label for="rn">Note to vendor <span class="m" style="font-weight:400">(required for “Other”)</span></label><textarea id="rn"></textarea><div class="err" id="rerr" role="alert"></div>`,
+   onConfirm(d){const r=d.querySelector('#rr'),n=d.querySelector('#rn'),e=d.querySelector('#rerr');
+     r.removeAttribute('aria-invalid');n.removeAttribute('aria-invalid');e.textContent='';
+     if(!r.value){r.setAttribute('aria-invalid','true');e.textContent='Select a reason so the vendor knows what to fix.';r.focus();return false}
+     if(r.value==='Other'&&!n.value.trim()){n.setAttribute('aria-invalid','true');e.textContent='Add a note explaining the rejection when the reason is “Other”.';n.focus();return false}
+     decide(ids,'reject',{reason:r.value,note:n.value.trim()})}});
+}
+function openDelete(ids){
+  const items=ids.map(id=>BY[id]);const el=items.filter(can.delete),skip=items.length-el.length;
+  if(!el.length){toast('Approved invoices can’t be deleted because they’re queued for payment. Return them to pending first.');return}
+  const big=el.slice(0,5);
+  dialog({title:`Delete ${plural(el.length,'invoice')}?`,confirm:`Delete ${plural(el.length,'invoice')}`,danger:true,focusCancel:true,
+   body:`<p>These ${usd(sumAmt(el))} of invoices move to <b>Deleted</b> and are removed from approval and payment. You can restore them for 30 days; after that they’re permanently erased.</p>
+    <table>${big.map(i=>`<tr><td class="mono">${esc(i.num)}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(i.vendor)}</td><td class="num" style="text-align:right">${amt(i.amount)}</td></tr>`).join('')}${el.length>5?`<tr><td colspan="3" class="m">and ${el.length-5} more</td></tr>`:''}</table>
+    ${skip?`<p style="margin-top:12px"><b>${plural(skip,'selected invoice')}</b> can’t be deleted (already approved) and will be skipped.</p>`:''}`,
+   onConfirm(){decide(ids,'delete')}});
+}
+function act(kind,ids){
+  if(!ids.length)return;
+  if(kind==='approve'||kind==='restore'||kind==='reopen'){if(guard({approve:'approve',restore:'restore',reopen:'change decisions on'}[kind]))decide(ids,kind)}
+  else if(kind==='reject'){if(guard('reject'))openReject(ids)}
+  else if(kind==='delete'){if(guard('delete'))openDelete(ids)}
+}
+
+/* ---------- menus ---------- */
+function closeMenu(){const m=document.querySelector('.menu');if(m)m.remove()}
+function openMenu(btn){
+  closeMenu();const id=btn.closest('[data-id]').dataset.id,i=BY[id];if(!i)return;
+  const m=document.createElement('div');m.className='menu';m.setAttribute('role','menu');m.dataset.id=id;
+  const it=(a,l,i2,cls='',ok=true)=>`<button role="menuitem" data-act="${a}" class="${cls}"${ok?'':' aria-disabled="true"'}>${ic(i2)}${l}</button>`;
+  m.innerHTML=it('open','Open details','inbox')+(can.reopen(i)?it('reopen','Return to pending','undo'):'')+(can.restore(i)?it('restore','Restore invoice','undo'):'')+
+    (can.approve(i)?it('approve','Approve','check')+it('reject','Reject…','x'):'')+(i.status!=='deleted'?'<hr>'+it('delete','Delete…','trash','d',can.delete(i)):'');
+  document.body.appendChild(m);const r=btn.getBoundingClientRect();
+  m.style.top=Math.min(r.bottom+4,innerHeight-m.offsetHeight-8)+'px';m.style.left=Math.max(8,Math.min(r.right-m.offsetWidth,innerWidth-m.offsetWidth-8))+'px';
+  m.querySelector('button').focus();
+}
+
+/* ---------- events ---------- */
+function setOpen(id){S.open=id||'';if(id){activeId=id;}render(false)}
+function move(d){
+  if(!LIST.length)return;let idx=LIST.findIndex(i=>i.id===activeId);idx=Math.max(0,Math.min(LIST.length-1,(idx<0?0:idx)+d));
+  activeId=LIST[idx].id;S.page=Math.floor(idx/S.size)+1;if(S.open)S.open=activeId;kbdNav=true;render(true)}
+function toggleSel(id,on){on?sel.add(id):sel.delete(id)}
+document.addEventListener('click',e=>{
+  const open=document.querySelector('.menu');
+  if(open&&!e.target.closest('.menu')&&!e.target.closest('[data-act=menu]'))closeMenu();
+  if(e.target===$('#dlg')){$('#dlg').close();return}
+  const el=e.target.closest('[data-act]');
+  if(!el){const tr=e.target.closest('tr.row');if(tr&&!e.target.closest('button,input,a')){activeId=tr.dataset.id;S.open=tr.dataset.id;render(false)}return}
+  const a=el.dataset.act;
+  if(el.getAttribute('aria-disabled')==='true'){const v=ui.role==='viewer';if(v)toast(el.title||'Not available.');return}
+  switch(a){
+   case'tab':go({status:el.dataset.v});break;
+   case'sort':{const k=el.dataset.v;go(S.sort===k?{dir:S.dir==='asc'?'desc':'asc'}:{sort:k,dir:k==='amount'||k==='sub'?'desc':'asc'},{keepSel:true});break}
+   case'page':go({page:+el.dataset.v},{keepSel:true});break;
+   case'clear-filters':go({q:'',vendor:'',flag:''});break;
+   case'clear-sel':sel.clear();render(true);break;
+   case'sel-all':LIST.forEach(i=>sel.add(i.id));render(true);break;
+   case'selpage':{const page=LIST.slice((S.page-1)*S.size,S.page*S.size);const on=el.checked;page.forEach(i=>toggleSel(i.id,on));render(true);break}
+   case'selrow':{const id=el.closest('tr').dataset.id;
+     if(e.shiftKey&&lastClickedId){const ids=LIST.map(i=>i.id);const a1=ids.indexOf(lastClickedId),b1=ids.indexOf(id);
+       if(a1>=0&&b1>=0)ids.slice(Math.min(a1,b1),Math.max(a1,b1)+1).forEach(x=>toggleSel(x,el.checked))}
+     else toggleSel(id,el.checked);
+     lastClickedId=id;activeId=id;render(true);break}
+   case'open':setOpen(el.closest('tr').dataset.id);break;
+   case'open-other':setOpen(el.dataset.v);break;
+   case'close':S.open='';render(false);break;
+   case'prev':move(-1);break;case'next':move(1);break;
+   case'refresh':case'retry':
+     if(ui.data==='error'||ui.data==='empty'&&a==='retry'){ui.data=ui.data==='error'?'live':ui.data;$('#devData').value=ui.data}
+     ui.refreshing=a==='refresh';ui.loading=a==='retry';render(true);
+     setTimeout(()=>{ui.refreshing=false;ui.loading=false;ui.updated=Date.now();render(true)},700);break;
+   case'density':ui.density=el.dataset.v;document.body.classList.toggle('compact',ui.density==='compact');try{localStorage.setItem('inv.density',ui.density)}catch(x){}render(true);break;
+   case'export':exportCsv();break;
+   case'help':showHelp();break;
+   case'menu':openMenu(el);break;
+   case'undo':if(undoFn)undoFn();$('#toast').hidden=true;break;
+   case'retry-failed':$('#toast').hidden=true;if(retryFn)retryFn();break;
+   case'toast-close':$('#toast').hidden=true;break;
+   case'approve':case'reject':case'delete':case'restore':case'reopen':{
+     const ids=targets(el);closeMenu();act(a,ids);break}
+  }
+  if(el.closest('.menu')&&a==='open'){closeMenu();setOpen(el.closest('.menu').dataset.id)}
+  if(el.closest('.menu'))closeMenu();
+});
+document.addEventListener('input',e=>{if(e.target.id==='q'){S.q=e.target.value;S.page=1;sel.clear();render(true)}});
+document.addEventListener('change',e=>{
+  if(e.target.id==='fVendor')go({vendor:e.target.value});
+  if(e.target.id==='fFlag')go({flag:e.target.value});
+  if(e.target.id==='size')go({size:+e.target.value},{keepSel:true});
+});
+$('#devData').onchange=e=>{ui.data=e.target.value;sel.clear();S.open='';render(true)};
+$('#devRole').onchange=e=>{ui.role=e.target.value;render(true)};
+window.addEventListener('hashchange',()=>{if(location.hash!==toHash()){fromHash();sel.clear();render(true)}});
+window.addEventListener('popstate',()=>{fromHash();sel.clear();render(true)});
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){const m=document.querySelector('.menu');if(m){closeMenu();return}}
+  if($('#dlg').open)return;
+  const t=e.target;const typing=/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)&&t.type!=='checkbox';
+  if(typing){if(e.key==='Escape'&&t.id==='q'){t.blur()}return}
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  const k=e.key;
+  if(k==='Escape'){if(sel.size){sel.clear();render(true)}else if(S.open){S.open='';render(false)}return}
+  if(ui.loading||ui.data!=='live')return;
+  if(k==='/'){e.preventDefault();const q=$('#q');if(q)q.focus();return}
+  if(k==='?'){showHelp();return}
+  if(k==='j'||k==='ArrowDown'){if(t.closest&&t.closest('select'))return;e.preventDefault();move(1);return}
+  if(k==='k'||k==='ArrowUp'){e.preventDefault();move(-1);return}
+  if(k==='Enter'&&!t.closest('button,a')&&activeId){setOpen(activeId);return}
+  if(t.closest&&t.closest('button')&&(k===' '||k==='Enter'))return;
+  if(k==='x'&&activeId){toggleSel(activeId,!sel.has(activeId));render(true);return}
+  if(k==='z'&&undoFn){undoFn();return}
+  const map={a:'approve',r:'reject',Delete:'delete'};
+  if(map[k]){const ids=sel.size?[...sel]:activeId?[activeId]:[];e.preventDefault();act(map[k],ids)}
+});
+
+function showHelp(){
+  dialog({title:'Keyboard shortcuts',confirm:'Close',body:`<table>${[['J / K or ↓ / ↑','Next / previous invoice'],['Enter','Open details'],['X','Select or deselect invoice'],['A','Approve (selected, or the highlighted invoice)'],['R','Reject… (asks for a reason)'],['Delete','Delete… (asks to confirm)'],['Z','Undo last decision'],['/','Search'],['Esc','Close details, clear selection']].map(([a,b])=>`<tr><td><kbd>${a}</kbd></td><td>${b}</td></tr>`).join('')}</table>`,onConfirm(){}});
+}
+function exportCsv(){
+  const q=s=>`"${String(s==null?'':s).replace(/"/g,'""')}"`;
+  const csv=['Invoice,Vendor,Amount (USD),Due date,Status,PO,Submitted'].concat(LIST.map(i=>[i.num,i.vendor,i.amount.toFixed(2),new Date(i.due).toISOString().slice(0,10),STATUS_LBL[i.status],i.po||'',new Date(i.sub).toISOString()].map(q).join(','))).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'}));a.download='invoices.csv';a.click();
+  toast(`Exported ${plural(LIST.length,'row')} matching the current filters.`);
+}
+
+/* ---------- boot ---------- */
+fromHash();render(true);
+setTimeout(()=>{ui.loading=false;ui.updated=Date.now();render(true)},700);
+</script>
+</body>
+</html>

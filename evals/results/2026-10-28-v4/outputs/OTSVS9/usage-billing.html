@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usage &amp; billing · Ledgerly</title>
+<link rel="stylesheet" href="acme-ds.css">
+<style>
+/* Page-level layout only. All colour, type, radius and spacing come from acme-ds.css tokens. */
+:root{
+  --ink:var(--ds-color-text);          /* anchor card = the DS text colour, inverted */
+  --ink-muted:#CBD5E1;
+  --display:48px;
+}
+*{box-sizing:border-box}
+body{margin:0;line-height:1.45}
+a{color:var(--ds-color-brand);text-underline-offset:2px}
+a:hover{color:var(--ds-color-brand-hover)}
+a:focus-visible,summary:focus-visible,select:focus-visible{outline:2px solid var(--ds-color-focus);outline-offset:2px;border-radius:var(--ds-radius-sm)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:-999px;top:8px;background:var(--ds-color-surface);padding:8px 12px;z-index:10}
+.skip:focus{left:8px}
+
+.topbar{background:var(--ds-color-surface);border-bottom:1px solid var(--ds-color-border)}
+.topbar-in{max-width:1200px;margin:0 auto;padding:0 var(--ds-space-6);height:52px;display:flex;align-items:center;gap:var(--ds-space-6)}
+.brand{font-weight:600;font-size:var(--ds-text-lg);color:var(--ds-color-text);text-decoration:none}
+.topbar nav{display:flex;gap:var(--ds-space-1);height:100%}
+.topbar nav a{display:flex;align-items:center;padding:0 var(--ds-space-3);color:var(--ds-color-text-muted);text-decoration:none;border-bottom:2px solid transparent;font-weight:500}
+.topbar nav a[aria-current="page"]{color:var(--ds-color-text);border-bottom-color:var(--ds-color-brand)}
+.topbar nav a:hover{color:var(--ds-color-text)}
+
+main{max-width:1200px;margin:0 auto;padding:var(--ds-space-8) var(--ds-space-6) 48px}
+.crumbs{font-size:var(--ds-text-sm);color:var(--ds-color-text-muted);margin:0 0 var(--ds-space-2)}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:var(--ds-space-4);flex-wrap:wrap;margin-bottom:var(--ds-space-6)}
+h1{font-size:var(--ds-text-2xl);line-height:1.2;margin:0;font-weight:600;letter-spacing:-.02em}
+.meta{margin:var(--ds-space-2) 0 0;color:var(--ds-color-text-muted);font-size:var(--ds-text-sm)}
+.head-actions{display:flex;gap:var(--ds-space-2);align-items:center}
+
+.ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--ds-space-2);text-decoration:none;white-space:nowrap}
+a.ds-btn{color:var(--ds-color-text)}
+a.ds-btn--primary{color:#fff}
+.ds-btn--primary:hover{color:#fff}
+.ds-btn[aria-disabled="true"]{background:var(--ds-color-surface-raised);border-color:var(--ds-color-border);color:var(--ds-color-text-muted);cursor:not-allowed}
+.ds-btn--sm{height:32px;padding:0 var(--ds-space-3);font-size:var(--ds-text-sm)}
+
+.alert{display:flex;gap:var(--ds-space-3);align-items:flex-start;background:var(--ds-color-warning-subtle);border:1px solid #F5D98B;border-radius:var(--ds-radius-lg);padding:var(--ds-space-3) var(--ds-space-4);margin-bottom:var(--ds-space-6);color:#78350F}
+.alert strong{font-weight:600}
+.alert p{margin:0}
+.alert .ico{flex:none;width:20px;height:20px;border-radius:50%;background:var(--ds-color-warning);color:#fff;font-weight:600;font-size:var(--ds-text-xs);display:grid;place-items:center;margin-top:1px}
+.alert a{color:#78350F;font-weight:500}
+.alert--danger{background:var(--ds-color-danger-subtle);border-color:#FCA5A5;color:#7F1D1D}
+.alert--danger .ico{background:var(--ds-color-danger)}
+.alert--danger a{color:#7F1D1D}
+
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:var(--ds-space-6);align-items:stretch}
+.c5{grid-column:span 5}.c7{grid-column:span 7}.c12{grid-column:span 12}
+@media (max-width:960px){.c5,.c7{grid-column:span 12}.topbar nav{display:none}}
+@media (max-width:560px){main{padding:var(--ds-space-6) var(--ds-space-4) 40px}.ds-card{padding:var(--ds-space-4)}:root{--display:40px}}
+
+.card-h{display:flex;justify-content:space-between;align-items:baseline;gap:var(--ds-space-3);margin:0 0 var(--ds-space-4)}
+h2{font-size:var(--ds-text-lg);font-weight:600;margin:0}
+.sub{color:var(--ds-color-text-muted);font-size:var(--ds-text-sm)}
+.num{font-variant-numeric:tabular-nums}
+
+/* Anchor card */
+.anchor{background:var(--ink);border-color:var(--ink);color:#fff;display:flex;flex-direction:column}
+.anchor .label{color:var(--ink-muted);font-size:var(--ds-text-sm);margin:0}
+.anchor .big{font-size:var(--display);font-weight:600;letter-spacing:-.03em;line-height:1.1;margin:var(--ds-space-2) 0 var(--ds-space-2);font-variant-numeric:tabular-nums}
+.anchor .big small{font-size:calc(var(--display)*.5);letter-spacing:0}
+.anchor .why{margin:0 0 var(--ds-space-6);color:#E2E8F0}
+.anchor dl{margin:0;border-top:1px solid #334155}
+.anchor .row{display:flex;justify-content:space-between;gap:var(--ds-space-4);padding:var(--ds-space-2) 0;border-bottom:1px solid #334155;font-variant-numeric:tabular-nums}
+.anchor dt{color:var(--ink-muted)}
+.anchor dd{margin:0}
+.anchor .row--total{font-weight:600;border-bottom:0}
+.anchor .row--total dt{color:#fff}
+.anchor .foot{margin-top:auto;padding-top:var(--ds-space-4);color:var(--ink-muted);font-size:var(--ds-text-sm)}
+.anchor a{color:var(--ds-color-brand-subtle)}
+.anchor a:hover{color:#fff}
+.anchor a:focus-visible{outline-color:#93C5FD}
+
+/* Meters */
+.meters{list-style:none;margin:0;padding:0}
+.meter{padding:var(--ds-space-3) 0;border-top:1px solid var(--ds-color-border)}
+.meter:first-child{border-top:0;padding-top:0}
+.meter-top{display:flex;justify-content:space-between;align-items:center;gap:var(--ds-space-3);margin-bottom:var(--ds-space-2);flex-wrap:wrap}
+.meter-name{font-weight:500}
+.meter-name a{color:var(--ds-color-text);text-decoration-color:var(--ds-color-border-strong)}
+.meter-name a:hover{color:var(--ds-color-brand-hover)}
+.meter-val{display:flex;align-items:center;gap:var(--ds-space-2);font-variant-numeric:tabular-nums}
+.meter-val b{font-weight:600}
+.track{position:relative;height:8px;border-radius:4px;background:var(--ds-color-border)}
+.fill{position:absolute;inset:0 auto 0 0;border-radius:4px;background:var(--ds-color-brand)}
+.fill.warn{background:var(--ds-color-warning)}
+.fill.over{background:var(--ds-color-danger)}
+.proj{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ds-color-text)}
+.meter-note{margin:var(--ds-space-1) 0 0;font-size:var(--ds-text-sm);color:var(--ds-color-text-muted)}
+
+/* Chart */
+.chart{display:grid;grid-template-columns:40px 1fr;gap:0 var(--ds-space-2)}
+.yaxis{position:relative;height:176px;font-size:var(--ds-text-xs);color:var(--ds-color-text-muted);text-align:right}
+.yaxis span{position:absolute;right:0;transform:translateY(50%);font-variant-numeric:tabular-nums}
+.plot{position:relative;height:176px;display:flex;align-items:flex-end;gap:3px;border-bottom:1px solid var(--ds-color-border-strong)}
+.gl{position:absolute;left:0;right:0;border-top:1px solid var(--ds-color-border)}
+.bar{position:relative;flex:1;background:#5FA9A1;border-radius:3px 3px 0 0;min-height:2px}
+.bar.we{background:#A7CFCA}
+.bar.now{background:var(--ds-color-brand)}
+.bar:hover{outline:2px solid var(--ds-color-text);outline-offset:1px;z-index:2}
+.xaxis{grid-column:2;display:flex;justify-content:space-between;font-size:var(--ds-text-xs);color:var(--ds-color-text-muted);margin-top:var(--ds-space-1)}
+.legend{display:flex;gap:var(--ds-space-4);flex-wrap:wrap;font-size:var(--ds-text-sm);color:var(--ds-color-text-muted);margin-top:var(--ds-space-3)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:baseline}
+details{margin-top:var(--ds-space-3);font-size:var(--ds-text-sm)}
+summary{cursor:pointer;color:var(--ds-color-brand);font-weight:500}
+details .scroll{max-height:220px;overflow:auto;margin-top:var(--ds-space-2);border:1px solid var(--ds-color-border);border-radius:var(--ds-radius-md)}
+
+/* Plan card */
+.kv{margin:0}
+.kv div{display:flex;justify-content:space-between;gap:var(--ds-space-4);padding:var(--ds-space-3) 0;border-top:1px solid var(--ds-color-border)}
+.kv div:first-child{border-top:0;padding-top:0}
+.kv dt{color:var(--ds-color-text-muted)}
+.kv dd{margin:0;text-align:right}
+.actions{display:flex;gap:var(--ds-space-2);flex-wrap:wrap;margin-top:var(--ds-space-4)}
+.note{margin:var(--ds-space-3) 0 0;font-size:var(--ds-text-sm);color:var(--ds-color-text-muted)}
+
+/* Table */
+.tablewrap{overflow-x:auto;margin:0 calc(var(--ds-space-3)*-1)}
+.ds-table td.r,.ds-table th.r{text-align:right}
+.ds-table td.num{font-variant-numeric:tabular-nums}
+.ds-table tbody tr:hover{background:var(--ds-color-bg)}
+.ds-table caption{text-align:left}
+
+/* States */
+.sk{background:linear-gradient(90deg,var(--ds-color-surface-raised) 25%,var(--ds-color-border) 50%,var(--ds-color-surface-raised) 75%);background-size:200% 100%;animation:sh 1.4s infinite linear;border-radius:var(--ds-radius-md);display:block}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}}
+.sk-line{height:14px;margin:var(--ds-space-3) 0}
+.sk-big{height:48px;width:60%;margin:var(--ds-space-3) 0}
+.sk-block{height:176px}
+.msg{text-align:center;padding:var(--ds-space-8) var(--ds-space-4);color:var(--ds-color-text-muted)}
+.msg h3{margin:0 0 var(--ds-space-1);font-size:var(--ds-text-lg);color:var(--ds-color-text)}
+.msg p{margin:0 auto var(--ds-space-4);max-width:42ch}
+.anchor .msg{color:var(--ink-muted)}.anchor .msg h3{color:#fff}
+.anchor .ds-btn{background:transparent;color:#fff;border-color:#64748B}
+
+.preview{margin-top:var(--ds-space-8);padding-top:var(--ds-space-4);border-top:1px dashed var(--ds-color-border-strong);display:flex;gap:var(--ds-space-4);flex-wrap:wrap;align-items:center;font-size:var(--ds-text-sm);color:var(--ds-color-text-muted)}
+.preview label{display:flex;gap:var(--ds-space-2);align-items:center}
+.preview select{font:inherit;height:32px;border:1px solid var(--ds-color-border-strong);border-radius:var(--ds-radius-md);background:var(--ds-color-surface);padding:0 var(--ds-space-2);color:var(--ds-color-text)}
+</style>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="#">Ledgerly</a>
+    <nav aria-label="Workspace settings">
+      <a href="#">General</a>
+      <a href="#">Members</a>
+      <a href="#" aria-current="page">Usage &amp; billing</a>
+      <a href="#">Security</a>
+      <a href="#">Integrations</a>
+    </nav>
+  </div>
+</header>
+
+<main id="content">
+  <p class="crumbs">Northwind Logistics · Workspace settings</p>
+  <div class="head">
+    <div>
+      <h1>Usage &amp; billing</h1>
+      <p class="meta" id="meta"></p>
+    </div>
+    <div class="head-actions">
+      <button class="ds-btn" id="refresh" type="button">Refresh</button>
+    </div>
+  </div>
+  <div id="live" class="sr-only" role="status" aria-live="polite"></div>
+
+  <div id="alerts"></div>
+
+  <div class="grid">
+    <section class="ds-card anchor c5" id="hero" aria-labelledby="hero-h" aria-busy="false"></section>
+    <section class="ds-card c7" id="meters" aria-labelledby="meters-h" aria-busy="false"></section>
+    <section class="ds-card c7" id="chart" aria-labelledby="chart-h" aria-busy="false"></section>
+    <section class="ds-card c5" id="plan" aria-labelledby="plan-h" aria-busy="false"></section>
+    <section class="ds-card c12" id="invoices" aria-labelledby="inv-h" aria-busy="false"></section>
+  </div>
+
+  <form class="preview" aria-label="Prototype controls" onsubmit="return false">
+    <span>Prototype controls:</span>
+    <label>State
+      <select id="p-state">
+        <option value="ready">Ready</option>
+        <option value="loading">Loading</option>
+        <option value="error">Error in two cards</option>
+        <option value="empty">New workspace (no usage yet)</option>
+        <option value="failed">Payment failed</option>
+      </select>
+    </label>
+    <label>Your role
+      <select id="p-role">
+        <option value="owner">Billing owner</option>
+        <option value="admin">Admin without billing access</option>
+      </select>
+    </label>
+  </form>
+</main>
+
+<script>
+/* ---------- Data (prototype values; "as of" is the measurement time, not page load) ---------- */
+const WS = {
+  period: "1–31 Oct 2026", asOf: "28 Oct 2026, 08:10 PT", nextBill: "1 Nov 2026",
+  owner: "Dana Okafor", ownerEmail: "dana.okafor@northwind.example",
+  card: "Visa ending 4242", cardExp: "09/2028", billingEmail: "ap@northwind.example",
+  plan: "Business", base: 299, seatPrice: 18, seats: 48, seatLimit: 50,
+  invUsed: 9380, invIncluded: 10000, invProjected: 10380, overageRate: 0.04
+};
+const overUnits = WS.invProjected - WS.invIncluded;
+const overage = +(overUnits * WS.overageRate).toFixed(2);
+const seatsCost = WS.seats * WS.seatPrice;
+const projectedTotal = WS.base + seatsCost + overage;
+
+const METERS = [
+  {name:"Invoices processed", href:"#invoices-usage", used:9380, cap:10000, fmt:n=>n.toLocaleString("en-US"), unit:"", proj:10380,
+   note:"On pace for about 10,380 by 31 Oct. Invoices above 10,000 cost $0.04 each."},
+  {name:"Seats", href:"#members", used:48, cap:50, fmt:n=>n, unit:"", note:"2 seats left on the Business plan. Each assigned seat is $18.00 per month."},
+  {name:"Bank connections", href:"#bank", used:14, cap:20, fmt:n=>n, unit:"", note:""},
+  {name:"API requests", href:"#api", used:412600, cap:1000000, fmt:n=>n.toLocaleString("en-US"), unit:"", note:""},
+  {name:"Receipt storage", href:"#storage", used:38.2, cap:100, fmt:n=>n.toFixed(1), unit:" GB", note:""}
+];
+const INVOICES = [
+  ["INV-2026-0112","1 Oct 2026","1–30 Sep 2026",1163.40,"Paid"],
+  ["INV-2026-0097","1 Sep 2026","1–31 Aug 2026",1140.00,"Paid"],
+  ["INV-2026-0083","1 Aug 2026","1–31 Jul 2026",1128.52,"Paid"],
+  ["INV-2026-0071","1 Jul 2026","1–30 Jun 2026",1098.00,"Paid"],
+  ["INV-2026-0060","1 Jun 2026","1–31 May 2026",1098.00,"Paid"],
+  ["INV-2026-0049","1 May 2026","1–30 Apr 2026",1074.00,"Paid"]
+];
+
+/* Daily invoice volume, 1–28 Oct. 1 Oct 2026 is a Thursday. Day 28 is a partial day. Scaled to sum to 9,380. */
+const DAYS = (()=>{
+  const jitter=[1.02,.96,.2,.18,1.08,.99,1.04,.95,1.1,.21,.19,1.03,.97,1.06,1.0,1.12,.2,.17,.98,1.05,1.01,.94,1.09,.22,.18,1.0,1.04,.38];
+  const w=jitter.slice(); const sum=w.reduce((a,b)=>a+b,0);
+  const v=w.map(x=>Math.round(x/sum*9380));
+  const diff=9380-v.reduce((a,b)=>a+b,0); v[v.indexOf(Math.max(...v))]+=diff;
+  return v;
+})();
+
+/* ---------- URL state ---------- */
+const params = new URLSearchParams(location.search);
+let state = params.get("state") || "ready";
+let role = params.get("role") || "owner";
+if(!["ready","loading","error","empty","failed"].includes(state)) state="ready";
+if(!["owner","admin"].includes(role)) role="owner";
+function syncUrl(){
+  const p=new URLSearchParams();
+  if(state!=="ready") p.set("state",state);
+  if(role!=="owner") p.set("role",role);
+  history.replaceState(null,"",p.toString()?("?"+p):location.pathname);
+  document.getElementById("p-state").value=state;
+  document.getElementById("p-role").value=role;
+}
+
+/* ---------- Helpers ---------- */
+const $ = id => document.getElementById(id);
+const usd = n => "$"+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const canBill = () => role==="owner";
+const askOwner = `Only billing owners can do this. Ask <a href="mailto:${WS.ownerEmail}">${WS.owner}</a>.`;
+function btn(label, cls, href){
+  if(canBill()) return `<a class="ds-btn ${cls}" href="${href}">${label}</a>`;
+  return `<span class="ds-btn ${cls}" role="link" aria-disabled="true">${label}</span>`;
+}
+function badge(kind,text,glyph){ return `<span class="ds-badge ds-badge--${kind}"><span aria-hidden="true">${glyph}</span>${text}</span>`; }
+function sk(n){ return Array.from({length:n},()=>`<span class="sk sk-line" style="width:${60+Math.random()*40|0}%"></span>`).join(""); }
+function errorBox(title,msg){
+  return `<div class="msg"><h3>${title}</h3><p>${msg}</p><button class="ds-btn" type="button" data-retry>Try again</button></div>`;
+}
+
+/* ---------- Renderers ---------- */
+function renderMeta(){
+  $("meta").innerHTML = state==="empty"
+    ? `Billing period starts 1 Nov 2026 · Trial ended; first invoice on that date`
+    : `Billing period ${WS.period} · Usage as of ${WS.asOf} · All amounts in USD`;
+}
+
+function renderAlerts(){
+  let h="";
+  if(state==="failed"){
+    h+=`<div class="alert alert--danger" role="alert"><span class="ico" aria-hidden="true">!</span><p><strong>Your last payment failed.</strong> ${WS.card} was declined on 1 Oct 2026. Update the payment method by 4 Nov 2026 to avoid your workspace switching to read-only. ${canBill()?`<a href="#payment">Update payment method</a>`:`Ask <a href="mailto:${WS.ownerEmail}">${WS.owner}</a> to update it.`}</p></div>`;
+  }
+  if(state==="ready"||state==="failed"){
+    h+=`<div class="alert" role="status"><span class="ico" aria-hidden="true">!</span><p><strong>Invoice volume is on track to pass your 10,000 monthly allowance.</strong> We project about ${overUnits} extra invoices, which adds about ${usd(overage)} to this period. <a href="#plan">See plan options</a></p></div>`;
+  }
+  $("alerts").innerHTML=h;
+}
+
+function renderHero(){
+  const el=$("hero");
+  if(state==="loading"){ el.setAttribute("aria-busy","true"); el.innerHTML=`<h2 id="hero-h" class="sr-only">Projected charge</h2><span class="sk sk-line" style="width:50%"></span><span class="sk sk-big"></span>${sk(4)}`; el.querySelectorAll(".sk").forEach(s=>s.style.opacity=".25"); return; }
+  el.setAttribute("aria-busy","false");
+  if(state==="empty"){
+    el.innerHTML=`<h2 id="hero-h" class="sr-only">Projected charge</h2><div class="msg"><h3>Nothing to charge yet</h3><p>Your first invoice is issued on 1 Nov 2026 once the workspace has processed invoices or assigned seats.</p></div>`;
+    return;
+  }
+  const whole=Math.floor(projectedTotal), cents=(projectedTotal-whole).toFixed(2).slice(1);
+  el.innerHTML=`
+    <h2 id="hero-h" class="label" style="font-weight:400;font-size:var(--ds-text-sm)">Projected charge for ${WS.period}</h2>
+    <p class="big"><span aria-label="${usd(projectedTotal)}">$${whole.toLocaleString("en-US")}<small>${cents}</small></span></p>
+    <p class="why">An estimate, not a final amount. It is ${usd(overage)} above your fixed monthly cost because of projected invoice overage.</p>
+    <dl>
+      <div class="row"><dt>${WS.plan} plan</dt><dd>${usd(WS.base)}</dd></div>
+      <div class="row"><dt>Seats (${WS.seats} × ${usd(WS.seatPrice)})</dt><dd>${usd(seatsCost)}</dd></div>
+      <div class="row"><dt>Invoice overage (about ${overUnits} × ${usd(WS.overageRate)})</dt><dd>${usd(overage)}</dd></div>
+      <div class="row row--total"><dt>Projected total</dt><dd>${usd(projectedTotal)}</dd></div>
+    </dl>
+    <p class="foot">Billed on ${WS.nextBill} to ${WS.card}. Projection uses the last 14 days of volume.</p>`;
+}
+
+function renderMeters(){
+  const el=$("meters");
+  const head=`<div class="card-h"><h2 id="meters-h">Usage against your plan</h2><span class="sub">${WS.plan} plan</span></div>`;
+  if(state==="loading"){ el.setAttribute("aria-busy","true"); el.innerHTML=head+sk(10); return; }
+  el.setAttribute("aria-busy","false");
+  const list = METERS.map(m=>{
+    const used = state==="empty" ? 0 : m.used;
+    const pct = Math.min(100, used/m.cap*100);
+    const projOver = !!m.proj && m.proj>m.cap && used<=m.cap;
+    let kind="", b;
+    if(used>m.cap){ kind="over"; b=badge("danger","Over limit","▲"); }
+    else if(projOver){ kind="warn"; b=badge("warning","Projected over","▲"); }
+    else if(pct>=90){ kind="warn"; b=badge("warning","Near limit","▲"); }
+    else b=badge("","Within limit","✓");
+    const pm = projOver ? `<span class="proj" style="left:calc(${Math.min(100,m.proj/m.cap*100)}% - 1px)"></span>` : "";
+    const note = state==="empty" ? "" : m.note;
+    return `<li class="meter">
+      <div class="meter-top">
+        <span class="meter-name"><a href="${m.href}">${m.name}</a></span>
+        <span class="meter-val"><span><b>${m.fmt(used)}</b> of ${m.fmt(m.cap)}${m.unit}</span>${b}</span>
+      </div>
+      <div class="track" role="img" aria-label="${m.name}: ${m.fmt(used)} of ${m.fmt(m.cap)}${m.unit} used, ${Math.round(pct)} percent"><div class="fill ${kind}" style="width:${pct}%"></div>${pm}</div>
+      ${note?`<p class="meter-note">${note}</p>`:""}
+    </li>`;
+  }).join("");
+  el.innerHTML=head+`<ul class="meters">${list}</ul>`+(state==="empty"?"":`<p class="note">The dark tick marks the projected end-of-period volume.</p>`);
+}
+
+function renderChart(){
+  const el=$("chart");
+  const head=`<div class="card-h"><h2 id="chart-h">Invoices processed per day</h2><span class="sub">1–28 Oct 2026</span></div>`;
+  if(state==="loading"){ el.setAttribute("aria-busy","true"); el.innerHTML=head+`<span class="sk sk-block"></span>`; return; }
+  el.setAttribute("aria-busy","false");
+  if(state==="error"){ el.innerHTML=head+errorBox("Daily volume didn't load","Your totals above are unaffected. Try again in a moment."); return; }
+  if(state==="empty"){ el.innerHTML=head+`<div class="msg"><h3>No invoices processed yet</h3><p>Daily volume appears here after your workspace processes its first invoice.</p><a class="ds-btn" href="#import">Import invoices</a></div>`; return; }
+  const max=600, total=DAYS.reduce((a,b)=>a+b,0);
+  const wd = d => new Date(Date.UTC(2026,9,d)).getUTCDay();
+  const bars = DAYS.map((v,i)=>{
+    const d=i+1, we=[0,6].includes(wd(d)), now=d===DAYS.length;
+    const label=`${new Date(Date.UTC(2026,9,d)).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"UTC"})}: ${v.toLocaleString("en-US")} invoices${now?" (so far today)":""}`;
+    return `<div class="bar ${we?"we":""} ${now?"now":""}" style="height:${v/max*100}%" title="${label}"></div>`;
+  }).join("");
+  const ticks=[0,200,400,600];
+  const rows = DAYS.map((v,i)=>`<tr><td>${new Date(Date.UTC(2026,9,i+1)).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"UTC"})}</td><td class="r num">${v.toLocaleString("en-US")}</td></tr>`).join("");
+  el.innerHTML=head+`
+    <div class="chart" role="img" aria-label="Bar chart of invoices processed per day from 1 to 28 October. Total ${total.toLocaleString("en-US")}. Weekdays run roughly 400 to 480 a day; weekends under 100. Full data is in the table below.">
+      <div class="yaxis" aria-hidden="true">${ticks.map(t=>`<span style="bottom:${t/max*100}%">${t}</span>`).join("")}</div>
+      <div class="plot" aria-hidden="true">${ticks.slice(1).map(t=>`<div class="gl" style="bottom:${t/max*100}%"></div>`).join("")}${bars}</div>
+      <div class="xaxis" aria-hidden="true"><span>1 Oct</span><span>8</span><span>15</span><span>22</span><span>28</span></div>
+    </div>
+    <div class="legend"><span><i style="background:#5FA9A1"></i>Weekday</span><span><i style="background:#A7CFCA"></i>Weekend</span><span><i style="background:var(--ds-color-brand)"></i>Today, partial day (to 08:10 PT)</span></div>
+    <p class="note">${total.toLocaleString("en-US")} invoices so far, about 430 per weekday. Counts follow your workspace time zone (PT).</p>
+    <details><summary>View as table</summary><div class="scroll"><table class="ds-table"><thead><tr><th scope="col">Day</th><th scope="col" class="r">Invoices</th></tr></thead><tbody>${rows}</tbody></table></div></details>`;
+}
+
+function renderPlan(){
+  const el=$("plan");
+  const head=`<div class="card-h"><h2 id="plan-h">Plan and payment</h2></div>`;
+  if(state==="loading"){ el.setAttribute("aria-busy","true"); el.innerHTML=head+sk(8); return; }
+  el.setAttribute("aria-busy","false");
+  const pay = state==="failed" ? `${WS.card} ${badge("danger","Payment failed","▲")}` : `${WS.card}, expires ${WS.cardExp}`;
+  el.innerHTML=head+`
+    <dl class="kv">
+      <div><dt>Plan</dt><dd><strong>${WS.plan}</strong>, billed monthly</dd></div>
+      <div><dt>Next invoice</dt><dd>${WS.nextBill}</dd></div>
+      <div id="payment"><dt>Payment method</dt><dd>${pay}</dd></div>
+      <div><dt>Invoices sent to</dt><dd>${WS.billingEmail}</dd></div>
+      <div><dt>Usage alerts</dt><dd>At 75%, 90% and 100% to billing owners</dd></div>
+    </dl>
+    <div class="actions">
+      ${btn("Change plan","ds-btn--primary","#change-plan")}
+      ${btn("Update payment method","","#update-payment")}
+      ${btn("Edit usage alerts","","#alerts")}
+    </div>
+    ${canBill()
+      ? `<p class="note">Plan changes apply at the start of your next period (${WS.nextBill}) unless you pick a higher plan, which starts now and is prorated.</p>`
+      : `<p class="note"><strong>Billing is managed by ${WS.owner}.</strong> ${askOwner} You can still view usage and download invoices.</p>`}`;
+}
+
+function renderInvoices(){
+  const el=$("invoices");
+  const head=(link=true)=>`<div class="card-h"><h2 id="inv-h">Invoices</h2>${link&&state==="ready"||state==="failed"?`<a href="#all-invoices">View all invoices</a>`:""}</div>`;
+  if(state==="loading"){ el.setAttribute("aria-busy","true"); el.innerHTML=head(false)+sk(7); return; }
+  el.setAttribute("aria-busy","false");
+  if(state==="error"){ el.innerHTML=head(false)+errorBox("Invoices didn't load","Your invoices are safe. We just couldn't fetch the list. Try again, or contact support if it keeps happening."); return; }
+  if(state==="empty"){ el.innerHTML=head(false)+`<div class="msg"><h3>No invoices yet</h3><p>Your first invoice will be issued on 1 Nov 2026 and appear here with a PDF to download.</p></div>`; return; }
+  const data = INVOICES.slice();
+  if(state==="failed") data.unshift(["INV-2026-0112","1 Oct 2026","1–30 Sep 2026",1163.40,"Failed"]), data.splice(1,1);
+  const st = s => s==="Paid"?badge("success","Paid","✓"):s==="Failed"?badge("danger","Failed","▲"):badge("","Open","");
+  el.innerHTML=head()+`
+    <div class="tablewrap"><table class="ds-table">
+      <caption class="sr-only">Last six invoices, newest first</caption>
+      <thead><tr><th scope="col">Invoice</th><th scope="col">Issued</th><th scope="col">Period</th><th scope="col" class="r">Amount</th><th scope="col">Status</th><th scope="col"><span class="sr-only">Download</span></th></tr></thead>
+      <tbody>${data.map(r=>`<tr>
+        <td><a href="#invoice-${r[0]}">${r[0]}</a></td><td>${r[1]}</td><td>${r[2]}</td>
+        <td class="r num">${usd(r[3])}</td><td>${st(r[4])}</td>
+        <td class="r"><a href="#pdf-${r[0]}" aria-label="Download PDF for ${r[0]}">Download PDF</a></td></tr>`).join("")}
+      </tbody></table></div>`;
+}
+
+function renderAll(){
+  renderMeta(); renderAlerts(); renderHero(); renderMeters();
+  if(state==="error"){ /* hero, meters and plan stay live */ }
+  renderChart(); renderPlan(); renderInvoices();
+  const c=$("hero"); c.querySelectorAll("[data-retry]");
+  document.querySelectorAll("[data-retry]").forEach(b=>b.addEventListener("click",()=>setState("loading",true)));
+}
+function setState(s,thenReady){
+  state=s; syncUrl(); renderAll();
+  if(thenReady){ $("live").textContent="Loading usage and billing"; setTimeout(()=>{ state="ready"; syncUrl(); renderAll(); $("live").textContent="Usage and billing updated"; },700); }
+}
+
+$("p-state").addEventListener("change",e=>setState(e.target.value));
+$("p-role").addEventListener("change",e=>{ role=e.target.value; syncUrl(); renderAll(); });
+$("refresh").addEventListener("click",()=>{ const keep=state; state="loading"; renderAll(); $("live").textContent="Refreshing"; setTimeout(()=>{ state=keep==="loading"?"ready":keep; syncUrl(); renderAll(); $("live").textContent="Usage and billing refreshed"; },600); });
+syncUrl(); renderAll();
+</script>
+</body>
+</html>

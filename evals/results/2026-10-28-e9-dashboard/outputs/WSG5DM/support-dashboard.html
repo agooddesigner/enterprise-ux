@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Staffing Plan</title>
+<style>
+:root{
+  --bg:#f5f6f8; --surface:#fff; --surface-2:#f0f2f5; --line:#e2e5ea; --line-strong:#cbd0d8;
+  --ink:#14181f; --ink-2:#4a5260; --ink-3:#6b7382;
+  --accent:#1d5fd1; --accent-ink:#fff; --accent-soft:#e6eefc;
+  --crit:#b42318; --crit-soft:#fdeceb; --warn:#9a5b00; --warn-soft:#fff3d9;
+  --ok:#14703f; --ok-soft:#e5f5ec; --info:#3a5a8c; --info-soft:#e8eef8;
+  --series-base:#8a93a3; --focus:#1d5fd1;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1218; --surface:#171b23; --surface-2:#1e232d; --line:#262c38; --line-strong:#3a4252;
+    --ink:#eceff4; --ink-2:#b4bccb; --ink-3:#8f98a9;
+    --accent:#6ea0f5; --accent-ink:#0b1220; --accent-soft:#1c2a45;
+    --crit:#ff8f84; --crit-soft:#3a1d1b; --warn:#f2b955; --warn-soft:#38290f;
+    --ok:#6fd49b; --ok-soft:#15301f; --info:#9ab8ea; --info-soft:#1d2940;
+    --series-base:#7d8699; --focus:#8bb4ff;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.wrap{max-width:1360px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:20px;margin:0;font-weight:650}
+h2{font-size:15px;margin:0;font-weight:650}
+.muted{color:var(--ink-3)} .sub{color:var(--ink-2);font-size:13px}
+header{display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between;align-items:flex-end;margin-bottom:16px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:13px;color:var(--ink-2)}
+.chip b{color:var(--ink)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.card-h{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}
+.card-b{padding:16px}
+.banner{display:flex;gap:10px;align-items:flex-start;background:var(--warn-soft);color:var(--ink);border:1px solid var(--warn);border-radius:10px;padding:10px 14px;margin-bottom:16px}
+.banner .ic{font-weight:700;color:var(--warn)}
+.banner a{color:var(--accent)}
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+.kpi{padding:14px 16px}
+.kpi .l{font-size:12px;color:var(--ink-2);margin-bottom:4px}
+.kpi .v{font-size:28px;font-weight:650;line-height:1.1;letter-spacing:-.01em}
+.kpi .d{font-size:12.5px;margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;color:var(--ink-2)}
+.bad{color:var(--crit);font-weight:600}.good{color:var(--ok);font-weight:600}
+.kpi svg{display:block;margin-top:8px;width:100%;height:26px}
+/* recommendation */
+.rec{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;padding:16px}
+.rec h2{font-size:17px}
+.moves{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+.mv{display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:6px 10px;font-weight:600;font-size:13px;border:1px solid var(--line)}
+.mv.from{background:var(--surface-2)} .mv.to{background:var(--accent-soft);border-color:var(--accent)}
+.arrow{align-self:center;color:var(--ink-3);font-size:18px}
+.resid{background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--ink-2)}
+.resid b{color:var(--ink)}
+.btn{font:inherit;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);padding:7px 14px;cursor:pointer;min-height:34px}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+/* table */
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:900px}
+th{font-size:12px;font-weight:600;color:var(--ink-2);text-align:left;padding:8px 12px;border-bottom:1px solid var(--line-strong);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+th.n,td.n{text-align:right}
+tr.sel td{background:var(--accent-soft)}
+tbody tr:last-child td{border-bottom:0}
+tfoot td{font-weight:600;border-top:1px solid var(--line-strong);border-bottom:0;background:var(--surface-2)}
+.qn{background:none;border:0;font:inherit;font-weight:600;color:var(--ink);padding:0;cursor:pointer;text-align:left;text-decoration:underline;text-decoration-color:var(--line-strong);text-underline-offset:3px}
+.qn:hover{text-decoration-color:var(--ink)}
+.step{display:inline-flex;align-items:center;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden}
+.step button{width:30px;height:30px;border:0;background:var(--surface-2);color:var(--ink);font-size:16px;cursor:pointer}
+.step button:hover:not(:disabled){background:var(--line)}
+.step button:disabled{opacity:.35;cursor:not-allowed}
+.step output{min-width:32px;text-align:center;font-weight:650}
+.delta{font-size:12px;margin-left:6px;min-width:28px;display:inline-block;color:var(--ink-3)}
+.load{display:flex;align-items:center;gap:8px;min-width:150px}
+.bar{position:relative;flex:1;height:8px;background:var(--surface-2);border-radius:4px}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.bar::after{content:"";position:absolute;left:66.6%;top:-3px;bottom:-3px;width:1px;background:var(--ink-3)}
+.pct{min-width:42px;text-align:right;font-weight:600}
+.st{display:inline-flex;gap:5px;align-items:center;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.st.over{background:var(--crit-soft);color:var(--crit)} .st.tight{background:var(--warn-soft);color:var(--warn)}
+.st.ok{background:var(--ok-soft);color:var(--ok)} .st.sur{background:var(--info-soft);color:var(--info)}
+.bar .over{background:var(--crit)}.bar .tight{background:var(--warn)}.bar .ok{background:var(--ok)}.bar .sur{background:var(--info)}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pool{font-size:13px;color:var(--ink-2)} .pool b{color:var(--ink)}
+.pool.warn b{color:var(--crit)}
+.legend-note{font-size:12px;color:var(--ink-3);padding:10px 16px;border-top:1px solid var(--line)}
+/* lower grid */
+.grid2{display:grid;grid-template-columns:1.25fr 1fr;gap:16px;margin-top:16px}
+.chartbox{position:relative}
+.chartbox svg{width:100%;height:auto;display:block;overflow:visible}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.5;min-width:170px;opacity:0;transition:opacity .08s;z-index:2}
+.leg{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--ink-2)}
+.leg span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:18px;height:0;border-top:2.5px solid}
+.sw.dash{border-top-style:dashed}
+details{margin-top:12px;font-size:13px} summary{cursor:pointer;color:var(--accent)}
+.mini{min-width:0;width:100%;margin-top:8px}.mini th,.mini td{padding:5px 8px}
+.acct{min-width:560px}
+.sla{font-weight:650}.sla.u{color:var(--crit)}
+.tag{font-size:11.5px;padding:1px 7px;border-radius:6px;background:var(--surface-2);color:var(--ink-2);white-space:nowrap}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.rec,.grid2{grid-template-columns:1fr}}
+@media (max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}.kpi .v{font-size:24px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Support staffing plan</h1>
+      <div class="sub">Wednesday, Oct 28, 2026 · Data as of 8:10 AM PT · Shift 8 AM – 6 PM</div>
+    </div>
+    <div class="chips" aria-label="Team availability">
+      <span class="chip"><b>37</b> of 40 agents on shift</span>
+      <span class="chip">Out: 2 PTO, 1 sick</span>
+      <span class="chip">Target load: 90%</span>
+    </div>
+  </header>
+
+  <div class="banner" role="status">
+    <span class="ic" aria-hidden="true">!</span>
+    <div><b>Open incident INC-2291: webhook delivery delays</b> since 6:42 AM. API-related tickets are arriving 38% above the normal Wednesday rate, and the forecast below already includes this.
+      Engineering's next update is due at 9:00 AM.</div>
+  </div>
+
+  <section class="kpis" aria-label="Key metrics" id="kpis"></section>
+
+  <section class="card" aria-labelledby="rec-h">
+    <div class="rec">
+      <div>
+        <div class="muted" style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Recommended for today</div>
+        <h2 id="rec-h">Move <span id="rec-n"></span> agents to the two queues that will miss SLA</h2>
+        <div class="moves" id="rec-moves"></div>
+        <div class="sub" id="rec-why" style="margin-top:8px"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;justify-content:space-between">
+        <div class="resid" id="rec-resid"></div>
+        <div class="toolbar">
+          <button class="btn primary" id="apply">Apply recommended plan</button>
+          <button class="btn" id="reset">Reset to current</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" style="margin-top:16px" aria-labelledby="q-h">
+    <div class="card-h">
+      <div><h2 id="q-h">Queues: today's load vs. staffing</h2>
+        <div class="sub">Adjust agents to test a plan. Select a queue name to chart it below.</div></div>
+      <div class="pool" id="pool" aria-live="polite"></div>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr>
+          <th scope="col">Queue</th>
+          <th scope="col" class="n">Due today<br><span class="muted" style="font-weight:400">backlog + inbound</span></th>
+          <th scope="col" class="n">At risk<br><span class="muted" style="font-weight:400">next 4h</span></th>
+          <th scope="col">Agents</th>
+          <th scope="col" class="n">Capacity</th>
+          <th scope="col">Load <span class="muted" style="font-weight:400">(line = 100%)</span></th>
+          <th scope="col">Status</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+        <tfoot><tr id="foot"></tr></tfoot>
+      </table>
+    </div>
+    <div class="legend-note">Capacity = agents × average tickets resolved per agent per day for that queue (trailing 30 days). Load = due today ÷ capacity. Agents are skill-routed, so capacity in one queue can't absorb another's overflow without a reassignment.</div>
+  </section>
+
+  <div class="grid2">
+    <section class="card" aria-labelledby="c-h">
+      <div class="card-h">
+        <div><h2 id="c-h">Tickets waiting through the day: <span id="c-q"></span></h2>
+          <div class="sub">Work that has arrived but no agent has finished yet</div></div>
+        <div class="leg">
+          <span><i class="sw dash" style="border-color:var(--series-base)"></i>Current assignment</span>
+          <span><i class="sw" style="border-color:var(--accent)"></i>Your plan</span>
+        </div>
+      </div>
+      <div class="card-b">
+        <div class="chartbox" id="chart"><div class="tip" id="tip"></div></div>
+        <details><summary>View as table</summary>
+          <div class="tw"><table class="mini" id="ctable"></table></div></details>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="a-h">
+      <div class="card-h">
+        <div><h2 id="a-h">Accounts closest to SLA breach</h2>
+          <div class="sub">Top 5 by ARR among tickets due in under 6 hours</div></div>
+      </div>
+      <div class="tw"><table class="acct">
+        <thead><tr><th scope="col">Account</th><th scope="col">Issue</th><th scope="col">Queue</th><th scope="col" class="n">Time left</th></tr></thead>
+        <tbody id="accts"></tbody>
+      </table></div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var TARGET=0.9, HOURS=10;
+var CUMW=[0,.06,.20,.35,.48,.58,.67,.79,.90,.97,1];   // share of daily inbound arrived by each hour mark
+var Q=[
+ {id:"api",  name:"Technical: API & integrations", sla:"1st response 2h", rate:14, cur:9, due:58, inb:112, risk:19, pri:2},
+ {id:"esc",  name:"Enterprise escalations (Tier 2)", sla:"1st response 1h", rate:6,  cur:5, due:21, inb:14,  risk:7,  pri:1},
+ {id:"sso",  name:"SSO & account access",   sla:"1st response 1h", rate:18, cur:4, due:12, inb:41,  risk:6,  pri:3},
+ {id:"bill", name:"Billing & invoices",     sla:"1st response 4h", rate:22, cur:8, due:9,  inb:96,  risk:3,  pri:6},
+ {id:"onb",  name:"Onboarding & setup",     sla:"1st response 8h", rate:10, cur:6, due:18, inb:33,  risk:4,  pri:5},
+ {id:"rep",  name:"Reports & data export",  sla:"1st response 4h", rate:16, cur:5, due:15, inb:52,  risk:8,  pri:4}
+];
+var KPI=[
+ {l:"Open tickets",v:"1,284",d:"▲ 9% vs last Wed",bad:1,s:[1010,1040,1022,1075,1090,1060,1105,1120,1098,1150,1190,1210,1236,1284]},
+ {l:"SLA at risk, next 4h",v:"47",d:"19 in Technical: API",bad:1,s:[22,25,19,28,31,24,30,33,29,35,38,41,44,47]},
+ {l:"SLA met, yesterday",v:"94.1%",d:"▼ 0.9 pts vs 95% target",bad:1,s:[96.1,95.8,95.9,96.0,95.2,95.5,95.1,95.6,95.0,94.8,95.2,94.6,94.9,94.1]},
+ {l:"Median first response",v:"38 min",d:"▲ 8 min over 30 min target",bad:1,s:[26,27,25,28,29,27,30,31,29,33,34,35,36,38]},
+ {l:"CSAT, 7-day",v:"91%",d:"▼ 2 pts vs prior week",bad:1,s:[94,93,94,93,93,92,93,92,93,92,92,91,92,91]}
+];
+var ACCTS=[
+ {n:"Meridian Bank Group",arr:"$980k",i:"Data export timing out",q:"Escalations",m:42},
+ {n:"Northwind Freight",arr:"$620k",i:"Webhooks not delivering (INC-2291)",q:"Technical: API",m:78},
+ {n:"Halcyon Health Systems",arr:"$410k",i:"SAML certificate expired, users locked out",q:"SSO & access",m:95},
+ {n:"Tessera Retail",arr:"$275k",i:"Disputed invoice, renewal in 12 days",q:"Billing",m:215},
+ {n:"Orbital Labs",arr:"$190k",i:"Onboarding stalled at day 12",q:"Onboarding",m:330}
+];
+
+var state={}, selected="api", byId={};
+Q.forEach(function(q){q.demand=q.due+q.inb; q.need=Math.ceil(q.demand/q.rate/TARGET); q.min=Math.ceil(q.demand/q.rate); state[q.id]=q.cur; byId[q.id]=q;});
+var TOTAL=Q.reduce(function(a,q){return a+q.cur;},0);
+
+function $(id){return document.getElementById(id);}
+function fmt(n){return n.toLocaleString("en-US");}
+function sgn(n){return n>0?"+"+n:n<0?"−"+Math.abs(n):"±0";}
+function el(tag,cls,html){var e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;}
+
+/* ---------- recommendation (computed from demand, independent of manual edits) ---------- */
+function recommend(){
+  var p={};Q.forEach(function(q){p[q.id]=q.cur;});
+  function def(q){return q.need-p[q.id];}
+  var guard=100;
+  while(guard--){
+    var recv=Q.filter(function(q){return def(q)>0;}).sort(function(a,b){return a.pri-b.pri;})[0];
+    if(!recv)break;
+    var donors=Q.filter(function(q){return p[q.id]>q.need;}).sort(function(a,b){return b.pri-a.pri;});
+    if(!donors.length) donors=Q.filter(function(q){return q!==recv&&def(q)<=0&&p[q.id]>q.min;}).sort(function(a,b){return b.pri-a.pri;});
+    if(!donors.length)break;
+    p[donors[0].id]--;p[recv.id]++;
+  }
+  return p;
+}
+var REC=recommend();
+
+/* ---------- KPI tiles ---------- */
+function spark(s,bad){
+  var w=200,h=26,mn=Math.min.apply(null,s),mx=Math.max.apply(null,s),r=mx-mn||1;
+  var pts=s.map(function(v,i){return (i/(s.length-1)*w).toFixed(1)+","+(h-3-(v-mn)/r*(h-6)).toFixed(1);}).join(" ");
+  var last=pts.split(" ").pop().split(",");
+  return '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" role="img" aria-label="14-day trend"><polyline points="'+pts+'" fill="none" stroke="var(--series-base)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>';
+}
+KPI.forEach(function(k){
+  var d=el("div","card kpi");
+  d.innerHTML='<div class="l">'+k.l+'</div><div class="v">'+k.v+'</div><div class="d"><span class="'+(k.bad?"bad":"good")+'">'+k.d.split(" ").slice(0,2).join(" ")+'</span><span>'+k.d.split(" ").slice(2).join(" ")+'</span></div>'+spark(k.s)+'<div class="muted" style="font-size:11px">Last 14 days</div>';
+  $("kpis").appendChild(d);
+});
+
+/* ---------- queue table (built once, updated in place so focus is kept) ---------- */
+var R={};
+Q.forEach(function(q){
+  var tr=el("tr");tr.id="r-"+q.id;
+  tr.innerHTML=
+   '<th scope="row" style="font-weight:400;padding:10px 12px;border-bottom:1px solid var(--line)"><button class="qn" data-q="'+q.id+'" aria-pressed="false">'+q.name+'</button><div class="muted" style="font-size:12px">'+q.sla+'</div></th>'+
+   '<td class="n"><b>'+q.demand+'</b><div class="muted" style="font-size:12px">'+q.due+' + '+q.inb+'</div></td>'+
+   '<td class="n">'+q.risk+'</td>'+
+   '<td><span class="step"><button data-q="'+q.id+'" data-d="-1" aria-label="Remove one agent from '+q.name+'">−</button><output aria-live="polite" id="a-'+q.id+'"></output><button data-q="'+q.id+'" data-d="1" aria-label="Add one agent to '+q.name+'">+</button></span><span class="delta" id="dl-'+q.id+'"></span></td>'+
+   '<td class="n" id="cap-'+q.id+'"></td>'+
+   '<td><div class="load"><div class="bar" aria-hidden="true"><i id="bar-'+q.id+'"></i></div><span class="pct" id="pct-'+q.id+'"></span></div></td>'+
+   '<td id="st-'+q.id+'"></td>';
+  $("rows").appendChild(tr);R[q.id]=tr;
+});
+
+function status(u){
+  if(u>1)return{c:"over",t:"▲ Over capacity"};
+  if(u>TARGET)return{c:"tight",t:"● Tight"};
+  if(u>=0.65)return{c:"ok",t:"✓ Healthy"};
+  return{c:"sur",t:"▽ Spare capacity"};
+}
+function overflow(q,a){return Math.max(0,q.demand-a*q.rate);}
+
+function update(){
+  var used=0,capT=0,demT=0,ovT=0,ovCur=0,dem=0;
+  Q.forEach(function(q){
+    var a=state[q.id];used+=a;
+    var cap=a*q.rate,u=a?q.demand/cap:9,st=status(u),ov=overflow(q,a);
+    capT+=cap;demT+=q.demand;ovT+=ov;ovCur+=overflow(q,q.cur);
+    $("a-"+q.id).textContent=a;
+    var d=a-q.cur;$("dl-"+q.id).textContent=d?sgn(d):"";
+    $("dl-"+q.id).style.color=d>0?"var(--accent)":"var(--ink-3)";
+    $("cap-"+q.id).textContent=fmt(cap);
+    var bar=$("bar-"+q.id);bar.style.width=Math.min(u/1.5,1)*100+"%";bar.className=st.c;
+    $("pct-"+q.id).textContent=a?Math.round(u*100)+"%":"–";
+    $("st-"+q.id).innerHTML='<span class="st '+st.c+'">'+st.t+'</span>'+(ov>0?'<div class="muted" style="font-size:12px;margin-top:2px">~'+Math.round(ov)+' tickets carry over</div>':'');
+    R[q.id].className=q.id===selected?"sel":"";
+    R[q.id].querySelector(".qn").setAttribute("aria-pressed",q.id===selected);
+  });
+  var free=TOTAL-used;
+  Array.prototype.forEach.call(document.querySelectorAll(".step button"),function(b){
+    var q=byId[b.dataset.q],d=+b.dataset.d;
+    b.disabled=d>0?free<=0:state[q.id]<=1;
+  });
+  var p=$("pool");
+  p.className="pool"+(free>0?" warn":"");
+  p.innerHTML='<b>'+used+'</b> of '+TOTAL+' agents assigned'+(free>0?' · <b>'+free+' unassigned</b>':'')+' · Tickets carrying over: <b>'+Math.round(ovT)+'</b>'+(ovT!==ovCur?' <span class="muted">(currently '+Math.round(ovCur)+')</span>':'');
+  $("foot").innerHTML='<td>All queues</td><td class="n">'+fmt(demT)+'</td><td class="n">'+Q.reduce(function(a,q){return a+q.risk;},0)+'</td><td>'+used+' agents</td><td class="n">'+fmt(capT)+'</td><td colspan="2" class="muted" style="font-weight:400">Overall load '+Math.round(demT/capT*100)+'%</td>';
+  drawChart();
+}
+
+/* ---------- recommendation card ---------- */
+(function(){
+  var from=[],to=[],n=0;
+  Q.forEach(function(q){var d=REC[q.id]-q.cur;if(d<0)from.push({q:q,d:-d});if(d>0){to.push({q:q,d:d});n+=d;}});
+  $("rec-n").textContent=n;
+  var short=function(q){return q.name.split(":")[0].replace(" (Tier 2)","");};
+  var h="";
+  from.forEach(function(f){h+='<span class="mv from">'+short(f.q)+' <span class="muted">−'+f.d+'</span></span>';});
+  h+='<span class="arrow" aria-label="move to">→</span>';
+  to.forEach(function(t){h+='<span class="mv to">'+short(t.q)+' +'+t.d+'</span>';});
+  $("rec-moves").innerHTML=h;
+  var worst=Q.filter(function(q){return q.cur*q.rate<q.demand;}).map(function(q){return q.name.split(":").pop().trim().replace(" (Tier 2)","")+" ("+Math.round(q.demand/(q.cur*q.rate)*100)+"%)";});
+  var spare=from.map(function(f){return f.q.name.split(":")[0]+" ("+Math.round(f.q.demand/(f.q.cur*f.q.rate)*100)+"%)";});
+  $("rec-why").innerHTML='Over capacity today: <b>'+worst.join(", ")+'</b>. Donor queues have room: '+spare.join(", ")+'. Escalations go first because they hold the highest-ARR accounts and the tightest SLA.';
+  var ovCur=Q.reduce(function(a,q){return a+overflow(q,q.cur);},0), ovRec=Q.reduce(function(a,q){return a+overflow(q,REC[q.id]);},0);
+  var left=Q.filter(function(q){return overflow(q,REC[q.id])>0;})[0];
+  var txt='Tickets carrying over to tomorrow: <b>'+Math.round(ovCur)+' → '+Math.round(ovRec)+'</b> with this plan.';
+  if(left){var ex=Math.ceil(overflow(left,REC[left.id])/left.rate);
+    txt+=' <b>'+left.name.split(":").pop().trim()+'</b> is still about '+Math.round(overflow(left,REC[left.id]))+' tickets short. Moving agents alone won\'t close it. Consider about '+ex+' agent-day'+(ex>1?'s':'')+' of overtime or a status-page banner for INC-2291 to cut inbound.';}
+  $("rec-resid").innerHTML=txt;
+})();
+
+/* ---------- chart: tickets waiting by hour ---------- */
+function waiting(q,a){var o=[];for(var t=0;t<=HOURS;t++){o.push(Math.max(0,Math.round(q.due+q.inb*CUMW[t]-a*q.rate*t/HOURS)));}return o;}
+function hl(t){var h=8+t;return (h>12?h-12:h)+(h>=12?"p":"a");}
+var hov=null;
+function drawChart(){
+  var q=byId[selected],box=$("chart"),W=Math.max(box.clientWidth,300),H=250,m={l:40,r:16,t:12,b:28};
+  $("c-q").textContent=q.name.split(":").pop().trim();
+  var base=waiting(q,q.cur),plan=waiting(q,state[q.id]);
+  var mx=Math.max.apply(null,base.concat(plan,[10])),step=mx>120?40:mx>60?20:mx>30?10:5,top=Math.ceil(mx/step)*step;
+  var X=function(t){return m.l+t/HOURS*(W-m.l-m.r);},Y=function(v){return m.t+(1-v/top)*(H-m.t-m.b);};
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Tickets waiting by hour for '+q.name+'. Current assignment ends the day with '+base[HOURS]+' waiting; your plan ends with '+plan[HOURS]+'.">';
+  for(var v=0;v<=top;v+=step)s+='<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--line)"/><text x="'+(m.l-8)+'" y="'+(Y(v)+4)+'" text-anchor="end" font-size="11" fill="var(--ink-3)">'+v+'</text>';
+  for(var t=0;t<=HOURS;t+=2)s+='<text x="'+X(t)+'" y="'+(H-8)+'" text-anchor="middle" font-size="11" fill="var(--ink-3)">'+hl(t)+'</text>';
+  var P=function(a){return a.map(function(v,i){return X(i).toFixed(1)+","+Y(v).toFixed(1);}).join(" ");};
+  s+='<polyline points="'+P(base)+'" fill="none" stroke="var(--series-base)" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>';
+  s+='<polyline points="'+P(plan)+'" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>';
+  var same=base[HOURS]===plan[HOURS];
+  s+='<text x="'+(W-m.r)+'" y="'+(Y(plan[HOURS])-8)+'" text-anchor="end" font-size="12" font-weight="600" fill="var(--ink)">'+plan[HOURS]+' carry over</text>';
+  if(!same)s+='<text x="'+(W-m.r)+'" y="'+(Y(base[HOURS])+(base[HOURS]>plan[HOURS]?-8:16))+'" text-anchor="end" font-size="12" fill="var(--ink-3)">'+base[HOURS]+' now</text>';
+  if(hov!=null){var x=X(hov);
+    s+='<line x1="'+x+'" x2="'+x+'" y1="'+m.t+'" y2="'+(H-m.b)+'" stroke="var(--ink-3)" stroke-dasharray="2 3"/>';
+    s+='<circle cx="'+x+'" cy="'+Y(base[hov])+'" r="4.5" fill="var(--series-base)" stroke="var(--surface)" stroke-width="2"/>';
+    s+='<circle cx="'+x+'" cy="'+Y(plan[hov])+'" r="4.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>';}
+  s+='<rect id="hit" x="'+m.l+'" y="0" width="'+(W-m.l-m.r)+'" height="'+H+'" fill="transparent"/></svg>';
+  var tip=$("tip");box.innerHTML=s;box.appendChild(tip);
+  var hit=box.querySelector("#hit");
+  function move(e){var r=box.getBoundingClientRect();var t=Math.round((e.clientX-r.left-m.l)/(W-m.l-m.r)*HOURS);t=Math.max(0,Math.min(HOURS,t));
+    if(t!==hov){hov=t;drawChart();}}
+  hit.addEventListener("pointermove",move);
+  hit.addEventListener("pointerleave",function(){hov=null;drawChart();});
+  if(hov!=null){var x=X(hov);
+    tip.innerHTML='<b>'+hl(hov)+(hov===0?' (start)':'')+'</b><br>Your plan: <b>'+plan[hov]+'</b> waiting<br>Current: '+base[hov]+' waiting';
+    tip.style.opacity=1;tip.style.left=Math.min(x+12,W-190)+"px";tip.style.top="8px";}
+  else tip.style.opacity=0;
+  var tb='<thead><tr><th scope="col">Time</th><th scope="col" class="n">Current</th><th scope="col" class="n">Your plan</th></tr></thead><tbody>';
+  for(var i=0;i<=HOURS;i++)tb+='<tr><th scope="row" style="font-weight:400">'+hl(i)+'</th><td class="n">'+base[i]+'</td><td class="n">'+plan[i]+'</td></tr>';
+  $("ctable").innerHTML=tb+'</tbody>';
+}
+
+/* ---------- accounts ---------- */
+ACCTS.forEach(function(a){
+  var h=Math.floor(a.m/60),mm=a.m%60,t=h?h+"h "+(mm<10?"0":"")+mm+"m":mm+"m";
+  var tr=el("tr");
+  tr.innerHTML='<td><b>'+a.n+'</b><div class="muted" style="font-size:12px">'+a.arr+' ARR</div></td><td>'+a.i+'</td><td><span class="tag">'+a.q+'</span></td><td class="n"><span class="sla'+(a.m<90?" u":"")+'">'+(a.m<90?"▲ ":"")+t+'</span></td>';
+  $("accts").appendChild(tr);
+});
+
+/* ---------- events ---------- */
+document.addEventListener("click",function(e){
+  var b=e.target.closest("button");if(!b)return;
+  if(b.dataset.d){var q=b.dataset.q;state[q]+=+b.dataset.d;update();var o=document.querySelector('button[data-q="'+q+'"][data-d="'+b.dataset.d+'"]');if(o&&o.disabled){var other=document.querySelector('button[data-q="'+q+'"][data-d="'+(-b.dataset.d)+'"]');if(other&&!other.disabled)other.focus();}}
+  else if(b.classList.contains("qn")){selected=b.dataset.q;hov=null;update();}
+});
+$("apply").addEventListener("click",function(){Q.forEach(function(q){state[q.id]=REC[q.id];});update();});
+$("reset").addEventListener("click",function(){Q.forEach(function(q){state[q.id]=q.cur;});update();});
+if(window.ResizeObserver)new ResizeObserver(function(){drawChart();}).observe($("chart"));
+update();
+})();
+</script>
+</body>
+</html>

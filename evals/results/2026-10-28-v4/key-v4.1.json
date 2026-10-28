@@ -1,0 +1,38 @@
+[
+  {
+    "code": "BDMHUE",
+    "case": "E11",
+    "condition": "v4.1",
+    "run": 1
+  },
+  {
+    "code": "35CBN0",
+    "case": "E10",
+    "condition": "v4.1",
+    "run": 2
+  },
+  {
+    "code": "H903KZ",
+    "case": "E10",
+    "condition": "v4.1",
+    "run": 1
+  },
+  {
+    "code": "UY05RB",
+    "case": "E11",
+    "condition": "v4.1",
+    "run": 2
+  },
+  {
+    "code": "ANTON1",
+    "case": "E13",
+    "condition": "v4.1",
+    "run": 2
+  },
+  {
+    "code": "9RV05P",
+    "case": "E13",
+    "condition": "v4.1",
+    "run": 1
+  }
+]

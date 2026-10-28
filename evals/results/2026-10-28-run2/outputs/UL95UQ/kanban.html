@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support tickets board</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --surface: #fff; --col: #e9ebef; --text: #1b1f27; --muted: #4a5262;
+    --border: #8a93a3; --accent: #0b57d0; --accent-text: #fff; --focus: #0b57d0;
+    --drop: #dbe8ff; --grab: #fff4cc;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b; --surface: #1d222b; --col: #181c24; --text: #eef0f4; --muted: #b4bccb;
+      --border: #7d8696; --accent: #8ab4f8; --accent-text: #0b1220; --focus: #8ab4f8;
+      --drop: #1c2f52; --grab: #4a3d0d;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .skip { position: absolute; left: 8px; top: -60px; background: var(--accent); color: var(--accent-text); padding: 8px 12px; border-radius: 4px; z-index: 10; }
+  .skip:focus { top: 8px; }
+  header { padding: 16px 24px 0; }
+  h1 { margin: 0 0 4px; font-size: 1.5rem; }
+  .help { margin: 0; color: var(--muted); max-width: 70ch; }
+  .help summary { cursor: pointer; padding: 4px 0; }
+  .help kbd { border: 1px solid var(--border); border-radius: 3px; padding: 0 5px; font: inherit; font-size: .875em; }
+  main { padding: 16px 24px 32px; }
+  .board { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; align-items: start; }
+
+  .column { background: var(--col); border-radius: 8px; padding: 12px; border: 1px solid transparent; }
+  .column h2 { margin: 0 0 8px; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; }
+  .count { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 0 8px; font-size: .875rem; font-weight: 600; }
+  .dropzone { min-height: 72px; border-radius: 6px; }
+  .column.over { border-color: var(--accent); background: var(--drop); outline: 2px dashed var(--accent); outline-offset: -2px; }
+  ul.cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .empty { margin: 0; padding: 16px 8px; text-align: center; color: var(--muted); border: 1px dashed var(--border); border-radius: 6px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; cursor: grab; position: relative; }
+  .card.dragging { opacity: .5; }
+  .card.grabbed { background: var(--grab); outline: 3px solid var(--text); }
+  .card.drop-before { box-shadow: 0 -4px 0 0 var(--accent); }
+  .card.drop-after { box-shadow: 0 4px 0 0 var(--accent); }
+  .card h3 { margin: 0; font-size: 1rem; }
+  .meta { margin: 4px 0 8px; color: var(--muted); font-size: .875rem; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+  .prio { font-weight: 700; color: var(--text); }
+  .prio[data-p="Urgent"] { text-decoration: underline wavy; text-underline-offset: 3px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .actions label { font-size: .875rem; color: var(--muted); }
+  button, select { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 4px; min-height: 32px; min-width: 32px; padding: 2px 8px; }
+  button { cursor: pointer; }
+  button[aria-pressed="true"] { background: var(--text); color: var(--surface); }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .handle { display: inline-flex; align-items: center; gap: 4px; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .status { position: sticky; bottom: 0; margin: 0; padding: 8px 24px; background: var(--surface); border-top: 1px solid var(--border); min-height: 40px; }
+
+  @media (prefers-reduced-motion: no-preference) { .card, .column { transition: box-shadow .15s, background .15s; } }
+  @media (forced-colors: active) {
+    .card.grabbed { outline: 3px solid Highlight; }
+    .column.over { outline-color: Highlight; }
+    .card.drop-before { box-shadow: 0 -4px 0 0 Highlight; }
+    .card.drop-after { box-shadow: 0 4px 0 0 Highlight; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#board">Skip to board</a>
+<header>
+  <h1>Support tickets</h1>
+  <details class="help">
+    <summary>How to move tickets</summary>
+    <ul>
+      <li><strong>Mouse or touch-pad:</strong> drag a ticket and drop it in a column.</li>
+      <li><strong>Keyboard:</strong> Tab to a ticket's <em>Reorder</em> button, press <kbd>Space</kbd> or <kbd>Enter</kbd> to pick it up, use <kbd>←</kbd> <kbd>→</kbd> to change column and <kbd>↑</kbd> <kbd>↓</kbd> to change position, then <kbd>Space</kbd> or <kbd>Enter</kbd> to drop. <kbd>Esc</kbd> cancels.</li>
+      <li><strong>Any device, no dragging:</strong> choose a column in a ticket's <em>Move to</em> list and press <em>Move</em>.</li>
+    </ul>
+  </details>
+</header>
+
+<main id="main">
+  <div class="board" id="board"></div>
+</main>
+
+<p class="status" id="live" role="status" aria-live="polite" aria-atomic="true"></p>
+
+<script>
+const COLUMNS = ["New", "In progress", "Waiting", "Done"];
+const tickets = [
+  { id: "T-101", title: "Cannot reset password", who: "Dana Lee", prio: "Urgent", col: 0 },
+  { id: "T-102", title: "Invoice shows wrong VAT number", who: "Acme Ltd", prio: "High", col: 0 },
+  { id: "T-103", title: "Export to CSV times out", who: "Priya N.", prio: "Normal", col: 1 },
+  { id: "T-104", title: "Dark mode request", who: "Sam Ortiz", prio: "Low", col: 1 },
+  { id: "T-105", title: "SSO login loop on Safari", who: "Northwind", prio: "High", col: 2 },
+  { id: "T-106", title: "Update billing address", who: "Jo Park", prio: "Low", col: 3 },
+];
+
+const board = document.getElementById("board");
+const live = document.getElementById("live");
+let grabbed = null;      // { id, col, index } original position while keyboard-grabbing
+let rendering = false;
+let dragId = null;
+
+const inCol = c => tickets.filter(t => t.col === c);
+const find = id => tickets.find(t => t.id === id);
+
+function announce(msg) {
+  live.textContent = "";
+  setTimeout(() => { live.textContent = msg; }, 30);
+}
+
+// Place ticket in column `col` at position `index` (0-based among that column's tickets).
+function place(id, col, index) {
+  const t = find(id);
+  tickets.splice(tickets.indexOf(t), 1);
+  t.col = col;
+  const peers = inCol(col);
+  index = Math.max(0, Math.min(index, peers.length));
+  const at = index < peers.length ? tickets.indexOf(peers[index]) : tickets.length;
+  tickets.splice(at, 0, t);
+  return index;
+}
+
+function position(id) {
+  const t = find(id);
+  const peers = inCol(t.col);
+  return `${COLUMNS[t.col]}, position ${peers.indexOf(t) + 1} of ${peers.length}`;
+}
+
+function render(focus) {
+  rendering = true;
+  board.replaceChildren();
+  COLUMNS.forEach((name, c) => {
+    const items = inCol(c);
+    const sec = document.createElement("section");
+    sec.className = "column";
+    sec.dataset.col = c;
+    sec.setAttribute("aria-labelledby", `h-${c}`);
+    sec.innerHTML = `<h2 id="h-${c}">${name} <span class="count">${items.length}<span class="sr-only"> ${items.length === 1 ? "ticket" : "tickets"}</span></span></h2>`;
+    const zone = document.createElement("div");
+    zone.className = "dropzone";
+    if (!items.length) zone.innerHTML = `<p class="empty">No tickets. Drop one here.</p>`;
+    else {
+      const ul = document.createElement("ul");
+      ul.className = "cards";
+      items.forEach(t => ul.append(card(t)));
+      zone.append(ul);
+    }
+    sec.append(zone);
+    wireZone(sec);
+    board.append(sec);
+  });
+  if (focus) {
+    const el = board.querySelector(`[data-id="${focus.id}"] ${focus.sel}`);
+    if (el) el.focus();
+  }
+  rendering = false;
+}
+
+function card(t) {
+  const li = document.createElement("li");
+  li.className = "card" + (grabbed && grabbed.id === t.id ? " grabbed" : "");
+  li.dataset.id = t.id;
+  li.draggable = true;
+  const others = COLUMNS.map((n, i) => i === t.col ? "" : `<option value="${i}">${n}</option>`).join("");
+  li.innerHTML = `
+    <h3>${t.title}</h3>
+    <p class="meta"><span>${t.id}</span><span>${t.who}</span><span>Priority: <span class="prio" data-p="${t.prio}">${t.prio}</span></span></p>
+    <div class="actions">
+      <button type="button" class="handle" data-role="handle" aria-pressed="${!!grabbed && grabbed.id === t.id}"
+        aria-label="Reorder ${t.id}: ${t.title}"><span aria-hidden="true">⠿</span> Reorder</button>
+      <label for="m-${t.id}">Move to</label>
+      <select id="m-${t.id}" data-role="select">${others}</select>
+      <button type="button" data-role="move" aria-label="Move ${t.id} to selected column">Move</button>
+    </div>`;
+  li.addEventListener("dragstart", e => {
+    dragId = t.id;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", t.id);
+    requestAnimationFrame(() => li.classList.add("dragging"));
+  });
+  li.addEventListener("dragend", () => { dragId = null; clearOver(); li.classList.remove("dragging"); });
+  return li;
+}
+
+/* ---------- mouse drag and drop ---------- */
+function clearOver() {
+  board.querySelectorAll(".over").forEach(e => e.classList.remove("over"));
+  board.querySelectorAll(".drop-before,.drop-after").forEach(e => e.classList.remove("drop-before", "drop-after"));
+}
+function dropIndex(sec, y) {
+  const cards = [...sec.querySelectorAll(".card:not(.dragging)")];
+  for (let i = 0; i < cards.length; i++) {
+    const r = cards[i].getBoundingClientRect();
+    if (y < r.top + r.height / 2) return { index: i, ref: cards[i], before: true };
+  }
+  return { index: cards.length, ref: cards[cards.length - 1], before: false };
+}
+function wireZone(sec) {
+  sec.addEventListener("dragover", e => {
+    if (!dragId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    clearOver();
+    sec.classList.add("over");
+    const d = dropIndex(sec, e.clientY);
+    if (d.ref) d.ref.classList.add(d.before ? "drop-before" : "drop-after");
+  });
+  sec.addEventListener("dragleave", e => { if (!sec.contains(e.relatedTarget)) clearOver(); });
+  sec.addEventListener("drop", e => {
+    if (!dragId) return;
+    e.preventDefault();
+    const c = +sec.dataset.col, id = dragId;
+    const d = dropIndex(sec, e.clientY);
+    // dropIndex ignores the dragged card, so index is relative to the column without it
+    place(id, c, d.index);
+    dragId = null;
+    render({ id, sel: '[data-role="handle"]' });
+    announce(`${id} dropped. ${position(id)}.`);
+  });
+}
+
+/* ---------- buttons, select, keyboard ---------- */
+board.addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  const id = b.closest(".card").dataset.id;
+  if (b.dataset.role === "move") {
+    const sel = b.closest(".card").querySelector("select");
+    place(id, +sel.value, Infinity);
+    render({ id, sel: '[data-role="select"]' });
+    announce(`${id} moved to ${position(id)}.`);
+  } else if (b.dataset.role === "handle") {
+    if (grabbed && grabbed.id === id) return drop(id);
+    const t = find(id);
+    grabbed = { id, col: t.col, index: inCol(t.col).indexOf(t) };
+    render({ id, sel: '[data-role="handle"]' });
+    announce(`Picked up ${id}. ${position(id)}. Arrow keys to move, Space to drop, Escape to cancel.`);
+  }
+});
+
+function drop(id) {
+  grabbed = null;
+  render({ id, sel: '[data-role="handle"]' });
+  announce(`${id} dropped. ${position(id)}.`);
+}
+
+board.addEventListener("keydown", e => {
+  const h = e.target.closest('[data-role="handle"]');
+  if (!h || !grabbed) return;
+  const id = h.closest(".card").dataset.id;
+  if (id !== grabbed.id) return;
+  const t = find(id), idx = inCol(t.col).indexOf(t);
+  let handled = true;
+  switch (e.key) {
+    case "ArrowLeft": case "ArrowRight": {
+      const c = t.col + (e.key === "ArrowRight" ? 1 : -1);
+      if (c < 0 || c >= COLUMNS.length) { announce(`Already in the ${e.key === "ArrowRight" ? "last" : "first"} column.`); break; }
+      place(id, c, idx);
+      render({ id, sel: '[data-role="handle"]' });
+      announce(position(id) + ".");
+      break;
+    }
+    case "ArrowUp": case "ArrowDown": {
+      const n = idx + (e.key === "ArrowDown" ? 1 : -1);
+      if (n < 0 || n >= inCol(t.col).length) { announce(`Already at the ${n < 0 ? "top" : "bottom"}.`); break; }
+      place(id, t.col, n);
+      render({ id, sel: '[data-role="handle"]' });
+      announce(position(id) + ".");
+      break;
+    }
+    case "Escape":
+      place(id, grabbed.col, grabbed.index);
+      grabbed = null;
+      render({ id, sel: '[data-role="handle"]' });
+      announce(`Move cancelled. ${id} returned to ${position(id)}.`);
+      break;
+    case "Tab": handled = false; break;
+    default: handled = false;
+  }
+  if (handled) e.preventDefault();
+});
+
+// Losing focus while holding a ticket drops it where it is.
+board.addEventListener("focusout", e => {
+  if (rendering || !grabbed) return;
+  if (e.relatedTarget && e.relatedTarget !== e.target) {
+    const id = grabbed.id;
+    grabbed = null;
+    render();
+    announce(`${id} dropped. ${position(id)}.`);
+  }
+});
+
+render();
+</script>
+</body>
+</html>

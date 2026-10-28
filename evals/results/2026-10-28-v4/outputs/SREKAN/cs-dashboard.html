@@ -1,0 +1,398 @@
+<title>Customer Success Dashboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: slim side nav + 12-col bento. Hero (ARR at risk) top-left in ink; table is the working surface; one lime highlight for today's tasks. */
+:root{
+  --bg:#eceff6; --card:#fff; --line:#e3e6ef; --ink:#14161f; --ink2:#4b5163; --ink3:#6b7185;
+  --accent:#3f45d9; --accent-soft:#e8e9fc;
+  --anchor:#14161f; --on-anchor:#f4f5fa; --on-anchor2:#b9bed0;
+  --hl:#d7f26a; --on-hl:#15190a;
+  --good:#17714a; --good-bg:#e1f4ea; --warn:#8a5300; --warn-bg:#fdf0d5; --bad:#b42818; --bad-bg:#fde6e2;
+  --track:#eef0f6; --shadow:0 1px 2px rgba(20,22,31,.05);
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif; --f-body:"Instrument Sans","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1017; --card:#171a24; --line:#262a38; --ink:#eef0f7; --ink2:#b4b9cb; --ink3:#8e94a8;
+  --accent:#8f94ff; --accent-soft:#252849; --anchor:#232842; --on-anchor:#f4f5fa; --on-anchor2:#b9bed0;
+  --hl:#d7f26a; --on-hl:#15190a; --good:#5fd49b; --good-bg:#143324; --warn:#f2b45a; --warn-bg:#3a2a0e; --bad:#ff8d7e; --bad-bg:#40191a;
+  --track:#222636; --shadow:none; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1017; --card:#171a24; --line:#262a38; --ink:#eef0f7; --ink2:#b4b9cb; --ink3:#8e94a8;
+  --accent:#8f94ff; --accent-soft:#252849; --anchor:#232842; --on-anchor:#f4f5fa; --on-anchor2:#b9bed0;
+  --hl:#d7f26a; --on-hl:#15190a; --good:#5fd49b; --good-bg:#143324; --warn:#f2b45a; --warn-bg:#3a2a0e; --bad:#ff8d7e; --bad-bg:#40191a;
+  --track:#222636; --shadow:none; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--f-body);padding-block:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.num{font-family:var(--f-display);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.shell{display:grid;grid-template-columns:200px minmax(0,1fr);gap:24px;max-width:1440px;margin:0 auto;padding-block:16px 40px}
+nav.side{position:sticky;top:16px;align-self:start;display:flex;flex-direction:column;gap:4px}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 10px 16px;font:700 16px var(--f-display)}
+.logo{width:28px;height:28px;border-radius:9px;background:var(--accent);display:grid;place-items:center;color:#fff;font-size:13px}
+nav.side a{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:999px;color:var(--ink2);text-decoration:none;font-weight:500}
+nav.side a:hover{background:var(--card)}
+nav.side a[aria-current=page]{background:var(--ink);color:var(--bg)}
+nav.side svg{width:18px;height:18px;flex:none}
+.ws{margin-top:16px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--card);font-size:12px;color:var(--ink3)}
+.ws b{display:block;color:var(--ink);font-size:13px}
+main{min-width:0}
+.top{display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap}
+.crumbs{color:var(--ink3);font-size:13px;margin-right:auto}
+.search{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 14px;min-width:240px;color:var(--ink3);cursor:text}
+.search input{border:0;background:none;outline:0;flex:1;min-width:0;color:var(--ink)}
+.search:focus-within{outline:2px solid var(--accent)}
+kbd{font:11px var(--f-body);border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--ink3)}
+.ibtn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;cursor:pointer;position:relative}
+.ibtn .dot{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--bad);border:2px solid var(--card)}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:600}
+h1{font:700 clamp(28px,4vw,44px)/1.05 var(--f-display);letter-spacing:-.03em;margin:0;text-wrap:balance}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.fresh{color:var(--ink3);font-size:13px;margin-top:8px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;cursor:pointer;font-weight:500;color:var(--ink2);min-height:36px}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip small{opacity:.7;margin-left:4px}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px}
+.card{background:var(--card);border-radius:24px;padding:22px;box-shadow:var(--shadow);min-width:0;position:relative}
+.card h2{font:600 14px var(--f-body);color:var(--ink2);margin:0 0 14px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.card h2 a,.link{color:var(--accent);font-weight:500;font-size:13px;text-decoration:none;background:none;border:0;cursor:pointer;padding:0}
+.card h2 a:hover,.link:hover{text-decoration:underline}
+.s5{grid-column:span 5}.s7{grid-column:span 7}.s8{grid-column:span 8}.s4{grid-column:span 4}
+.anchor{background:var(--anchor);color:var(--on-anchor);display:flex;flex-direction:column;justify-content:space-between;gap:20px}
+.anchor h2{color:var(--on-anchor2)}
+.hero{font-size:clamp(56px,7vw,84px);line-height:.95;font-weight:700}
+.hero small{font-size:.5em;opacity:.8}
+.anchor p{margin:10px 0 0;color:var(--on-anchor2);max-width:42ch}
+.anchor .btn{align-self:flex-start}
+.btn{border:0;border-radius:999px;padding:10px 18px;font-weight:600;cursor:pointer;background:var(--hl);color:var(--on-hl);min-height:40px}
+.btn.sec{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.kpi .v{font-size:clamp(36px,4vw,48px);font-weight:700;line-height:1}
+.kpi .v small{font-size:.5em;color:var(--ink3)}
+.kpi .l{color:var(--ink2);font-size:13px;margin-bottom:10px}
+.delta{display:inline-flex;gap:4px;align-items:center;font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px;margin-top:10px}
+.delta.good{background:var(--good-bg);color:var(--good)}.delta.bad{background:var(--bad-bg);color:var(--bad)}
+.spark{display:block;margin-top:10px;width:100%;height:30px}
+.pill{display:inline-flex;gap:6px;align-items:center;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill.risk{background:var(--bad-bg);color:var(--bad)}.pill.watch{background:var(--warn-bg);color:var(--warn)}.pill.ok{background:var(--good-bg);color:var(--good)}
+.tablewrap{overflow-x:auto;margin:0 -8px}
+table{width:100%;border-collapse:collapse;min-width:640px}
+th{font-weight:500;font-size:12px;color:var(--ink3);text-align:left;padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th button{background:none;border:0;cursor:pointer;color:inherit;font:inherit;padding:0}
+th button:hover{color:var(--ink)}
+td{padding:11px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+td.r,th.r{text-align:right}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--track)}
+tbody tr:last-child td{border-bottom:0}
+.acct{font-weight:600;background:none;border:0;cursor:pointer;text-align:left;padding:0}
+.sig{color:var(--ink2);font-size:13px;max-width:30ch}
+.due{font-size:12px;color:var(--ink3)}
+.tfoot{display:flex;justify-content:space-between;align-items:center;color:var(--ink3);font-size:13px;margin-top:12px;gap:8px;flex-wrap:wrap}
+.hl{background:var(--hl);color:var(--on-hl)}
+.hl h2{color:var(--on-hl)}
+.hl .big{font-size:56px;font-weight:700;line-height:1}
+.task{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid rgba(21,25,10,.18)}
+.task input{width:20px;height:20px;margin:1px 0 0;accent-color:#15190a;flex:none}
+.task label{cursor:pointer}.task em{display:block;font-style:normal;font-size:12px;opacity:.78}
+.task.done label{text-decoration:line-through;opacity:.6}
+.bar{display:flex;height:22px;gap:2px;margin:6px 0 14px}
+.bar span{display:block;min-width:4px}
+.bar span:first-child{border-radius:999px 4px 4px 999px}.bar span:last-child{border-radius:4px 999px 999px 4px}
+.leg{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.leg li{display:flex;align-items:center;gap:10px}
+.sw{width:10px;height:10px;border-radius:3px;flex:none}
+.leg b{margin-left:auto;font-variant-numeric:tabular-nums}
+.leg span.m{color:var(--ink3);font-size:12px;min-width:56px;text-align:right}
+svg text{fill:var(--ink3);font:11px var(--f-body)}
+svg.chart{width:100%;height:auto;display:block;overflow:visible}
+.msg{display:none;text-align:center;padding:28px 12px;color:var(--ink2)}
+.msg b{display:block;color:var(--ink);font-size:15px;margin-bottom:4px}
+.msg .btn{margin-top:12px;background:var(--ink);color:var(--bg)}
+.sk{display:none}
+[data-state=loading] .sk{display:block}
+[data-state=loading] .real{display:none!important}
+[data-state=error] .real,[data-state=error] .sk{display:none!important}
+[data-state=error] .msg.e{display:block}
+[data-state=empty] table-wrap{display:none}
+.skl{height:14px;border-radius:7px;background:linear-gradient(90deg,var(--track),var(--line),var(--track));background-size:200% 100%;animation:sh 1.3s infinite;margin:12px 0}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skl{animation:none}}
+.preview{display:flex;gap:8px;align-items:center;margin-top:24px;color:var(--ink3);font-size:12px;flex-wrap:wrap}
+.preview .chip{padding:4px 12px;min-height:30px;font-size:12px}
+.err-banner{display:none}
+[data-state=error] .card .real{display:none}
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(10,12,20,.45);display:none;z-index:20}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);background:var(--card);z-index:21;padding:24px max(24px,env(safe-area-inset-right,0px)) 24px 24px;overflow:auto;transform:translateX(100%);transition:transform .2s;box-shadow:-8px 0 30px rgba(0,0,0,.15)}
+.open .drawer{transform:none}.open .scrim{display:block}
+@media (prefers-reduced-motion:reduce){.drawer{transition:none}}
+.drawer h3{font:700 28px var(--f-display);margin:12px 0 4px;letter-spacing:-.02em}
+.dl{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0}
+.dl dt{font-size:12px;color:var(--ink3)}.dl dd{margin:2px 0 0;font-weight:600}
+.x{position:absolute;top:16px;right:16px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);border-radius:999px;padding:10px 12px 10px 20px;display:none;gap:14px;align-items:center;z-index:30;max-width:calc(100% - 32px)}
+.toast.show{display:flex}
+.toast button{background:none;border:0;color:var(--hl);font-weight:600;cursor:pointer;padding:4px 8px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:1100px){.s5,.s7,.s8,.s4{grid-column:span 12}.s4.third{grid-column:span 6}}
+@media (max-width:860px){.shell{grid-template-columns:1fr}
+  nav.side{position:static;flex-direction:row;overflow-x:auto;align-items:center;padding-bottom:4px}.brand{padding:6px 10px 6px 0}.ws{display:none}nav.side a{white-space:nowrap}
+  .s4.third{grid-column:span 12}.search{min-width:0;flex:1}.crumbs{display:none}}
+@media (max-width:480px){.kpis{grid-template-columns:1fr}.card{padding:18px;border-radius:20px}}
+</style>
+
+<div class="shell" id="app" data-state="ready">
+<nav class="side" aria-label="Primary">
+  <div class="brand"><span class="logo" aria-hidden="true">C</span>Cadence</div>
+  <a href="#" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>Overview</a>
+  <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 3-6 6.5-6s6.5 2.400 6.500 6M17 4.500a3.500 3.500 0 010 7M21.500 20c0-2.800-1.700-4.800-4-5.500"/></svg>Accounts</a>
+  <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Renewals</a>
+  <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Health</a>
+  <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg>Tasks</a>
+  <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Reports</a>
+  <div class="ws"><b>North America team</b>Priya Raman · CSM</div>
+</nav>
+
+<main>
+  <div class="top">
+    <div class="crumbs">Customer Success / Overview</div>
+    <label class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span class="sr">Search accounts, contacts, tasks</span><input id="q" type="search" placeholder="Search accounts, contacts, tasks"><kbd>⌘K</kbd></label>
+    <button class="ibtn" aria-label="Notifications, 3 unread"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9a6 6 0 1112 0c0 6 2.500 7 2.500 7h-17S6 15 6 9zM10 20a2 2 0 004 0"/></svg><span class="dot"></span></button>
+    <div class="avatar" role="img" aria-label="Priya Raman, account menu">PR</div>
+  </div>
+
+  <div class="head">
+    <div>
+      <h1 id="h1">Your book is mostly healthy.<br>6 renewals need you.</h1>
+      <div class="fresh">Updated Oct 28, 08:10 PT · Renewal window: next 90 days · Example data</div>
+    </div>
+    <div class="chips" role="group" aria-label="Scope">
+      <button class="chip" aria-pressed="true" data-scope="mine">My accounts <small>81</small></button>
+      <button class="chip" aria-pressed="false" data-scope="team">Team <small>342</small></button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <section class="card anchor s5" aria-labelledby="h-risk">
+      <div class="real">
+        <h2 id="h-risk">ARR at risk, renewing in 90 days</h2>
+        <div class="hero num" id="riskArr"></div>
+        <p id="riskTxt"></p>
+      </div>
+      <div class="sk"><div class="skl" style="width:40%"></div><div class="skl" style="height:64px;width:70%"></div><div class="skl" style="width:80%"></div></div>
+      <div class="msg e"><b>Couldn't load ARR at risk</b>The health service didn't respond.<br><button class="btn" data-retry>Retry</button></div>
+      <button class="btn real" data-filter="risk">Review at-risk accounts</button>
+    </section>
+
+    <div class="s7 kpis">
+      <section class="card kpi"><div class="real"><div class="l">Net revenue retention</div><div class="v num">108<small>%</small></div><span class="delta good">▲ 2 pts vs Q3</span><svg class="spark" viewBox="0 0 120 30" preserveAspectRatio="none" aria-hidden="true"><path d="M0 24 L20 22 L40 23 L60 17 L80 14 L100 10 L120 5" fill="none" stroke="var(--good)" stroke-width="2" stroke-linecap="round"/></svg></div><div class="sk"><div class="skl"></div><div class="skl" style="height:40px"></div></div><div class="msg e"><b>Unavailable</b><button class="link" data-retry>Retry</button></div></section>
+      <section class="card kpi"><div class="real"><div class="l">Gross retention</div><div class="v num">93.4<small>%</small></div><span class="delta bad">▼ 1.1 pts vs Q3</span><svg class="spark" viewBox="0 0 120 30" preserveAspectRatio="none" aria-hidden="true"><path d="M0 6 L20 8 L40 7 L60 12 L80 15 L100 19 L120 22" fill="none" stroke="var(--bad)" stroke-width="2" stroke-linecap="round"/></svg></div><div class="sk"><div class="skl"></div><div class="skl" style="height:40px"></div></div><div class="msg e"><b>Unavailable</b><button class="link" data-retry>Retry</button></div></section>
+      <section class="card kpi"><div class="real"><div class="l">Average health score</div><div class="v num">72<small>/100</small></div><span class="delta bad">▼ 6 over 12 weeks</span><svg class="spark" viewBox="0 0 120 30" preserveAspectRatio="none" aria-hidden="true"><path d="M0 5 L20 6 L40 8 L60 12 L80 16 L100 20 L120 24" fill="none" stroke="var(--bad)" stroke-width="2" stroke-linecap="round"/></svg></div><div class="sk"><div class="skl"></div><div class="skl" style="height:40px"></div></div><div class="msg e"><b>Unavailable</b><button class="link" data-retry>Retry</button></div></section>
+      <section class="card kpi"><div class="real"><div class="l">Open escalations</div><div class="v num">9</div><span class="delta bad">▲ 3 vs last week</span><svg class="spark" viewBox="0 0 120 30" preserveAspectRatio="none" aria-hidden="true"><path d="M0 24 L20 22 L40 24 L60 18 L80 16 L100 10 L120 6" fill="none" stroke="var(--bad)" stroke-width="2" stroke-linecap="round"/></svg></div><div class="sk"><div class="skl"></div><div class="skl" style="height:40px"></div></div><div class="msg e"><b>Unavailable</b><button class="link" data-retry>Retry</button></div></section>
+    </div>
+
+    <section class="card s8" aria-labelledby="h-tbl">
+      <h2 id="h-tbl">Accounts needing attention <a href="#">Open all accounts</a></h2>
+      <div class="chips" id="filters" role="group" aria-label="Filter accounts" style="margin-bottom:12px"></div>
+      <div class="real">
+        <div class="tablewrap"><table id="tbl"><caption class="sr">Accounts needing attention, sortable</caption>
+          <thead><tr>
+            <th scope="col"><button data-sort="name">Account</button></th>
+            <th scope="col"><button data-sort="health">Health</button></th>
+            <th scope="col" class="r"><button data-sort="arr">ARR</button></th>
+            <th scope="col"><button data-sort="renewal">Renews</button></th>
+            <th scope="col">Why it needs you</th>
+          </tr></thead><tbody id="rows"></tbody></table></div>
+        <div class="msg" id="emptyMsg"><b>No accounts match this filter</b>Try another filter or clear it.<br><button class="btn" data-filter="all">Show all</button></div>
+        <div class="tfoot"><span id="count"></span><span>Click a row to open the account</span></div>
+      </div>
+      <div class="sk"><div class="skl"></div><div class="skl"></div><div class="skl"></div><div class="skl"></div><div class="skl"></div></div>
+      <div class="msg e"><b>Couldn't load accounts</b>The request timed out. Your filters are kept.<br><button class="btn" data-retry>Retry</button></div>
+    </section>
+
+    <section class="card hl s4" aria-labelledby="h-task">
+      <h2 id="h-task">Due today <a href="#" style="color:var(--on-hl);text-decoration:underline">All tasks</a></h2>
+      <div class="real">
+        <div class="big num" id="taskCount"></div><div style="margin-bottom:8px;font-size:13px" id="taskSub"></div>
+        <div id="tasks"></div>
+      </div>
+      <div class="sk"><div class="skl"></div><div class="skl"></div><div class="skl"></div></div>
+      <div class="msg e"><b>Couldn't load tasks</b><button class="btn" data-retry>Retry</button></div>
+    </section>
+
+    <section class="card s4 third" aria-labelledby="h-dist">
+      <h2 id="h-dist">Book by health</h2>
+      <div class="real"><div class="bar" id="distBar" role="img" aria-label="Share of ARR by health"></div><ul class="leg" id="distLeg"></ul></div>
+      <div class="sk"><div class="skl" style="height:22px"></div><div class="skl"></div><div class="skl"></div></div>
+      <div class="msg e"><b>Couldn't load</b><button class="btn" data-retry>Retry</button></div>
+    </section>
+    <section class="card s4 third" aria-labelledby="h-ren">
+      <h2 id="h-ren">Renewing ARR by month</h2>
+      <div class="real"><svg class="chart" id="renChart" viewBox="0 0 320 190" role="img" aria-label="Renewing ARR by month, split by health"></svg>
+        <ul class="leg" style="grid-auto-flow:column;justify-content:start;gap:16px;margin-top:8px"><li><i class="sw" style="background:var(--accent)"></i>Healthy</li><li><i class="sw" style="background:var(--warn)"></i>Watch</li><li><i class="sw" style="background:var(--bad)"></i>At risk</li></ul></div>
+      <div class="sk"><div class="skl" style="height:150px"></div></div>
+      <div class="msg e"><b>Couldn't load</b><button class="btn" data-retry>Retry</button></div>
+    </section>
+    <section class="card s4 third" aria-labelledby="h-tr">
+      <h2 id="h-tr">Average health, last 12 weeks</h2>
+      <div class="real"><svg class="chart" id="trChart" viewBox="0 0 320 190" role="img" aria-label="Average health score fell from 78 to 72 over 12 weeks"></svg></div>
+      <div class="sk"><div class="skl" style="height:150px"></div></div>
+      <div class="msg e"><b>Couldn't load</b><button class="btn" data-retry>Retry</button></div>
+    </section>
+  </div>
+
+  <div class="preview" role="group" aria-label="Preview page state">Preview state:
+    <button class="chip" data-st="ready" aria-pressed="true">Ready</button>
+    <button class="chip" data-st="loading" aria-pressed="false">Loading</button>
+    <button class="chip" data-st="error" aria-pressed="false">Error</button>
+    <button class="chip" id="themeBtn" aria-pressed="false">Dark mode</button>
+  </div>
+</main>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dName" tabindex="-1" hidden></aside>
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toastTxt"></span><button id="undo">Undo</button></div>
+
+<script>
+const TODAY = new Date(2026,9,28);
+// Example data. Health: at risk < 55, watch 55–69, healthy ≥ 70.
+const A = [
+ {id:1,name:"Northwind Logistics",arr:412,renewal:"2026-11-14",health:38,trend:-12,sig:"Exec sponsor left; logins down 41% in 30 days",owner:"Priya Raman",next:"Book exec re-intro with VP Ops",plan:"Enterprise"},
+ {id:2,name:"Helix Biologics",arr:286,renewal:"2026-11-21",health:44,trend:-9,sig:"3 open P1 tickets, oldest 11 days",owner:"Priya Raman",next:"Escalation review with Support lead",plan:"Enterprise"},
+ {id:3,name:"Quill Software",arr:132,renewal:"2026-11-25",health:66,trend:-4,sig:"Champion changed roles",owner:"Priya Raman",next:"Intro to new admin",plan:"Growth"},
+ {id:4,name:"Brightpath Education",arr:198,renewal:"2026-12-02",health:51,trend:-7,sig:"Using 52% of contracted seats",owner:"Marcus Cole",next:"Seat right-sizing proposal",plan:"Growth"},
+ {id:5,name:"Tallgrass Energy",arr:340,renewal:"2026-12-09",health:47,trend:-10,sig:"No business review in 2 quarters",owner:"Priya Raman",next:"Schedule QBR",plan:"Enterprise"},
+ {id:6,name:"Ostrava Retail Group",arr:154,renewal:"2026-12-15",health:56,trend:-14,sig:"Integration sync failing since Oct 19",owner:"Marcus Cole",next:"Join engineering triage",plan:"Growth"},
+ {id:7,name:"Cobalt Freight",arr:118,renewal:"2026-12-20",health:49,trend:-6,sig:"Invoice 45 days overdue",owner:"Priya Raman",next:"Loop in finance contact",plan:"Growth"},
+ {id:8,name:"Atlas Dental Group",arr:87,renewal:"2026-12-28",health:61,trend:-3,sig:"Onboarding step 4 of 7 incomplete",owner:"Marcus Cole",next:"Offer guided setup session",plan:"Starter"},
+ {id:9,name:"Meridian Health Partners",arr:520,renewal:"2027-01-08",health:63,trend:-8,sig:"Support CSAT fell to 3.1 from 4.4",owner:"Priya Raman",next:"Review last 5 tickets",plan:"Enterprise"},
+ {id:10,name:"Larkspur Insurance",arr:244,renewal:"2027-01-12",health:52,trend:-5,sig:"Competitor evaluation mentioned on call",owner:"Priya Raman",next:"Prepare value summary",plan:"Enterprise"},
+ {id:11,name:"Pinecrest Foods",arr:210,renewal:"2027-01-19",health:68,trend:-2,sig:"Feature adoption flat for 8 weeks",owner:"Marcus Cole",next:"Share adoption playbook",plan:"Growth"}
+];
+const TASKS = [
+ {id:1,t:"Call Northwind VP Ops",s:"Northwind Logistics · 10:00"},
+ {id:2,t:"Send escalation summary",s:"Helix Biologics · 11:30"},
+ {id:3,t:"Prep QBR deck",s:"Tallgrass Energy · 14:00"},
+ {id:4,t:"Confirm renewal quote",s:"Quill Software · 15:30"}
+];
+const HEALTHY = {n:70, arr:11600, ren:{"2026-11":900,"2026-12":1400,"2027-01":1200}};
+const TREND = [78,78,77,77,76,76,75,74,74,73,72,72];
+const $ = (s,r=document)=>r.querySelector(s), $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const cls = h => h<55?"risk":h<70?"watch":"ok";
+const lbl = {risk:"At risk",watch:"Watch",ok:"Healthy"};
+const money = k => k>=1000 ? "$"+(k/1000).toFixed(2).replace(/0$/,"")+"M" : "$"+k+"K";
+const days = d => Math.round((new Date(d)-TODAY)/864e5);
+const fmtDate = d => new Date(d+"T00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"});
+let filter = "all", sortKey = "renewal", sortDir = 1;
+const FILTERS = ["all","risk","watch","30d"];
+try{const h=location.hash.slice(1); if(FILTERS.includes(h)) filter=h;}catch(e){}
+
+function visible(){
+  let r = A.filter(a=> filter==="all" ? true : filter==="30d" ? days(a.renewal)<=30 : cls(a.health)===filter);
+  r.sort((a,b)=>{const x=a[sortKey],y=b[sortKey];return (x>y?1:x<y?-1:0)*sortDir});
+  return r;
+}
+function renderFilters(){
+  const c = {all:A.length,risk:A.filter(a=>cls(a.health)==="risk").length,watch:A.filter(a=>cls(a.health)==="watch").length,"30d":A.filter(a=>days(a.renewal)<=30).length};
+  const names = {all:"All",risk:"At risk",watch:"Watch","30d":"Renewing in 30 days"};
+  $("#filters").innerHTML = FILTERS.map(f=>`<button class="chip" data-filter="${f}" aria-pressed="${f===filter}">${names[f]}<small>${c[f]}</small></button>`).join("");
+}
+function renderRows(){
+  const r = visible();
+  $("#rows").innerHTML = r.map(a=>`<tr data-id="${a.id}">
+    <td><button class="acct" data-open="${a.id}">${a.name}</button><div class="due">${a.plan} · ${a.owner}</div></td>
+    <td><span class="pill ${cls(a.health)}">${lbl[cls(a.health)]} · ${a.health}</span></td>
+    <td class="r num">${money(a.arr)}</td>
+    <td>${fmtDate(a.renewal)}<div class="due">in ${days(a.renewal)} days</div></td>
+    <td class="sig">${a.sig}</td></tr>`).join("");
+  $("#tbl").hidden = !r.length; $("#emptyMsg").style.display = r.length?"none":"block";
+  $("#count").textContent = `Showing ${r.length} of ${A.length} accounts that need attention`;
+  $$("#tbl th button").forEach(b=>{const th=b.closest("th"); th.setAttribute("aria-sort", b.dataset.sort===sortKey?(sortDir>0?"ascending":"descending"):"none")});
+}
+function renderHero(){
+  const risk = A.filter(a=>cls(a.health)==="risk"), s = risk.reduce((t,a)=>t+a.arr,0);
+  $("#riskArr").innerHTML = money(s).replace(/(\$)([\d.]+)(M|K)/,"$1$2<small>$3</small>");
+  const first=[...risk].sort((x,y)=>x.renewal>y.renewal?1:-1)[0];
+  $("#riskTxt").textContent = `${risk.length} accounts scored below 55. Earliest renewal: ${first.name} on ${fmtDate(first.renewal)}.`;
+  $("#h1").innerHTML = `Your book is mostly healthy.<br>${risk.length} renewals need you.`;
+}
+function renderDist(){
+  const g = k=>A.filter(a=>cls(a.health)===k), sum = l=>l.reduce((t,a)=>t+a.arr,0);
+  const rows = [["ok","Healthy",HEALTHY.n,HEALTHY.arr,"var(--accent)"],["watch","Watch",g("watch").length,sum(g("watch")),"var(--warn)"],["risk","At risk",g("risk").length,sum(g("risk")),"var(--bad)"]];
+  const tot = rows.reduce((t,r)=>t+r[3],0);
+  $("#distBar").innerHTML = rows.map(r=>`<span style="flex:${r[3]};background:${r[4]}" title="${r[1]}: ${money(r[3])}"></span>`).join("");
+  $("#distLeg").innerHTML = rows.map(r=>`<li><i class="sw" style="background:${r[4]}"></i>${r[1]}<span class="m">${r[2]} accts</span><b>${money(r[3])}</b></li>`).join("")+`<li style="color:var(--ink3);font-size:12px">Total ARR ${money(tot)} · ${rows.reduce((t,r)=>t+r[2],0)} accounts</li>`;
+}
+function renderRen(){
+  const months=[["2026-11","Nov"],["2026-12","Dec"],["2027-01","Jan"]];
+  const data = months.map(([k,n])=>{const f=c=>A.filter(a=>a.renewal.startsWith(k)&&cls(a.health)===c).reduce((t,a)=>t+a.arr,0);return {n,ok:HEALTHY.ren[k],watch:f("watch"),risk:f("risk")}});
+  const max = 3000, W=320,H=190,L=34,B=24,T=10, ph=H-B-T, bw=56, step=(W-L)/3;
+  let s=""; [0,1000,2000,3000].forEach(v=>{const y=T+ph-ph*v/max; s+=`<line x1="${L}" x2="${W}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${L-6}" y="${y+4}" text-anchor="end">${v?"$"+v/1000+"M":"0"}</text>`});
+  data.forEach((d,i)=>{const x=L+step*i+(step-bw)/2; let y=T+ph;
+    [["ok","var(--accent)"],["watch","var(--warn)"],["risk","var(--bad)"]].forEach(([k,c],j,arr)=>{const h=ph*d[k]/max; y-=h; if(h) s+=`<rect x="${x}" y="${y}" width="${bw}" height="${Math.max(h-2,1)}" rx="${j===2?6:2}" fill="${c}"><title>${d.n} ${lbl[k]}: ${money(d[k])}</title></rect>`});
+    const tot=d.ok+d.watch+d.risk; s+=`<text x="${x+bw/2}" y="${y-5}" text-anchor="middle" style="fill:var(--ink);font-weight:600">${money(tot)}</text><text x="${x+bw/2}" y="${H-6}" text-anchor="middle">${d.n}</text>`});
+  $("#renChart").innerHTML = s;
+}
+function renderTr(){
+  const W=320,H=190,L=30,B=24,T=14,R=34, mn=60,mx=80, x=i=>L+(W-L-R)*i/11, y=v=>T+(H-T-B)*(1-(v-mn)/(mx-mn));
+  let s=""; [60,70,80].forEach(v=>s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${v}</text>`);
+  const pts=TREND.map((v,i)=>[x(i),y(v)]), line=pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
+  s+=`<path d="${line} L${x(11)} ${H-B} L${x(0)} ${H-B} Z" fill="var(--accent)" opacity=".12"/><path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2.500" stroke-linejoin="round"/>`;
+  const e=pts[11]; s+=`<circle cx="${e[0]}" cy="${e[1]}" r="5" fill="var(--accent)" stroke="var(--card)" stroke-width="2"/><text x="${e[0]+9}" y="${e[1]+4}" style="fill:var(--ink);font-weight:600">72</text>`;
+  s+=`<circle cx="${pts[0][0]}" cy="${pts[0][1]}" r="3.500" fill="var(--accent)"/><text x="${pts[0][0]}" y="${pts[0][1]-9}" text-anchor="middle" style="fill:var(--ink2)">78</text>`;
+  s+=`<text x="${L}" y="${H-6}">12 wks ago</text><text x="${W-R}" y="${H-6}" text-anchor="end">Now</text>`;
+  TREND.forEach((v,i)=>s+=`<circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="9" fill="transparent"><title>Week ${i+1}: ${v}</title></circle>`);
+  $("#trChart").innerHTML = s;
+}
+const done = new Set();
+function renderTasks(){
+  const open = TASKS.filter(t=>!done.has(t.id)).length;
+  $("#taskCount").textContent = open; $("#taskSub").textContent = open? `task${open===1?"":"s"} left today`:"All done for today";
+  $("#tasks").innerHTML = TASKS.map(t=>`<div class="task${done.has(t.id)?" done":""}"><input type="checkbox" id="t${t.id}" data-task="${t.id}" ${done.has(t.id)?"checked":""}><label for="t${t.id}">${t.t}<em>${t.s}</em></label></div>`).join("");
+}
+function setFilter(f){filter=f; try{history.replaceState(null,"","#"+f)}catch(e){location.hash=f} renderFilters(); renderRows();}
+let last=null, tmr;
+function toast(msg,undo){ $("#toastTxt").textContent=msg; $("#undo").style.display=undo?"":"none"; last=undo; $("#toast").classList.add("show"); clearTimeout(tmr); tmr=setTimeout(()=>$("#toast").classList.remove("show"),6000);}
+let opener=null;
+function openDrawer(id){
+  const a=A.find(x=>x.id==id), d=$("#drawer"); opener=document.activeElement;
+  d.innerHTML=`<button class="ibtn x" data-close aria-label="Close account details">✕</button>
+  <span class="pill ${cls(a.health)}">${lbl[cls(a.health)]} · ${a.health}</span>
+  <h3 id="dName">${a.name}</h3><div class="due">${a.plan} plan · Owner ${a.owner}</div>
+  <dl class="dl"><div><dt>ARR</dt><dd class="num">${money(a.arr)}</dd></div><div><dt>Renews</dt><dd>${fmtDate(a.renewal)} (${days(a.renewal)} days)</dd></div><div><dt>Health change, 30 days</dt><dd>${a.trend} pts</dd></div><div><dt>Last contact</dt><dd>9 days ago</dd></div></dl>
+  <h2 style="font-size:13px;color:var(--ink2);margin:0 0 6px">What changed</h2><p style="margin:0 0 20px">${a.sig}.</p>
+  <h2 style="font-size:13px;color:var(--ink2);margin:0 0 6px">Suggested next step</h2><p style="margin:0 0 20px">${a.next}.</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" style="background:var(--ink);color:var(--bg)" data-addtask="${a.id}">Add to my tasks</button><button class="btn sec">Open full account</button></div>`;
+  d.hidden=false; document.body.classList.add("open"); requestAnimationFrame(()=>$("[data-close]",d).focus());
+}
+function closeDrawer(){document.body.classList.remove("open"); setTimeout(()=>{$("#drawer").hidden=true},200); opener&&opener.focus&&opener.focus();}
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button,tr,[data-filter]"); if(!t) return;
+  if(t.dataset.filter) return setFilter(t.dataset.filter);
+  if(t.dataset.sort){ if(sortKey===t.dataset.sort) sortDir*=-1; else {sortKey=t.dataset.sort; sortDir=1} return renderRows(); }
+  if(t.dataset.scope){ $$("[data-scope]").forEach(b=>b.setAttribute("aria-pressed",b===t)); return toast(t.dataset.scope==="team"?"Showing team view (example data unchanged)":"Showing your accounts"); }
+  if(t.dataset.st){ $$("[data-st]").forEach(b=>b.setAttribute("aria-pressed",b===t)); return $("#app").dataset.state=t.dataset.st; }
+  if(t.dataset.retry!==undefined){ $("#app").dataset.state="loading"; $$("[data-st]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.st==="loading")); return setTimeout(()=>{$("#app").dataset.state="ready";$$("[data-st]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.st==="ready"))},900); }
+  if(t.dataset.close!==undefined||t.id==="scrim") return closeDrawer();
+  if(t.dataset.addtask){ const a=A.find(x=>x.id==t.dataset.addtask), n={id:Date.now(),t:a.next,s:a.name+" · added just now"}; TASKS.push(n); renderTasks(); return toast("Task added for "+a.name,()=>{TASKS.pop();renderTasks()}); }
+  if(t.id==="themeBtn"){ const d=document.documentElement; const dark=d.dataset.theme==="dark"||(!d.dataset.theme&&matchMedia("(prefers-color-scheme:dark)").matches); d.dataset.theme=dark?"light":"dark"; t.textContent=dark?"Dark mode":"Light mode"; t.setAttribute("aria-pressed",!dark); return; }
+  if(t.id==="undo"){ last&&last(); $("#toast").classList.remove("show"); return; }
+  const row=e.target.closest("tbody tr"); if(row) openDrawer(row.dataset.id);
+});
+$("#scrim").addEventListener("click",closeDrawer);
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&document.body.classList.contains("open")) closeDrawer();
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();$("#q").focus();}
+});
+document.addEventListener("change",e=>{
+  const c=e.target.closest("[data-task]"); if(!c) return; const id=+c.dataset.task;
+  c.checked?done.add(id):done.delete(id); renderTasks(); if(c.checked) toast("Task completed",()=>{done.delete(id);renderTasks()});
+});
+window.addEventListener("hashchange",()=>{const h=location.hash.slice(1); if(FILTERS.includes(h)&&h!==filter){filter=h;renderFilters();renderRows()}});
+renderHero(); renderFilters(); renderRows(); renderDist(); renderRen(); renderTr(); renderTasks();
+</script>

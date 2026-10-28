@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Members · Northwind Logistics</title>
+<style>
+:root{
+  --bg:#f6f7f9; --surface:#fff; --surface-2:#f1f3f6; --border:#dfe3e9; --border-strong:#c5ccd6;
+  --text:#14181f; --text-2:#4a5565; --text-3:#6b7686;
+  --accent:#2f5bd8; --accent-hover:#2549b3; --accent-soft:#e8eefc; --on-accent:#fff;
+  --danger:#b42318; --danger-hover:#912018; --danger-soft:#fdeceb;
+  --ok:#17692f; --ok-soft:#e5f5ea; --warn:#8a5300; --warn-soft:#fff3d9;
+  --focus:#2f5bd8; --row-h:48px; --shadow:0 8px 24px rgba(16,24,40,.16);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1217; --surface:#171b22; --surface-2:#1f242d; --border:#2b323d; --border-strong:#3c4553;
+    --text:#e8ebf0; --text-2:#aab3c0; --text-3:#8d97a6;
+    --accent:#7b9cf5; --accent-hover:#97b1f8; --accent-soft:#1d2744; --on-accent:#0c1020;
+    --danger:#ff8a80; --danger-hover:#ffa8a0; --danger-soft:#3a1c1a;
+    --ok:#7ddc9b; --ok-soft:#173222; --warn:#f2c36b; --warn-soft:#3a2d12;
+    --focus:#97b1f8; --shadow:0 8px 24px rgba(0,0,0,.5); color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.num{font-variant-numeric:tabular-nums}
+
+/* shell */
+.app{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+.side{background:var(--surface);border-right:1px solid var(--border);padding:16px 12px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{display:flex;gap:10px;align-items:center;padding:4px 8px 16px;font-weight:600}
+.brand i{width:28px;height:28px;border-radius:7px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-style:normal;font-size:13px}
+.side small{display:block;color:var(--text-3);font-weight:400;font-size:12px}
+.side h2{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin:18px 8px 6px;font-weight:600}
+.side a{display:block;padding:7px 10px;border-radius:6px;color:var(--text-2);text-decoration:none}
+.side a:hover{background:var(--surface-2)}
+.side a[aria-current]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+main{padding:24px 32px 96px;min-width:0;max-width:1320px}
+.crumbs{color:var(--text-3);font-size:12px;margin-bottom:6px}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+h1{font-size:22px;line-height:1.25;margin:0}
+.sub{color:var(--text-2);margin:4px 0 0;max-width:62ch}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:6px;border:1px solid var(--border-strong);background:var(--surface);cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:#fff;font-weight:600}
+[data-theme="dark"] .btn.danger,:root:not([data-theme="light"]) .btn.danger{color:#1a0a09}
+.btn.danger:hover{background:var(--danger-hover)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--text-2)}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn.link{border:0;background:none;color:var(--accent);height:auto;padding:0;text-decoration:underline;cursor:pointer}
+.btn[aria-disabled="true"],.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn.icon{width:32px;padding:0;justify-content:center}
+
+/* SSO banner */
+.sso{display:flex;gap:12px;align-items:flex-start;margin:16px 0;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px}
+.sso svg{flex:none;margin-top:2px;color:var(--accent)}
+.sso p{margin:0;color:var(--text-2)}
+.sso strong{color:var(--text)}
+.sso .meta{margin-left:auto;display:flex;gap:16px;color:var(--text-2);font-size:13px;flex-wrap:wrap;align-items:center}
+
+/* tabs */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-top:8px}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;margin-bottom:-1px;color:var(--text-2);cursor:pointer;font-weight:500}
+.tab[aria-selected="true"]{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
+.tab .count{margin-left:6px;background:var(--surface-2);border-radius:10px;padding:1px 7px;font-size:12px;color:var(--text-2)}
+
+/* toolbar */
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 0;min-height:56px}
+.field{height:32px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);padding:0 10px}
+.search{position:relative;flex:0 1 300px;min-width:200px}
+.search input{width:100%;padding-left:30px}
+.search svg{position:absolute;left:9px;top:8px;color:var(--text-3);pointer-events:none}
+.search kbd{position:absolute;right:8px;top:6px;font:11px/18px ui-monospace,monospace;border:1px solid var(--border);border-radius:4px;padding:0 5px;color:var(--text-3)}
+.spacer{flex:1}
+.bulkbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%;background:var(--accent-soft);border:1px solid var(--accent);border-radius:8px;padding:8px 12px}
+.bulkbar b{margin-right:8px}
+.progress{height:2px;background:transparent;overflow:hidden;margin-bottom:-2px}
+.progress.on{background:linear-gradient(90deg,transparent,var(--accent),transparent);background-size:40% 100%;background-repeat:no-repeat;animation:slide 1s linear infinite}
+@keyframes slide{from{background-position:-40% 0}to{background-position:140% 0}}
+
+/* table */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.selnote{background:var(--accent-soft);padding:8px 14px;text-align:center;border-bottom:1px solid var(--border);font-size:13px}
+.wrap{overflow:auto;max-height:calc(100vh - 360px);min-height:300px}
+.wrap.dim{opacity:.55;transition:opacity .1s}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:980px}
+th,td{padding:0 12px;height:var(--row-h);border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+.compact{--row-h:36px}
+thead th{position:sticky;top:0;z-index:2;background:var(--surface-2);font-size:12px;font-weight:600;color:var(--text-2);height:38px}
+th button{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center;padding:4px 0}
+th button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+th .arrow{color:var(--accent);font-size:11px}
+td.sticky,th.sticky{position:sticky;left:0;z-index:1;background:var(--surface)}
+thead th.sticky{background:var(--surface-2);z-index:3}
+tbody tr:hover td{background:var(--surface-2)}
+tbody tr[aria-selected="true"] td{background:var(--accent-soft)}
+td.chk,th.chk{width:44px;padding-right:0}
+td.act,th.act{width:56px;text-align:right}
+.person{display:flex;align-items:center;gap:10px;min-width:0;max-width:340px}
+.av{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;background:hsl(var(--h) 45% 86%);color:hsl(var(--h) 55% 24%)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .av{background:hsl(var(--h) 25% 26%);color:hsl(var(--h) 60% 85%)}}
+.compact .av{width:22px;height:22px;font-size:10px}
+.pname{overflow:hidden;text-overflow:ellipsis;font-weight:600;line-height:1.2}
+.pmail{overflow:hidden;text-overflow:ellipsis;color:var(--text-3);font-size:12px;line-height:1.2}
+.compact .pmail{display:none}
+.ptext{min-width:0;display:flex;flex-direction:column}
+.tag{display:inline-block;font-size:11px;border:1px solid var(--border-strong);border-radius:4px;padding:0 5px;margin-left:6px;color:var(--text-2);font-weight:500;vertical-align:1px}
+.rolesel{height:28px;border:1px solid transparent;background:transparent;border-radius:6px;padding:0 4px;cursor:pointer;font-weight:500}
+.rolesel:hover{border-color:var(--border-strong);background:var(--surface)}
+.roletext{font-weight:500}
+.lock{color:var(--text-3);margin-left:4px;vertical-align:-2px}
+.src{display:flex;flex-direction:column;line-height:1.2}
+.src small{color:var(--text-3);font-family:ui-monospace,Menlo,monospace;font-size:11px}
+.muted{color:var(--text-3)}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border-radius:10px;padding:1px 8px}
+.status.ok{background:var(--ok-soft);color:var(--ok)}
+.status.warn{background:var(--warn-soft);color:var(--warn)}
+.status.bad{background:var(--danger-soft);color:var(--danger)}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 14px;color:var(--text-2);font-size:13px}
+.pager{display:flex;gap:4px;align-items:center}
+
+/* states */
+.state{padding:56px 24px;text-align:center;max-width:520px;margin:0 auto}
+.state h3{margin:12px 0 4px;font-size:16px}
+.state p{margin:0 0 16px;color:var(--text-2)}
+.state .ic{width:40px;height:40px;border-radius:10px;background:var(--surface-2);display:inline-grid;place-items:center;color:var(--text-2)}
+.state.err .ic{background:var(--danger-soft);color:var(--danger)}
+.state code{background:var(--surface-2);padding:1px 6px;border-radius:4px;font-size:12px}
+.sk{display:block;height:10px;border-radius:5px;background:linear-gradient(90deg,var(--surface-2),var(--border),var(--surface-2));background-size:200% 100%;animation:sh 1.3s linear infinite}
+@keyframes sh{from{background-position:200% 0}to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.sk,.progress.on{animation:none}}
+
+/* menu */
+#menu{position:fixed;z-index:50;min-width:260px;max-width:320px;background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;box-shadow:var(--shadow);padding:4px;display:none}
+#menu.open{display:block}
+#menu button{all:unset;box-sizing:border-box;display:block;width:100%;padding:7px 10px;border-radius:5px;cursor:pointer}
+#menu button:hover,#menu button:focus-visible{background:var(--surface-2);outline:none}
+#menu button small{display:block;color:var(--text-3);font-size:12px;white-space:normal}
+#menu button[aria-disabled="true"]{cursor:not-allowed;opacity:.8}
+#menu button[aria-disabled="true"] span{color:var(--text-3)}
+#menu button.danger span{color:var(--danger)}
+#menu hr{border:0;border-top:1px solid var(--border);margin:4px 0}
+
+/* dialog */
+dialog{border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);color:var(--text);padding:0;width:min(520px,calc(100vw - 32px));box-shadow:var(--shadow)}
+dialog::backdrop{background:rgba(10,14,20,.5)}
+.dh{padding:20px 20px 0}
+.dh h2{margin:0;font-size:17px;line-height:1.3}
+.db{padding:12px 20px 4px;color:var(--text-2)}
+.db ul{margin:8px 0;padding-left:18px}
+.db li{margin:3px 0}
+.df{display:flex;justify-content:flex-end;gap:8px;padding:16px 20px 20px}
+label.l{display:block;font-weight:600;margin:12px 0 4px;color:var(--text)}
+.hint{color:var(--text-3);font-size:12px;margin-top:4px}
+textarea.field{width:100%;height:96px;padding:8px 10px;resize:vertical;line-height:1.4}
+select.field{width:100%}
+.field.invalid{border-color:var(--danger)}
+.errlist{margin:8px 0 0;padding:8px 10px;border-radius:6px;background:var(--danger-soft);color:var(--danger);font-size:13px}
+.errlist ul{margin:4px 0 0;padding-left:18px}
+.note{margin-top:12px;padding:8px 10px;border-radius:6px;background:var(--warn-soft);color:var(--warn);font-size:13px}
+.note.info{background:var(--surface-2);color:var(--text-2)}
+
+/* toasts */
+#toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:64px;z-index:80;display:flex;flex-direction:column;gap:8px;align-items:center;width:min(560px,calc(100vw - 32px))}
+.toast{display:flex;gap:12px;align-items:center;background:#1c2330;color:#f1f4f9;border-radius:8px;padding:10px 12px 10px 14px;box-shadow:var(--shadow);width:100%}
+.toast.error{background:#7a1b13}
+.toast span{flex:1}
+.toast button{all:unset;cursor:pointer;font-weight:600;color:#a9c0ff;padding:2px 6px;border-radius:4px}
+.toast.error button{color:#ffd7d3}
+.toast button:focus-visible{outline:2px solid #fff}
+
+/* prototype bar */
+.proto{position:fixed;bottom:0;left:232px;right:0;z-index:40;background:#1c2330;color:#d5dbe6;font-size:12px;display:flex;gap:16px;align-items:center;padding:8px 20px;flex-wrap:wrap}
+.proto b{color:#fff}
+.proto select{background:#2a3242;color:#fff;border:1px solid #3d475a;border-radius:4px;height:24px}
+
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}.side{display:none}.proto{left:0}main{padding:16px 16px 120px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="side" aria-label="Admin console">
+    <div class="brand"><i aria-hidden="true">N</i><div>Northwind Logistics<small>Admin console</small></div></div>
+    <h2>Workspace</h2>
+    <a href="#">Overview</a>
+    <a href="#" aria-current="page">Members</a>
+    <a href="#">Groups &amp; teams</a>
+    <a href="#">Projects</a>
+    <h2>Security</h2>
+    <a href="#">Single sign-on</a>
+    <a href="#">Audit log</a>
+    <h2>Billing</h2>
+    <a href="#">Plan &amp; seats</a>
+  </nav>
+
+  <main id="main">
+    <div class="crumbs">Workspace settings / Members</div>
+    <div class="head">
+      <div>
+        <h1>Members</h1>
+        <p class="sub">Invite people, set what they can do, and remove access. Sign-in is handled by your identity provider.</p>
+      </div>
+      <button class="btn primary" id="inviteBtn" type="button">+ Invite members</button>
+    </div>
+
+    <div class="sso" id="sso">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+      <p><strong>Single sign-on is required (Okta).</strong> Members can only join with a verified company email, and must also be assigned to the Northwind app in Okta. Roles for members in an Okta group are set by that group.</p>
+      <div class="meta"><span class="num" id="seats"></span><a href="#" class="btn link">Open Okta</a></div>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Member lists">
+      <button class="tab" role="tab" id="tab-members" data-tab="members">Members<span class="count num" id="cMembers">–</span></button>
+      <button class="tab" role="tab" id="tab-invites" data-tab="invites">Pending invites<span class="count num" id="cInvites">–</span></button>
+    </div>
+
+    <div class="progress" id="progress"></div>
+    <div class="toolbar" id="toolbar"></div>
+    <div class="card" id="card" role="tabpanel"></div>
+  </main>
+</div>
+
+<div class="proto" role="region" aria-label="Prototype controls">
+  <b>Prototype</b>
+  <label>Viewing as <select id="pRole"><option value="admin">Admin (Priya Sharma)</option><option value="editor">Editor (no member permissions)</option></select></label>
+  <label>Data <select id="pData"><option value="normal">63+ members</option><option value="loading">Loading</option><option value="error">Load error</option><option value="solo">Only me (first use)</option></select></label>
+  <label>Density <select id="pDens"><option value="">Comfortable</option><option value="compact">Compact</option></select></label>
+  <span style="margin-left:auto">Shortcuts: <b>/</b> search · <b>i</b> invite · <b>Esc</b> close</span>
+</div>
+
+<div id="menu" role="menu" aria-label="Member actions"></div>
+<div id="toasts" role="status" aria-live="polite"></div>
+
+<dialog id="dlg" aria-labelledby="dlgT"></dialog>
+<dialog id="inv" aria-labelledby="invT"></dialog>
+
+<script>
+(() => {
+'use strict';
+const NOW = new Date('2026-10-28T09:30:00Z').getTime();
+const ROLES = {owner:'Owner', admin:'Admin', editor:'Editor', viewer:'Viewer'};
+const ROLE_DESC = {
+  admin:'Manage members, SSO, billing and every project.',
+  editor:'Create and edit projects. Can’t manage members or settings.',
+  viewer:'Read-only access to projects. Can comment.'
+};
+const ALLOWED = ['northwind.com','northwind-logistics.co.uk','contractors.northwind.com'];
+const SEAT_LIMIT = 100, ME = 'u0', ADMIN_NAMES = 'Priya Sharma or Daniel Okafor';
+const $ = (s, r=document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- seed data ---------- */
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R = rng(42);
+const pick = a => a[Math.floor(R()*a.length)];
+const FIRST = ['Mateo','Aiko','Fatima','Lars','Chidi','Sofia','Wei','Hannah','Omar','Ingrid','Ravi','Camille','Tomasz','Yuki','Amara','Diego','Noor','Elena','Jonas','Leila'];
+const LAST = ['Alvarez','Tanaka','Al-Rashid','Eriksson','Nwosu','Rossi','Zhang','Becker','Haddad','Lindqvist','Patel','Moreau','Kowalski','Sato','Diallo','Fernández','Khan','Petrova','Novak','Okonkwo'];
+const ascii = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z]/g,'');
+const mins = m => NOW - m*60000;
+let members = [];
+function mk(id,name,email,role,managed,active,added,projects){
+  return {id,name,email,role,group:managed?`ws-${role}s`:null,lastActive:active,added,projects};
+}
+members.push(mk('u0','Priya Sharma','priya.sharma@northwind.com','admin',false,mins(1),mins(60*24*610),9));
+members.push(mk('u1','Daniel Okafor','daniel.okafor@northwind.com','owner',false,mins(95),mins(60*24*820),21));
+members.push(mk('u2','Maximilian Alexander von Hohenzollern-Schwarzenberg-Bartholomäus','maximilian.vonhohenzollern-schwarzenberg@northwind.com','editor',true,mins(60*30),mins(60*24*200),3));
+members.push(mk('u3','田中 美咲','misaki.tanaka@northwind.com','editor',false,mins(14),mins(60*24*90),7));
+members.push(mk('u4','Мария Иванова','maria.ivanova@northwind.com','viewer',true,mins(60*24*3),mins(60*24*40),0));
+members.push(mk('u5','Sam Oyelaran','sam.oyelaran@contractors.northwind.com','viewer',false,null,mins(60*24*2),0));
+members.push(mk('u6','Jonas Weiß','jonas.weiss@northwind.com','admin',true,mins(60*5),mins(60*24*300),4));
+for(let i=0;i<58;i++){
+  const f=FIRST[i%20], l=LAST[(i*7+3)%20];
+  const role = R()<.1?'admin':R()<.5?'editor':'viewer';
+  const managed = R()<.38 && role!=='admin' || (role==='admin' && R()<.25);
+  const never = R()<.07;
+  const lastA = never?null: R()<.15? mins(Math.floor(R()*180)) : mins(Math.floor(R()*60*24*(R()<.2?120:14)));
+  let email=`${ascii(f)}.${ascii(l)}@northwind.com`;
+  if(members.some(m=>m.email===email)) email=`${ascii(f)}.${ascii(l)}${i}@northwind.com`;
+  members.push(mk('u'+(10+i),`${f} ${l}`,email,role,managed,lastA,mins(60*24*Math.floor(30+R()*700)),Math.floor(R()*14)));
+}
+let invites = [
+  {id:'i1',email:'tomasz.kowalski@northwind.com',role:'editor',by:'Priya Sharma',sent:mins(60*26),expires:NOW+60*60000*24*6},
+  {id:'i2',email:'a.verylongaddress.for.testing.truncation.in.cells@contractors.northwind.com',role:'viewer',by:'Daniel Okafor',sent:mins(60*24*3),expires:NOW+60*60000*24*4},
+  {id:'i3',email:'hiroshi.mori@northwind.com',role:'viewer',by:'Jonas Weiß',sent:mins(60*24*5),expires:NOW+60*60000*24*2},
+  {id:'i4',email:'rachel.green@northwind-logistics.co.uk',role:'editor',by:'Priya Sharma',sent:mins(60*24*9),expires:NOW+60*60000*24*0.4},
+  {id:'i5',email:'ben.achterberg@northwind.com',role:'admin',by:'Daniel Okafor',sent:mins(60*24*16),expires:NOW-60*60000*24*2},
+  {id:'i6',email:'nadia.farouk@northwind.com',role:'viewer',by:'Priya Sharma',sent:mins(60*24*21),expires:NOW-60*60000*24*7},
+];
+
+/* ---------- URL state ---------- */
+const DEF = {tab:'members',q:'',role:'',src:'',sort:'name',dir:'asc',page:'1',size:'25'};
+let S = {...DEF};
+const parse = () => { const p=new URLSearchParams(location.hash.slice(1)); S={...DEF}; for(const k in DEF) if(p.has(k)) S[k]=p.get(k); };
+function nav(patch, mode='push'){
+  Object.assign(S, patch);
+  const p = new URLSearchParams(); for(const k in DEF) if(S[k]!==DEF[k]) p.set(k,S[k]);
+  const h = p.toString()?'#'+p:location.pathname+location.search;
+  history[mode==='push'?'pushState':'replaceState'](null,'',h);
+  flash(); render();
+}
+let flashT;
+function flash(){ $('#progress').classList.add('on'); $('#card').querySelector('.wrap')?.classList.add('dim'); clearTimeout(flashT); flashT=setTimeout(()=>{$('#progress').classList.remove('on'); $('#card').querySelector('.wrap')?.classList.remove('dim')},220); }
+
+/* ---------- runtime ---------- */
+let viewer='admin', dataMode='normal', sel=new Set(), allMatching=false;
+const isAdmin = () => viewer==='admin';
+const rel = t => {
+  if(t==null) return '—';
+  const m=Math.round((NOW-t)/60000);
+  if(m<1) return 'Just now'; if(m<60) return m+' min ago';
+  if(m<1440) return Math.floor(m/60)+' h ago'; if(m<43200) return Math.floor(m/1440)+' d ago';
+  return new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
+};
+const abs = t => t==null?'':new Date(t).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'UTC'})+' UTC';
+const dateOnly = t => new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
+const initials = n => { const p=n.trim().split(/\s+/); return /[^\u0000-ɏ]/.test(n[0])? [...n][0] : ((p[0][0]||'')+(p.length>1?p[p.length-1][0]:'')).toUpperCase(); };
+const hue = s => { let h=0; for(const c of s) h=(h*31+c.codePointAt(0))%360; return h; };
+const lockReason = m => m.id===ME ? 'This is you. Ask another admin to change your role.' :
+  m.role==='owner' ? 'The Owner role can only be moved with “Transfer ownership” in Plan & seats.' :
+  m.group ? `Role is set by the Okta group ${m.group}. Change their group in Okta, or ask ${ADMIN_NAMES}.` : '';
+const roleLocked = m => !!lockReason(m);
+const removeBlock = m => m.id===ME ? 'You can’t remove yourself. Ask another admin.' :
+  m.role==='owner' ? 'The Owner can’t be removed. Transfer ownership first.' :
+  m.group ? `Provisioned by Okta group ${m.group}. Unassign them from the Northwind app in Okta; removing here would be undone at the next sync.` : '';
+
+function filtered(){
+  const q=S.q.trim().toLowerCase();
+  let list=members.filter(m=>
+    (!q || m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)) &&
+    (!S.role || m.role===S.role) &&
+    (!S.src || (S.src==='okta'?!!m.group:!m.group)));
+  const d=S.dir==='asc'?1:-1, ord={owner:0,admin:1,editor:2,viewer:3};
+  const key={name:m=>m.name.toLowerCase(),role:m=>ord[m.role],active:m=>m.lastActive??-1,added:m=>m.added}[S.sort]||(m=>m.name.toLowerCase());
+  return list.sort((a,b)=>{const x=key(a),y=key(b); return (x<y?-1:x>y?1:0)*d || a.name.localeCompare(b.name)});
+}
+const hasFilters = () => S.q||S.role||S.src;
+const adminCount = () => members.filter(m=>m.role==='admin'||m.role==='owner').length;
+
+/* ---------- render ---------- */
+const svg = {
+  search:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>',
+  lock:'<svg class="lock" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>',
+  dots:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
+  users:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-4 3-6 6.5-6s6 2 6.5 6M16 4.5a3.5 3.5 0 010 7M18 14c2 .6 3.3 2.4 3.5 6"/></svg>',
+  warn:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.01"/></svg>',
+  find:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4M8.5 11h5"/></svg>'
+};
+
+function render(){
+  document.body.classList.toggle('compact', $('#pDens').value==='compact');
+  document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected', String(t.dataset.tab===S.tab)));
+  $('#cMembers').textContent = dataMode==='solo'?1:dataMode==='normal'?members.length:'–';
+  $('#cInvites').textContent = dataMode==='normal'?invites.length:dataMode==='solo'?0:'–';
+  const used = dataMode==='solo'?1:members.length + invites.filter(i=>i.expires>NOW).length;
+  $('#seats').innerHTML = dataMode==='loading'||dataMode==='error' ? 'Seats: —' : `<b>${used}</b> of ${SEAT_LIMIT} seats used`;
+  const ib=$('#inviteBtn');
+  ib.setAttribute('aria-disabled', String(!isAdmin()));
+  ib.title = isAdmin()?'':`Only admins can invite members. Ask ${ADMIN_NAMES}.`;
+  if(!isAdmin()){ sel.clear(); }
+  S.tab==='invites' ? renderInvites() : renderMembers();
+}
+
+function renderToolbar(extra=''){
+  const nsel = sel.size;
+  if(S.tab==='members' && nsel && isAdmin()){
+    const n = allMatching ? filtered().length : nsel;
+    $('#toolbar').innerHTML = `<div class="bulkbar" role="toolbar" aria-label="Bulk actions">
+      <b class="num">${n} selected${allMatching?' (all matching)':''}</b>
+      <button class="btn" data-bulk="role" type="button">Change role…</button>
+      <button class="btn" data-bulk="remove" type="button">Remove…</button>
+      <span class="spacer"></span><button class="btn ghost" data-bulk="clear" type="button">Clear selection</button></div>`;
+    return;
+  }
+  const disabled = dataMode!=='normal';
+  $('#toolbar').innerHTML = `
+    <div class="search"><span class="sr"><label for="q">Search members</label></span>${svg.search}
+      <input id="q" class="field" type="search" placeholder="Search name or email" value="${esc(S.q)}" ${disabled?'disabled':''} autocomplete="off"><kbd>/</kbd></div>
+    <label class="sr" for="fRole">Role</label>
+    <select id="fRole" class="field" ${disabled?'disabled':''}><option value="">All roles</option>${['owner','admin','editor','viewer'].map(r=>`<option value="${r}" ${S.role===r?'selected':''}>${ROLES[r]}</option>`).join('')}</select>
+    <label class="sr" for="fSrc">Role managed by</label>
+    <select id="fSrc" class="field" ${disabled?'disabled':''}><option value="">Any source</option><option value="okta" ${S.src==='okta'?'selected':''}>Managed by Okta group</option><option value="manual" ${S.src==='manual'?'selected':''}>Set manually here</option></select>
+    ${hasFilters()?'<button class="btn link" id="clearF" type="button">Clear filters</button>':''}
+    <span class="spacer"></span>${extra}`;
+}
+
+function stateBox(kind){
+  if(kind==='loading'){
+    const rows = Array.from({length:8},()=>`<tr aria-hidden="true"><td class="chk"><span class="sk" style="width:14px"></span></td><td class="sticky"><span class="sk" style="width:200px"></span></td><td><span class="sk" style="width:70px"></span></td><td><span class="sk" style="width:110px"></span></td><td><span class="sk" style="width:80px"></span></td><td><span class="sk" style="width:80px"></span></td><td></td></tr>`).join('');
+    return `<div class="wrap" aria-busy="true"><table><tbody>${rows}</tbody></table></div><div class="foot"><span>Loading members…</span></div>`;
+  }
+  if(kind==='error') return `<div class="state err" role="alert"><div class="ic">${svg.warn}</div><h3>Couldn’t load members</h3>
+    <p>The directory service didn’t respond in time. Nothing has been changed. Try again, and if it keeps failing, send support this reference.</p>
+    <button class="btn primary" id="retry" type="button">Try again</button> <p style="margin-top:12px"><code>ref req_7f3a9c21b · 28 Oct 2026, 09:30 UTC</code></p></div>`;
+  if(kind==='solo') return `<div class="state"><div class="ic">${svg.users}</div><h3>You’re the only member</h3>
+    <p>Invite teammates by email. They’ll sign in through Okta, so they need to be assigned to the Northwind app there too.</p>
+    ${isAdmin()?'<button class="btn primary" data-open-invite type="button">+ Invite members</button>':`<p>Only admins can invite. Ask ${ADMIN_NAMES}.</p>`}</div>`;
+}
+
+function renderMembers(){
+  const card=$('#card');
+  if(dataMode!=='normal'){
+    renderToolbar(); card.innerHTML = dataMode==='solo' ? stateBox('solo') : stateBox(dataMode); return;
+  }
+  const list=filtered(), total=list.length, size=+S.size;
+  const pages=Math.max(1,Math.ceil(total/size)); const page=Math.min(Math.max(1,+S.page||1),pages);
+  const rows=list.slice((page-1)*size, page*size);
+  renderToolbar(`<span class="muted num">${hasFilters()?`${total} of ${members.length} members`:`${total} members`}</span>${isAdmin()?'':''}<button class="btn" id="export" type="button">Export ${hasFilters()?total+' filtered ':''}CSV</button>`);
+  if(!total){
+    card.innerHTML = `<div class="state"><div class="ic">${svg.find}</div><h3>No members match your filters</h3>
+      <p>${S.q?`Nothing found for “${esc(S.q)}”`:'No one has this combination of role and source'}${S.role||S.src?' with the current filters':''}. Check the spelling, or search by email.</p>
+      <button class="btn" id="clearF2" type="button">Clear filters</button></div>`; return;
+  }
+  const pageIds=rows.map(m=>m.id), allOnPage=pageIds.every(id=>sel.has(id));
+  const th=(k,label,cls='')=>`<th class="${cls}" scope="col" aria-sort="${S.sort===k?(S.dir==='asc'?'ascending':'descending'):'none'}"><button type="button" data-sort="${k}">${label}${S.sort===k?`<span class="arrow" aria-hidden="true">${S.dir==='asc'?'▲':'▼'}</span>`:''}</button></th>`;
+  const edit=isAdmin();
+  card.innerHTML = `
+    ${edit && allOnPage && !allMatching && total>pageIds.length ? `<div class="selnote">All ${pageIds.length} on this page are selected. <button class="btn link" data-bulk="all" type="button">Select all ${total} matching members</button></div>`:''}
+    <div class="wrap"><table>
+      <caption class="sr">Workspace members, sorted by ${S.sort} ${S.dir==='asc'?'ascending':'descending'}</caption>
+      <thead><tr>
+        ${edit?`<th class="chk" scope="col"><input type="checkbox" id="selAll" aria-label="Select all ${pageIds.length} members on this page" ${allOnPage?'checked':''}></th>`:''}
+        ${th('name','Member','sticky')}${th('role','Role')}<th scope="col">Role managed by</th>${th('active','Last active')}${th('added','Added')}
+        <th class="act" scope="col"><span class="sr">Actions</span></th></tr></thead>
+      <tbody>${rows.map(m=>row(m,edit)).join('')}</tbody></table></div>
+    <div class="foot">
+      <span class="num">${(page-1)*size+1}–${Math.min(total,page*size)} of ${total} · sorted by ${{name:'name',role:'role',active:'last active',added:'date added'}[S.sort]} ${S.dir==='asc'?'(A–Z / oldest first)':'(Z–A / newest first)'}</span>
+      <span class="pager"><label>Rows <select id="size" class="field" style="height:28px">${[25,50,100].map(n=>`<option ${n==size?'selected':''}>${n}</option>`).join('')}</select></label>
+      <button class="btn icon" data-page="1" ${page==1?'disabled':''} aria-label="First page">«</button>
+      <button class="btn icon" data-page="${page-1}" ${page==1?'disabled':''} aria-label="Previous page">‹</button>
+      <span class="num">Page ${page} of ${pages}</span>
+      <button class="btn icon" data-page="${page+1}" ${page==pages?'disabled':''} aria-label="Next page">›</button>
+      <button class="btn icon" data-page="${pages}" ${page==pages?'disabled':''} aria-label="Last page">»</button></span></div>`;
+}
+
+function row(m,edit){
+  const picked = sel.has(m.id)||allMatching;
+  const locked = roleLocked(m);
+  const roleCell = !edit || locked
+    ? `<span class="roletext" ${locked&&edit?`title="${esc(lockReason(m))}"`:''}>${ROLES[m.role]}</span>${locked&&edit?svg.lock:''}`
+    : `<label class="sr" for="r-${m.id}">Role for ${esc(m.name)}</label><select class="rolesel" id="r-${m.id}" data-role="${m.id}">${['admin','editor','viewer'].map(r=>`<option value="${r}" ${m.role===r?'selected':''}>${ROLES[r]}</option>`).join('')}</select>`;
+  return `<tr ${picked?'aria-selected="true"':''} data-id="${m.id}">
+    ${edit?`<td class="chk"><input type="checkbox" data-pick="${m.id}" aria-label="Select ${esc(m.name)}" ${picked?'checked':''}></td>`:''}
+    <td class="sticky"><div class="person"><span class="av" style="--h:${hue(m.name)}" aria-hidden="true">${esc(initials(m.name))}</span>
+      <span class="ptext"><span class="pname" title="${esc(m.name)}">${esc(m.name)}${m.id===ME?'<span class="tag">You</span>':''}</span><span class="pmail" title="${esc(m.email)}">${esc(m.email)}</span></span></div></td>
+    <td>${roleCell}</td>
+    <td><span class="src">${m.group?`<span>Okta group</span><small>${esc(m.group)}</small>`:`<span>Set here</span>`}</span></td>
+    <td class="num ${m.lastActive==null?'muted':''}" title="${m.lastActive==null?'Hasn’t signed in yet':abs(m.lastActive)}">${rel(m.lastActive)}</td>
+    <td class="num" title="${abs(m.added)}">${dateOnly(m.added)}</td>
+    <td class="act"><button class="btn ghost icon" data-menu="${m.id}" aria-haspopup="menu" aria-label="Actions for ${esc(m.name)}">${svg.dots}</button></td></tr>`;
+}
+
+function renderInvites(){
+  const card=$('#card'); renderToolbar('');
+  $('#toolbar').innerHTML = `<span class="muted">Invites expire after 7 days. Invitees still need to be assigned to the Northwind app in Okta.</span>`;
+  if(dataMode!=='normal'){ card.innerHTML = dataMode==='solo'? `<div class="state"><div class="ic">${svg.users}</div><h3>No pending invites</h3><p>Invites you send will wait here until the person signs in.</p></div>` : stateBox(dataMode); return; }
+  if(!invites.length){ card.innerHTML=`<div class="state"><div class="ic">${svg.users}</div><h3>No pending invites</h3><p>Everyone you’ve invited has joined. New invites will appear here until accepted.</p></div>`; return; }
+  const edit=isAdmin();
+  card.innerHTML = `<div class="wrap"><table>
+    <thead><tr><th class="sticky" scope="col">Email</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Invited by</th><th scope="col">Sent</th><th class="act" scope="col" style="width:150px"><span class="sr">Actions</span></th></tr></thead>
+    <tbody>${invites.map(i=>{const exp=i.expires<NOW, soon=!exp&&i.expires-NOW<86400000*1.5;
+      return `<tr><td class="sticky"><div class="person"><span class="pname" title="${esc(i.email)}">${esc(i.email)}</span></div></td>
+      <td>${ROLES[i.role]}</td>
+      <td><span class="status ${exp?'bad':soon?'warn':'ok'}"><span aria-hidden="true">${exp?'✕':soon?'!':'●'}</span>${exp?'Expired '+dateOnly(i.expires):soon?'Expires in '+Math.max(1,Math.round((i.expires-NOW)/3600000))+' h':'Pending · expires '+dateOnly(i.expires)}</span></td>
+      <td>${esc(i.by)}</td><td class="num" title="${abs(i.sent)}">${rel(i.sent)}</td>
+      <td class="act" style="white-space:nowrap">${edit?`<button class="btn ${exp?'':'ghost'}" data-resend="${i.id}" type="button">Resend</button><button class="btn ghost icon" data-imenu="${i.id}" aria-haspopup="menu" aria-label="Actions for invite to ${esc(i.email)}">${svg.dots}</button>`:'<span class="muted" title="Only admins can manage invites.">View only</span>'}</td></tr>`}).join('')}</tbody></table></div>
+    <div class="foot"><span class="num">${invites.length} invites · ${invites.filter(i=>i.expires<NOW).length} expired</span></div>`;
+}
+
+/* ---------- toasts ---------- */
+function toast(msg,{action,fn,error=false,ms=9000}={}){
+  const t=document.createElement('div'); t.className='toast'+(error?' error':'');
+  t.innerHTML=`<span>${esc(msg)}</span>${action?`<button type="button">${esc(action)}</button>`:''}<button type="button" aria-label="Dismiss">✕</button>`;
+  const [b1,b2]=t.querySelectorAll('button'); const kill=()=>t.remove();
+  if(action){ b1.onclick=()=>{fn();kill()}; b2.onclick=kill } else b1.onclick=kill;
+  $('#toasts').append(t); if(!error) setTimeout(kill,ms);
+}
+
+/* ---------- dialogs ---------- */
+function confirmDlg({title,body,confirm,danger=false,onOk,noConfirm=false}){
+  const d=$('#dlg');
+  d.innerHTML=`<div class="dh"><h2 id="dlgT">${esc(title)}</h2></div><div class="db">${body}</div>
+    <div class="df"><button class="btn" id="dNo" type="button" autofocus>${noConfirm?'Close':'Cancel'}</button>${noConfirm?'':`<button class="btn ${danger?'danger':'primary'}" id="dYes" type="button">${esc(confirm)}</button>`}</div>`;
+  $('#dNo',d).onclick=()=>d.close();
+  const y=$('#dYes',d); if(y) y.onclick=()=>{d.close();onOk()};
+  d.addEventListener('close',()=>render(),{once:true});
+  d.showModal();
+}
+const find = id => members.find(m=>m.id===id);
+
+function setRole(ids,role,label){
+  const prev=ids.map(id=>[id,find(id).role]);
+  ids.forEach(id=>find(id).role=role);
+  render();
+  toast(label,{action:'Undo',fn:()=>{prev.forEach(([id,r])=>find(id).role=r);render();toast('Role change undone.')}});
+}
+function changeRole(id,role){
+  const m=find(id); if(!m||m.role===role) return;
+  const losingAdmin = (m.role==='admin') && role!=='admin';
+  if(losingAdmin && adminCount()<=1){
+    return confirmDlg({title:'Can’t remove the last admin',body:`<p>${esc(m.name)} is the only admin. Promote another member to Admin first, so someone can still manage the workspace.</p>`,noConfirm:true});
+  }
+  if(role==='admin'){
+    return confirmDlg({title:`Make ${m.name} an admin?`,confirm:`Make ${m.name.split(' ')[0]} an admin`,
+      body:`<p>Admins can invite and remove members, change roles, edit SSO settings and see billing. This is recorded in the audit log.</p>`,
+      onOk:()=>setRole([id],role,`${m.name} is now an Admin.`)});
+  }
+  if(id===ME){
+    return confirmDlg({title:'Remove your own admin access?',confirm:'Change my role to '+ROLES[role],danger:true,
+      body:`<p>You’ll lose access to this page right away. Another admin would have to restore it.</p>`,onOk:()=>setRole([id],role,`Your role is now ${ROLES[role]}.`)});
+  }
+  setRole([id],role,`${m.name} is now ${/^[AEIOU]/.test(ROLES[role])?'an':'a'} ${ROLES[role]}.`);
+}
+function removeMembers(ids,{bulk=false}={}){
+  const ms=ids.map(find); const snap=ms.map(m=>[members.indexOf(m),m]);
+  members=members.filter(m=>!ids.includes(m.id)); sel.clear(); allMatching=false; render();
+  toast(ms.length===1?`${ms[0].name} was removed from the workspace.`:`Removed ${ms.length} members from the workspace.`,{action:'Restore',ms:12000,fn:()=>{
+    snap.sort((a,b)=>a[0]-b[0]).forEach(([i,m])=>members.splice(i,0,m)); render(); toast(ms.length===1?`${ms[0].name} restored.`:`${ms.length} members restored.`);}});
+}
+function removeOne(id){
+  const m=find(id), block=removeBlock(m);
+  if(block) return confirmDlg({title:`Can’t remove ${m.name} here`,body:`<p>${esc(block)}</p>`,noConfirm:true});
+  confirmDlg({title:`Remove ${m.name} from Northwind Logistics?`,danger:true,confirm:`Remove ${m.name.length>24?m.name.split(' ')[0]:m.name}`,
+    body:`<ul><li>${esc(m.name)} loses access immediately and is signed out of all sessions.</li>
+    <li>${m.projects?`Their <b>${m.projects} owned project${m.projects>1?'s':''}</b> will be transferred to you.`:'They don’t own any projects.'} Comments and edit history stay attributed to them.</li>
+    <li>They can still sign in to Okta. To keep them out for good, also unassign them from the Northwind app there.</li></ul>
+    <p>You can restore them for 30 days.</p>`,onOk:()=>removeMembers([id])});
+}
+function targetIds(){ return allMatching ? filtered().map(m=>m.id) : [...sel]; }
+function bulk(kind){
+  const ids=targetIds(), ms=ids.map(find).filter(Boolean);
+  const skip=ms.filter(m=>m.id===ME||m.role==='owner'||m.group), ok=ms.filter(m=>!skip.includes(m));
+  const nM=skip.filter(m=>m.group).length, nO=skip.length-nM;
+  const skipNote = skip.length ? `<div class="note info"><b>${skip.length} of ${ms.length}</b> will be skipped: ${[nM?`${nM} managed by an Okta group`:'',nO?`${nO} you or the Owner`:''].filter(Boolean).join(', ')}.</div>`:'';
+  if(kind==='remove'){
+    return confirmDlg({title:`Remove ${ok.length} member${ok.length===1?'':'s'}?`,danger:true,confirm:`Remove ${ok.length} member${ok.length===1?'':'s'}`,
+      body: ok.length ? `<p>They lose access immediately and are signed out. Projects they own transfer to you. You can restore them for 30 days.</p><p class="muted" style="font-size:13px">${ok.slice(0,3).map(m=>esc(m.name)).join(', ')}${ok.length>3?` and ${ok.length-3} more`:''}</p>${skipNote}` : `<p>Nobody selected can be removed here.</p>${skipNote}`,
+      onOk:()=>removeMembers(ok.map(m=>m.id),{bulk:true}), ...(ok.length?{}:{noConfirm:true})});
+  }
+  const d=$('#dlg');
+  d.innerHTML=`<div class="dh"><h2 id="dlgT">Change role for ${ok.length} member${ok.length===1?'':'s'}</h2></div><div class="db">
+    <label class="l" for="bRole">New role</label><select id="bRole" class="field"><option value="viewer">Viewer</option><option value="editor">Editor</option><option value="admin">Admin</option></select>
+    <div class="hint" id="bDesc">${ROLE_DESC.viewer}</div>${skipNote}</div>
+    <div class="df"><button class="btn" id="dNo" type="button">Cancel</button><button class="btn primary" id="dYes" type="button" ${ok.length?'':'disabled'}>Apply to ${ok.length}</button></div>`;
+  $('#bRole',d).onchange=e=>{$('#bDesc',d).textContent=ROLE_DESC[e.target.value]+(e.target.value==='admin'?' Recorded in the audit log.':'')};
+  $('#dNo',d).onclick=()=>d.close();
+  $('#dYes',d).onclick=()=>{const r=$('#bRole',d).value; d.close(); const was=ok.map(m=>[m.id,m.role]); sel.clear(); allMatching=false;
+    ok.forEach(m=>m.role=r); render();
+    toast(`Changed ${ok.length} to ${ROLES[r]}${skip.length?` · ${skip.length} skipped`:''}`,{action:'Undo',fn:()=>{was.forEach(([id,ro])=>find(id).role=ro);render()}});};
+  d.showModal();
+}
+
+/* ---------- invite ---------- */
+const EMAIL=/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
+function openInvite(){
+  if(!isAdmin()) return;
+  const d=$('#inv'), used=members.length+invites.filter(i=>i.expires>NOW).length;
+  d.innerHTML=`<div class="dh"><h2 id="invT">Invite members</h2></div><div class="db">
+    <label class="l" for="iEmails">Work email addresses</label>
+    <textarea id="iEmails" class="field" placeholder="amara.diallo@northwind.com, lars.eriksson@northwind.com" aria-describedby="iHint iErr" autofocus></textarea>
+    <div class="hint" id="iHint">Separate with commas, spaces or new lines. Allowed domains: ${ALLOWED.join(', ')}.</div>
+    <div id="iErr" aria-live="polite"></div>
+    <label class="l" for="iRole">Role</label>
+    <select id="iRole" class="field"><option value="viewer">Viewer</option><option value="editor">Editor</option><option value="admin">Admin</option></select>
+    <div class="hint" id="iDesc">${ROLE_DESC.viewer}</div>
+    <div class="note info" id="iSeat"></div>
+    <div class="note info">Each person must also be assigned to the Northwind app in Okta, or sign-in will fail. Okta group membership overrides the role set here.</div></div>
+    <div class="df"><button class="btn" id="iNo" type="button">Cancel</button><button class="btn primary" id="iYes" type="button" disabled>Send invites</button></div>`;
+  const ta=$('#iEmails',d), yes=$('#iYes',d);
+  const emails=()=>[...new Set(ta.value.split(/[\s,;]+/).map(s=>s.trim().toLowerCase()).filter(Boolean))];
+  const upd=()=>{ const n=emails().length; yes.disabled=!n; yes.textContent=n?`Send ${n} invite${n>1?'s':''}`:'Send invites';
+    const left=SEAT_LIMIT-used; $('#iSeat',d).textContent = n>left ? `${left} seats left. ${n-left} of these will add paid seats ($12 per seat per month).` : `${left} of ${SEAT_LIMIT} seats left.`; };
+  ta.oninput=()=>{upd();ta.classList.remove('invalid');$('#iErr',d).innerHTML=''}; upd();
+  $('#iRole',d).onchange=e=>{$('#iDesc',d).textContent=ROLE_DESC[e.target.value]+(e.target.value==='admin'?' Admins can remove other members.':'')};
+  $('#iNo',d).onclick=()=>d.close();
+  yes.onclick=()=>{
+    const good=[],bad=[];
+    emails().forEach(e=>{
+      if(!EMAIL.test(e)) bad.push([e,'isn’t a valid email address']);
+      else if(!ALLOWED.includes(e.split('@')[1])) bad.push([e,`uses a domain that isn’t approved. Add it under Single sign-on › Domains`]);
+      else if(members.some(m=>m.email===e)) bad.push([e,'is already a member']);
+      else if(invites.some(i=>i.email===e&&i.expires>NOW)) bad.push([e,'already has a pending invite']);
+      else good.push(e);
+    });
+    const role=$('#iRole',d).value;
+    good.forEach((e,i)=>invites.unshift({id:'n'+Date.now()+i,email:e,role,by:'Priya Sharma',sent:NOW,expires:NOW+7*86400000}));
+    if(good.length) toast(`Sent ${good.length} invite${good.length>1?'s':''} as ${ROLES[role]}${bad.length?` · ${bad.length} need attention`:''}`,{action:'View',fn:()=>nav({tab:'invites'})});
+    if(!bad.length){ d.close(); render(); return; }
+    ta.value=bad.map(b=>b[0]).join('\n'); ta.classList.add('invalid'); upd(); render();
+    $('#iErr',d).innerHTML=`<div class="errlist" role="alert"><b>${bad.length} address${bad.length>1?'es weren’t':' wasn’t'} sent. Fix or remove ${bad.length>1?'them':'it'}, then send again:</b><ul>${bad.map(([e,w])=>`<li><b>${esc(e)}</b> ${w}</li>`).join('')}</ul></div>`;
+  };
+  d.showModal();
+}
+
+/* ---------- menu ---------- */
+const menu=$('#menu'); let menuBtn=null;
+function openMenu(btn,items){
+  menuBtn=btn; menu.innerHTML=items.map(it=> it==='-'?'<hr>':
+    `<button role="menuitem" type="button" data-do="${it.do}" ${it.off?'aria-disabled="true"':''} class="${it.danger?'danger':''}"><span>${esc(it.label)}</span>${it.hint?`<small>${esc(it.hint)}</small>`:''}</button>`).join('');
+  menu.classList.add('open'); const r=btn.getBoundingClientRect();
+  menu.style.top=Math.min(r.bottom+4,innerHeight-menu.offsetHeight-8)+'px'; menu.style.left=Math.max(8,r.right-menu.offsetWidth)+'px';
+  menu.querySelector('button')?.focus();
+}
+function closeMenu(refocus){ menu.classList.remove('open'); if(refocus&&menuBtn?.isConnected) menuBtn.focus(); menuBtn=null; }
+menu.addEventListener('keydown',e=>{
+  const b=[...menu.querySelectorAll('button')], i=b.indexOf(document.activeElement);
+  if(e.key==='ArrowDown'){e.preventDefault();b[(i+1)%b.length].focus()}
+  else if(e.key==='ArrowUp'){e.preventDefault();b[(i-1+b.length)%b.length].focus()}
+  else if(e.key==='Escape'||e.key==='Tab'){e.preventDefault();closeMenu(true)}
+});
+document.addEventListener('click',e=>{ if(menu.classList.contains('open')&&!menu.contains(e.target)&&!e.target.closest('[data-menu],[data-imenu]')) closeMenu(); });
+
+menu.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return; if(b.getAttribute('aria-disabled')==='true'){ return; }
+  const [what,id]=[b.dataset.do, menuBtn?.dataset.menu||menuBtn?.dataset.imenu]; closeMenu(true);
+  if(what==='copy'){ navigator.clipboard?.writeText(find(id).email).catch(()=>{}); toast('Email copied.'); }
+  if(what==='remove') removeOne(id);
+  if(what==='okta') toast('Opening Okta in a new tab…');
+  if(what==='activity') toast('Opening activity for '+find(id).name+'…');
+  if(what==='icopy') toast('Invite link copied. It works only for that email address.');
+  if(what==='revoke'){ const i=invites.find(x=>x.id===id), idx=invites.indexOf(i); invites.splice(idx,1); render();
+    toast(`Invite to ${i.email} was revoked.`,{action:'Undo',fn:()=>{invites.splice(idx,0,i);render()}}); }
+});
+
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button,[data-open-invite]'); if(!t) return;
+  if(t.id==='inviteBtn'||t.hasAttribute('data-open-invite')){ if(!isAdmin()) return toast(`Only admins can invite members. Ask ${ADMIN_NAMES}.`); return openInvite(); }
+  if(t.dataset.tab) { sel.clear(); allMatching=false; return nav({tab:t.dataset.tab,page:'1'}); }
+  if(t.dataset.sort){ const k=t.dataset.sort; return nav({sort:k,dir:S.sort===k&&S.dir==='asc'?'desc':'asc',page:'1'}); }
+  if(t.dataset.page) return nav({page:t.dataset.page});
+  if(t.id==='clearF'||t.id==='clearF2') return nav({q:'',role:'',src:'',page:'1'});
+  if(t.id==='retry'){ dataMode='loading'; $('#pData').value='loading'; render(); setTimeout(()=>{dataMode='normal';$('#pData').value='normal';render()},900); return; }
+  if(t.id==='export') return toast(`Preparing CSV of ${filtered().length} members. We’ll email it to you when it’s ready.`);
+  if(t.dataset.bulk){ const k=t.dataset.bulk;
+    if(k==='clear'){sel.clear();allMatching=false;return render()} if(k==='all'){allMatching=true;return render()} return bulk(k); }
+  if(t.dataset.menu){ const m=find(t.dataset.menu), rb=removeBlock(m), edit=isAdmin();
+    const items=[{label:'Copy email',do:'copy'},{label:'View activity',do:'activity'}];
+    if(m.group) items.push({label:'Open in Okta',do:'okta',hint:`Manage group ${m.group}`});
+    if(edit){ items.push('-',{label:'Remove from workspace…',do:'remove',danger:!rb,off:!!rb,hint:rb||''}); }
+    return menu.classList.contains('open')&&menuBtn===t?closeMenu():openMenu(t,items); }
+  if(t.dataset.imenu) return openMenu(t,[{label:'Copy invite link',do:'icopy'},'-',{label:'Revoke invite',do:'revoke',danger:true}]);
+  if(t.dataset.resend){ const i=invites.find(x=>x.id===t.dataset.resend); i.sent=NOW; i.expires=NOW+7*86400000; render(); toast(`Invite re-sent to ${i.email}. New 7-day expiry.`); }
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset.role) return changeRole(t.dataset.role,t.value);
+  if(t.id==='fRole') return nav({role:t.value,page:'1'});
+  if(t.id==='fSrc') return nav({src:t.value,page:'1'});
+  if(t.id==='size') return nav({size:t.value,page:'1'});
+  if(t.id==='selAll'){ const rows=filtered().slice((+S.page-1||0)*+S.size,((+S.page-1||0)+1)*+S.size); allMatching=false; rows.forEach(m=>t.checked?sel.add(m.id):sel.delete(m.id)); return render(); }
+  if(t.dataset.pick){ if(allMatching){ allMatching=false; sel=new Set(filtered().map(m=>m.id)); } t.checked?sel.add(t.dataset.pick):sel.delete(t.dataset.pick); return render(); }
+});
+let lastPick=null;
+document.addEventListener('click',e=>{ const t=e.target; if(!t.dataset?.pick) return;
+  if(e.shiftKey&&lastPick){ const ids=[...document.querySelectorAll('[data-pick]')].map(x=>x.dataset.pick); const a=ids.indexOf(lastPick),b=ids.indexOf(t.dataset.pick); ids.slice(Math.min(a,b),Math.max(a,b)+1).forEach(id=>sel.add(id)); render(); }
+  lastPick=t.dataset.pick; },true);
+document.addEventListener('input',e=>{ if(e.target.id==='q'){ const v=e.target.value, pos=e.target.selectionStart; nav({q:v,page:'1'},'replace'); const q=$('#q'); q.focus(); q.setSelectionRange(pos,pos); }});
+document.addEventListener('keydown',e=>{
+  if(e.target.matches('input,textarea,select')||document.querySelector('dialog[open]')||e.metaKey||e.ctrlKey) return;
+  if(e.key==='/'){e.preventDefault();$('#q')?.focus()}
+  if(e.key==='i'&&isAdmin()){e.preventDefault();openInvite()}
+});
+$('#pRole').onchange=e=>{viewer=e.target.value;render()};
+$('#pDens').onchange=()=>render();
+$('#pData').onchange=e=>{ const v=e.target.value; sel.clear(); allMatching=false;
+  if(v==='normal'){ dataMode='loading'; render(); setTimeout(()=>{dataMode='normal';render()},700);} else {dataMode=v;render();} };
+window.addEventListener('popstate',()=>{parse();render()});
+window.addEventListener('beforeunload',e=>{ const iv=$('#iEmails'); if($('#inv').open&&iv&&iv.value.trim()){e.preventDefault();e.returnValue=''} });
+
+/* ---------- boot ---------- */
+parse(); dataMode='loading'; render();
+setTimeout(()=>{dataMode='normal';render()},700);
+})();
+</script>
+</body>
+</html>

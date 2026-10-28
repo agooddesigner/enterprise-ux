@@ -1,0 +1,72 @@
+[
+  {
+    "code": "9XMWNK",
+    "case": "E1",
+    "condition": "baseline",
+    "checks": 4,
+    "premium": 3
+  },
+  {
+    "code": "76GTLX",
+    "case": "E1",
+    "condition": "v1",
+    "checks": 7,
+    "premium": 5
+  },
+  {
+    "code": "R4ZU5N",
+    "case": "E1",
+    "condition": "v2",
+    "checks": 6,
+    "premium": 5
+  },
+  {
+    "code": "7WRFI6",
+    "case": "E2",
+    "condition": "baseline",
+    "checks": 8,
+    "premium": 7
+  },
+  {
+    "code": "8QCZG1",
+    "case": "E2",
+    "condition": "v1",
+    "checks": 4,
+    "premium": 4
+  },
+  {
+    "code": "OEJ7S1",
+    "case": "E2",
+    "condition": "v2",
+    "checks": 7,
+    "premium": 6
+  },
+  {
+    "code": "U1GCBY",
+    "case": "E4",
+    "condition": "baseline",
+    "checks": 7,
+    "premium": 6
+  },
+  {
+    "code": "0SZBHN",
+    "case": "E7",
+    "condition": "baseline",
+    "checks": 5,
+    "premium": 4
+  },
+  {
+    "code": "UL95UQ",
+    "case": "E7",
+    "condition": "v1",
+    "checks": 4,
+    "premium": 3
+  },
+  {
+    "code": "8VJLBS",
+    "case": "E7",
+    "condition": "v2",
+    "checks": 7,
+    "premium": 4
+  }
+]

@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Members · Acme Admin</title>
+<style>
+:root{
+  --bg:#f6f7f9; --surface:#fff; --line:#e3e6eb; --line-strong:#cfd4dc;
+  --text:#14181f; --muted:#5b6575; --accent:#3b5bdb; --accent-ink:#fff; --accent-soft:#eaefff;
+  --danger:#c92a2a; --danger-soft:#fdecec; --ok:#237a3b; --ok-soft:#e5f5ea; --warn:#8a5a00; --warn-soft:#fff3d6;
+  --shadow:0 8px 28px rgba(16,24,40,.16); --radius:8px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0f1218; --surface:#171b23; --line:#262c37; --line-strong:#374050;
+    --text:#e8ebf0; --muted:#9aa4b4; --accent:#7c93ff; --accent-ink:#0b1020; --accent-soft:#222a4a;
+    --danger:#ff7b7b; --danger-soft:#3a1d20; --ok:#6fd08a; --ok-soft:#173222; --warn:#f0c15a; --warn-soft:#3a2f12;
+    --shadow:0 8px 28px rgba(0,0,0,.5);
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+nav.side{background:var(--surface);border-right:1px solid var(--line);padding:16px 12px}
+.brand{font-weight:700;padding:4px 10px 16px;display:flex;gap:8px;align-items:center}
+.brand i{width:22px;height:22px;border-radius:6px;background:var(--accent);display:inline-block}
+nav.side a{display:block;padding:7px 10px;border-radius:6px;color:var(--muted);text-decoration:none}
+nav.side a:hover{background:var(--bg)}
+nav.side a[aria-current]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+nav.side h2{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 10px 6px}
+main{padding:28px 32px 64px;max-width:1120px;width:100%}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+h1{font-size:22px;margin:0 0 2px}
+.sub{color:var(--muted);margin:0}
+.btn{border:1px solid var(--line-strong);background:var(--surface);border-radius:6px;padding:7px 12px;cursor:pointer;font-weight:500}
+.btn:hover{background:var(--bg)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.sso{display:flex;gap:12px;align-items:flex-start;margin:20px 0;padding:12px 14px;background:var(--accent-soft);border-radius:var(--radius);color:var(--text)}
+.sso svg{flex:none;margin-top:2px;color:var(--accent)}
+.sso p{margin:0}
+.sso a{color:var(--accent);font-weight:600}
+.seats{display:flex;align-items:center;gap:10px;color:var(--muted);margin-bottom:14px}
+.meter{width:120px;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.meter span{display:block;height:100%;background:var(--accent)}
+.meter.full span{background:var(--danger)}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.search{flex:1 1 220px;min-width:180px;position:relative}
+.search input{width:100%;padding:8px 10px 8px 32px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface)}
+.search svg{position:absolute;left:10px;top:10px;color:var(--muted)}
+select.f{padding:8px 10px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface)}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:6px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:7px 12px;cursor:pointer;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:visible}
+.bulk{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--accent-soft);border-bottom:1px solid var(--line);border-radius:var(--radius) var(--radius) 0 0}
+.bulk[hidden]{display:none}
+.bulk .sp{flex:1}
+table{width:100%;border-collapse:collapse}
+th{font-size:12px;text-align:left;color:var(--muted);font-weight:600;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:color-mix(in srgb,var(--bg) 60%,transparent)}
+.who{display:flex;align-items:center;gap:10px;min-width:0}
+.av{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:600;font-size:12px;color:#fff}
+.av.pending{background:transparent!important;border:1.5px dashed var(--line-strong);color:var(--muted)}
+.nm{font-weight:600;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.em{color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis}
+.tag{font-size:11px;font-weight:600;padding:1px 7px;border-radius:10px;background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:2px 9px;border-radius:12px}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.active{background:var(--ok-soft);color:var(--ok)}
+.pill.invited{background:var(--warn-soft);color:var(--warn)}
+.pill.expired{background:var(--danger-soft);color:var(--danger)}
+.role select{padding:5px 8px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);min-width:112px}
+.role select:disabled{background:transparent;border-color:transparent;appearance:none;-webkit-appearance:none;padding-left:0;opacity:1;color:var(--text);font-weight:500}
+.lock{display:inline-flex;gap:5px;align-items:center;color:var(--muted);font-size:12px;margin-top:3px}
+.muted{color:var(--muted)}
+.actions{text-align:right;width:48px;position:relative}
+.kebab{border:0;background:none;border-radius:6px;padding:6px;cursor:pointer;color:var(--muted);line-height:0}
+.kebab:hover{background:var(--bg);color:var(--text)}
+.menu{position:absolute;right:14px;top:80%;z-index:20;min-width:210px;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;box-shadow:var(--shadow);padding:4px;text-align:left}
+.menu[hidden]{display:none}
+.menu button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 10px;border-radius:5px;cursor:pointer}
+.menu button:hover:not(:disabled),.menu button:focus-visible{background:var(--bg)}
+.menu button.d{color:var(--danger)}
+.menu button:disabled{color:var(--muted);cursor:not-allowed}
+.menu small{display:block;color:var(--muted);font-size:12px;padding:0 10px 6px;margin-top:-4px}
+.menu hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+.empty{padding:48px 20px;text-align:center;color:var(--muted)}
+.foot{padding:10px 14px;color:var(--muted);border-top:1px solid var(--line);font-size:13px}
+input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent)}
+/* dialogs */
+dialog{border:0;border-radius:12px;padding:0;width:min(520px,calc(100vw - 32px));background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+dialog::backdrop{background:rgba(10,14,22,.5)}
+.dh{padding:20px 22px 0}.dh h2{margin:0 0 4px;font-size:18px}.dh p{margin:0;color:var(--muted)}
+.db{padding:16px 22px}
+.df{display:flex;justify-content:flex-end;gap:8px;padding:14px 22px;border-top:1px solid var(--line);background:var(--bg);border-radius:0 0 12px 12px}
+label.l{display:block;font-weight:600;margin-bottom:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;border:1px solid var(--line-strong);border-radius:6px;padding:6px;background:var(--surface);cursor:text}
+.chips:focus-within{outline:2px solid var(--accent)}
+.chips input{border:0;outline:0;flex:1;min-width:160px;background:none;padding:3px 4px}
+.chip{display:inline-flex;gap:4px;align-items:center;background:var(--accent-soft);border-radius:12px;padding:2px 4px 2px 10px;font-size:13px}
+.chip.bad{background:var(--danger-soft);color:var(--danger)}
+.chip button{border:0;background:none;cursor:pointer;line-height:1;padding:2px 5px;border-radius:50%;color:inherit}
+.hint{color:var(--muted);font-size:13px;margin:6px 0 0}
+.err{color:var(--danger);font-size:13px;margin:6px 0 0}
+.field{margin-bottom:16px}
+.field select{width:100%;padding:8px 10px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface)}
+.note{display:flex;gap:8px;background:var(--bg);border-radius:6px;padding:10px 12px;color:var(--muted);font-size:13px}
+.warnbox{background:var(--danger-soft);color:var(--text);border-radius:6px;padding:10px 12px;margin-top:12px}
+#toasts{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);display:grid;gap:8px;z-index:50}
+.toast{background:#1b2130;color:#fff;border-radius:8px;padding:10px 14px;display:flex;gap:14px;align-items:center;box-shadow:var(--shadow)}
+.toast button{background:none;border:0;color:#9fb2ff;font-weight:600;cursor:pointer}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr}nav.side{display:none}main{padding:20px 16px 56px}
+  .c-source,.c-last{display:none}
+}
+@media (max-width:560px){.c-status{display:none}th,td{padding:10px 8px}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav class="side" aria-label="Admin">
+    <div class="brand"><i></i>Acme Admin</div>
+    <a href="#">Overview</a>
+    <h2>Workspace</h2>
+    <a href="#" aria-current="page">Members</a>
+    <a href="#">Groups</a>
+    <a href="#">Billing</a>
+    <h2>Security</h2>
+    <a href="#">Single sign-on</a>
+    <a href="#">Audit log</a>
+  </nav>
+
+  <main>
+    <div class="head">
+      <div>
+        <h1>Members</h1>
+        <p class="sub">Invite people, set what they can do, and remove access.</p>
+      </div>
+      <button class="btn primary" id="inviteBtn">Invite members</button>
+    </div>
+
+    <div class="sso" role="note">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+      <p><strong>Sign-in is managed by Okta.</strong> Members log in with their company account, so there are no passwords to reset. Only people with an <b>@acme.com</b> or <b>@acme.io</b> address can join. Members marked <span class="tag">Okta</span> are synced from your directory: change their role or remove them in Okta. <a href="#">SSO settings</a></p>
+    </div>
+
+    <div class="seats"><span id="seatText"></span><div class="meter" id="meter" aria-hidden="true"><span></span></div></div>
+
+    <div class="toolbar">
+      <div class="search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <label class="sr" for="q">Search members</label>
+        <input id="q" type="search" placeholder="Search by name or email" autocomplete="off">
+      </div>
+      <div class="seg" role="group" aria-label="Status filter" id="statusSeg">
+        <button data-s="all" aria-pressed="true">All</button>
+        <button data-s="active" aria-pressed="false">Active</button>
+        <button data-s="invited" aria-pressed="false">Invited</button>
+      </div>
+      <label class="sr" for="roleF">Filter by role</label>
+      <select class="f" id="roleF"><option value="all">All roles</option></select>
+    </div>
+
+    <div class="card">
+      <div class="bulk" id="bulk" hidden>
+        <strong id="bulkN"></strong>
+        <span class="sp"></span>
+        <button class="btn" id="bulkClear">Clear</button>
+        <button class="btn danger" id="bulkRemove">Remove…</button>
+      </div>
+      <table>
+        <thead><tr>
+          <th style="width:36px"><input type="checkbox" id="all" aria-label="Select all"></th>
+          <th>Member</th><th>Role</th><th class="c-status">Status</th><th class="c-source">Source</th><th class="c-last">Last active</th><th><span class="sr">Actions</span></th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="empty" id="empty" hidden></div>
+      <div class="foot" id="foot"></div>
+    </div>
+  </main>
+</div>
+
+<!-- Invite -->
+<dialog id="inviteDlg" aria-labelledby="invT">
+  <form method="dialog" id="inviteForm" novalidate>
+    <div class="dh"><h2 id="invT">Invite members</h2><p>They’ll get an email and sign in with Okta.</p></div>
+    <div class="db">
+      <div class="field">
+        <label class="l" for="emailIn">Email addresses</label>
+        <div class="chips" id="chips"><input id="emailIn" placeholder="name@acme.com" autocomplete="off" aria-describedby="emailHint"></div>
+        <p class="hint" id="emailHint">Separate with commas, spaces or paste a list. Must be @acme.com or @acme.io.</p>
+        <p class="err" id="emailErr" role="alert" hidden></p>
+      </div>
+      <div class="field">
+        <label class="l" for="invRole">Role</label>
+        <select id="invRole"></select>
+        <p class="hint" id="invRoleDesc"></p>
+      </div>
+      <div class="note"><span aria-hidden="true">ⓘ</span><span id="seatNote"></span></div>
+    </div>
+    <div class="df">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="submit" class="btn primary" id="sendInv">Send invites</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Remove -->
+<dialog id="rmDlg" aria-labelledby="rmT">
+  <form method="dialog">
+    <div class="dh"><h2 id="rmT"></h2></div>
+    <div class="db" id="rmBody"></div>
+    <div class="df">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="submit" class="btn danger" id="rmGo">Remove</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Role change confirm -->
+<dialog id="roleDlg" aria-labelledby="roleT">
+  <form method="dialog">
+    <div class="dh"><h2 id="roleT"></h2></div>
+    <div class="db" id="roleBody"></div>
+    <div class="df">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="submit" class="btn primary" id="roleGo">Change role</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+const ROLES = {
+  Owner:  {d:'Full control, including billing, SSO and deleting the workspace.'},
+  Admin:  {d:'Manage members, settings and integrations. Can’t change billing or SSO.'},
+  Billing:{d:'Manage plan, invoices and payment. No access to workspace content.'},
+  Member: {d:'Create and edit content in the workspace.'},
+  Viewer: {d:'Read-only access. Doesn’t use a paid seat.'}
+};
+const DOMAINS = ['acme.com','acme.io'];
+const SEATS = 14;
+const COLORS = ['#3b5bdb','#0b7285','#862e9c','#c2255c','#e8590c','#2b8a3e','#5f3dc4','#1864ab'];
+const hue = s => COLORS[[...s].reduce((a,c)=>a+c.charCodeAt(0),0)%COLORS.length];
+
+let members = [
+  {id:1,name:'Priya Raman',email:'priya.raman@acme.com',role:'Owner',status:'active',src:'okta',last:'Now',you:true,group:'Acme-Owners'},
+  {id:2,name:'Daniel Okafor',email:'daniel.okafor@acme.com',role:'Owner',status:'active',src:'okta',last:'2 hours ago',group:'Acme-Owners'},
+  {id:3,name:'Mei Tanaka',email:'mei.tanaka@acme.com',role:'Admin',status:'active',src:'okta',last:'Yesterday',group:'Acme-IT'},
+  {id:4,name:'Lucas Meyer',email:'lucas.meyer@acme.com',role:'Admin',status:'active',src:'manual',last:'3 days ago'},
+  {id:5,name:'Amara Nwosu',email:'amara.nwosu@acme.io',role:'Billing',status:'active',src:'manual',last:'Oct 21'},
+  {id:6,name:'Tomás Herrera',email:'tomas.herrera@acme.com',role:'Member',status:'active',src:'okta',last:'Today',group:'Acme-Everyone'},
+  {id:7,name:'Sofia Lindqvist',email:'sofia.lindqvist@acme.com',role:'Member',status:'active',src:'okta',last:'Today',group:'Acme-Everyone'},
+  {id:8,name:'Jonas Weber',email:'jonas.weber@acme.io',role:'Member',status:'active',src:'manual',last:'Oct 12'},
+  {id:9,name:'Hana Kim',email:'hana.kim@acme.com',role:'Viewer',status:'active',src:'manual',last:'Sep 30'},
+  {id:10,name:'',email:'ravi.patel@acme.com',role:'Member',status:'invited',src:'manual',last:'—',sent:'Sent 2 days ago · expires in 5 days'},
+  {id:11,name:'',email:'elena.rossi@acme.io',role:'Viewer',status:'invited',src:'manual',last:'—',sent:'Sent 1 day ago · expires in 6 days'},
+  {id:12,name:'',email:'ben.carter@acme.com',role:'Member',status:'expired',src:'manual',last:'—',sent:'Expired Oct 20'}
+];
+let nextId = 100, filt = {q:'',s:'all',r:'all'}, sel = new Set(), openMenu = null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const init = m => m.name ? m.name.split(' ').map(w=>w[0]).slice(0,2).join('') : m.email[0].toUpperCase();
+const seatsUsed = () => members.filter(m=>m.role!=='Viewer' && m.status!=='expired').length;
+const owners = () => members.filter(m=>m.role==='Owner' && m.status==='active').length;
+const locked = m => m.src==='okta';
+const snapshot = () => JSON.stringify(members);
+
+function render(){
+  const used = seatsUsed();
+  $('#seatText').textContent = `${used} of ${SEATS} seats used · Viewers are free`;
+  $('#meter').firstElementChild.style.width = Math.min(100,used/SEATS*100)+'%';
+  $('#meter').classList.toggle('full', used>=SEATS);
+
+  const q = filt.q.toLowerCase();
+  const list = members.filter(m =>
+    (filt.s==='all' || (filt.s==='active'?m.status==='active':m.status!=='active')) &&
+    (filt.r==='all' || m.role===filt.r) &&
+    (!q || m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)));
+
+  $('#rows').innerHTML = list.map(m=>{
+    const pend = m.status!=='active';
+    const dis = locked(m) || m.you;
+    const selectable = !m.you && !locked(m);
+    const lastOwner = m.role==='Owner' && owners()<=1;
+    return `<tr data-id="${m.id}">
+      <td><input type="checkbox" class="rs" ${sel.has(m.id)?'checked':''} ${selectable?'':'disabled'} aria-label="Select ${esc(m.name||m.email)}"
+          ${selectable?'':`title="${m.you?'You can’t remove yourself':'Managed in Okta'}"`}></td>
+      <td><div class="who"><div class="av ${pend?'pending':''}" style="background:${hue(m.email)}" aria-hidden="true">${esc(init(m))}</div>
+        <div style="min-width:0"><div class="nm">${esc(m.name||m.email)}${m.you?' <span class="tag">You</span>':''}</div>
+        <div class="em">${m.name?esc(m.email):esc(m.sent)}</div></div></div></td>
+      <td class="role">
+        <select aria-label="Role for ${esc(m.name||m.email)}" ${dis?'disabled':''}>
+          ${Object.keys(ROLES).map(r=>`<option ${r===m.role?'selected':''}>${r}</option>`).join('')}
+        </select>
+        ${locked(m)?`<div class="lock"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>Set by Okta group ${esc(m.group)}</div>`:''}
+        ${m.you&&!locked(m)?'<div class="lock">You can’t change your own role</div>':''}
+      </td>
+      <td class="c-status"><span class="pill ${m.status}">${m.status==='active'?'Active':m.status==='invited'?'Invited':'Invite expired'}</span></td>
+      <td class="c-source muted">${locked(m)?'<span class="tag">Okta</span> Synced':'Invited by admin'}</td>
+      <td class="c-last muted">${esc(m.last)}</td>
+      <td class="actions">
+        <button class="kebab" aria-haspopup="menu" aria-expanded="false" aria-label="Actions for ${esc(m.name||m.email)}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+        <div class="menu" role="menu" hidden>${menuFor(m,lastOwner)}</div>
+      </td></tr>`;
+  }).join('');
+
+  const e = $('#empty');
+  e.hidden = list.length>0;
+  if(!list.length) e.innerHTML = members.length ? `No members match your filters. <button class="btn" id="clr" style="margin-left:6px">Clear filters</button>` : 'No members yet.';
+  $('#clr')?.addEventListener('click',()=>{filt={q:'',s:'all',r:'all'};$('#q').value='';$('#roleF').value='all';syncSeg();render()});
+  $('#foot').textContent = `Showing ${list.length} of ${members.length} · ${members.filter(m=>m.status!=='active').length} pending invitations`;
+
+  const visSel = list.filter(m=>!m.you&&!locked(m));
+  $('#all').checked = visSel.length>0 && visSel.every(m=>sel.has(m.id));
+  $('#all').disabled = !visSel.length;
+  $('#bulk').hidden = sel.size===0;
+  $('#bulkN').textContent = `${sel.size} selected`;
+}
+
+function menuFor(m,lastOwner){
+  const out=[];
+  if(m.status!=='active'){
+    out.push(`<button role="menuitem" data-a="resend">${m.status==='expired'?'Send new invite':'Resend invite'}</button>`);
+    out.push(`<button role="menuitem" data-a="copy">Copy invite link</button><hr>`);
+    out.push(`<button role="menuitem" class="d" data-a="remove">Cancel invitation</button>`);
+  } else if(locked(m)){
+    out.push(`<button role="menuitem" data-a="okta">Open in Okta ↗</button>`);
+    out.push(`<hr><button role="menuitem" disabled>Remove member</button><small>Synced members are removed by unassigning them from the Okta app.</small>`);
+  } else if(m.you){
+    out.push(`<button role="menuitem" disabled>Remove member</button><small>You can’t remove yourself. Ask another owner.</small>`);
+  } else {
+    out.push(`<button role="menuitem" class="d" data-a="remove" ${lastOwner?'disabled':''}>Remove member…</button>`);
+    if(lastOwner) out.push(`<small>Last owner. Assign another owner first.</small>`);
+  }
+  return out.join('');
+}
+
+/* events */
+$('#q').addEventListener('input',e=>{filt.q=e.target.value;render()});
+$('#roleF').innerHTML += Object.keys(ROLES).map(r=>`<option>${r}</option>`).join('');
+$('#roleF').addEventListener('change',e=>{filt.r=e.target.value;render()});
+function syncSeg(){document.querySelectorAll('#statusSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===filt.s))}
+$('#statusSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;filt.s=b.dataset.s;syncSeg();render()});
+
+$('#all').addEventListener('change',e=>{
+  document.querySelectorAll('.rs:not(:disabled)').forEach(c=>{
+    const id=+c.closest('tr').dataset.id; e.target.checked?sel.add(id):sel.delete(id)});
+  render();
+});
+$('#bulkClear').onclick=()=>{sel.clear();render()};
+$('#bulkRemove').onclick=()=>confirmRemove([...sel]);
+
+$('#rows').addEventListener('change',e=>{
+  const tr=e.target.closest('tr'); if(!tr)return; const id=+tr.dataset.id;
+  if(e.target.classList.contains('rs')){e.target.checked?sel.add(id):sel.delete(id);render();return}
+  if(e.target.tagName==='SELECT') changeRole(id,e.target.value);
+});
+$('#rows').addEventListener('click',e=>{
+  const k=e.target.closest('.kebab');
+  if(k){const menu=k.nextElementSibling;const was=!menu.hidden;closeMenus();
+    if(!was){menu.hidden=false;k.setAttribute('aria-expanded','true');openMenu=k;menu.querySelector('button:not(:disabled)')?.focus()}return}
+  const a=e.target.closest('[data-a]'); if(!a)return;
+  const id=+a.closest('tr').dataset.id, m=members.find(x=>x.id===id); closeMenus();
+  if(a.dataset.a==='remove') confirmRemove([id]);
+  if(a.dataset.a==='resend'){const s=snapshot();m.status='invited';m.sent='Sent just now · expires in 7 days';render();toast(`Invite sent to ${m.email}`,s)}
+  if(a.dataset.a==='copy'){navigator.clipboard?.writeText(`https://app.acme.com/join/${btoa(m.email).slice(0,12)}`).catch(()=>{});toast('Invite link copied. It still requires Okta sign-in.')}
+  if(a.dataset.a==='okta') toast('Opening Okta admin console…');
+});
+function closeMenus(){document.querySelectorAll('.menu').forEach(m=>m.hidden=true);document.querySelectorAll('.kebab').forEach(k=>k.setAttribute('aria-expanded','false'));const o=openMenu;openMenu=null;return o}
+document.addEventListener('click',e=>{if(!e.target.closest('.actions'))closeMenus()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const o=closeMenus();o?.focus()}});
+
+/* role change */
+function changeRole(id,role){
+  const m=members.find(x=>x.id===id), from=m.role;
+  if(role===from)return;
+  const demoteOwner = from==='Owner' && owners()<=1;
+  if(demoteOwner){toast('A workspace needs at least one owner. Assign another owner first.');render();return}
+  const name=m.name||m.email;
+  if(['Owner','Admin'].includes(role)||['Owner','Admin'].includes(from)){
+    $('#roleT').textContent = `Change ${name}’s role to ${role}?`;
+    $('#roleBody').innerHTML=`<p style="margin-top:0"><b>${esc(from)} → ${esc(role)}</b></p><p class="muted">${esc(ROLES[role].d)}</p>${role==='Owner'?'<div class="warnbox">Owners can remove other owners and change SSO settings.</div>':''}`;
+    const dlg=$('#roleDlg'); dlg.dataset.id=id; dlg.dataset.role=role; dlg.returnValue='';
+    dlg.onclose=()=>{ if(dlg.returnValue==='ok') applyRole(id,role,from); else render(); };
+    $('#roleGo').onclick=()=>{dlg.returnValue='ok'};
+    dlg.showModal();
+  } else applyRole(id,role,from);
+}
+function applyRole(id,role,from){
+  const m=members.find(x=>x.id===id), s=snapshot(); m.role=role; render();
+  toast(`${m.name||m.email} is now ${role==='Admin'||role==='Owner'?'an':'a'} ${role} (was ${from})`,s);
+}
+
+/* remove */
+function confirmRemove(ids){
+  const ms=ids.map(i=>members.find(m=>m.id===i)).filter(Boolean); if(!ms.length)return;
+  const pend=ms.every(m=>m.status!=='active'), one=ms.length===1;
+  $('#rmT').textContent = pend ? (one?'Cancel invitation?':`Cancel ${ms.length} invitations?`) : (one?`Remove ${ms[0].name}?`:`Remove ${ms.length} members?`);
+  $('#rmBody').innerHTML = pend
+    ? `<p style="margin-top:0">${one?esc(ms[0].email):'These people'} won’t be able to join with the existing invite link.</p>`
+    : `<p style="margin-top:0">${one?`<b>${esc(ms[0].name)}</b> (${esc(ms[0].email)})`:'They'} will lose access to the workspace immediately and be signed out of all sessions.</p>
+       <ul class="muted" style="margin:8px 0 0;padding-left:18px"><li>Content they created stays in the workspace.</li><li>${ms.filter(m=>m.role!=='Viewer').length} paid seat${ms.filter(m=>m.role!=='Viewer').length===1?'':'s'} will be freed.</li><li>They can’t sign back in unless re-invited, even if they’re still in Okta.</li></ul>
+       ${one?'':`<p class="hint">${esc(ms.slice(0,4).map(m=>m.name||m.email).join(', '))}${ms.length>4?` and ${ms.length-4} more`:''}</p>`}`;
+  $('#rmGo').textContent = pend?'Cancel invitation':'Remove';
+  const dlg=$('#rmDlg'); dlg.returnValue='';
+  $('#rmGo').onclick=()=>{dlg.returnValue='ok'};
+  dlg.onclose=()=>{ if(dlg.returnValue!=='ok')return;
+    const s=snapshot(); members=members.filter(m=>!ids.includes(m.id)); ids.forEach(i=>sel.delete(i)); render();
+    toast(pend?'Invitation cancelled':`${ms.length} member${one?'':'s'} removed`, pend?null:s); };
+  dlg.showModal();
+}
+
+/* invite */
+let chips=[];
+const ok = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+const domOk = e => DOMAINS.includes(e.split('@')[1].toLowerCase());
+function addChips(text){
+  text.split(/[\s,;]+/).map(s=>s.trim().toLowerCase()).filter(Boolean).forEach(e=>{
+    if(chips.some(c=>c.e===e))return;
+    let bad = !ok(e) ? 'Not a valid email address' : !domOk(e) ? 'Not in a verified SSO domain' : members.some(m=>m.email===e) ? 'Already a member' : '';
+    chips.push({e,bad});
+  });
+  drawChips();
+}
+function drawChips(){
+  $('#chips').querySelectorAll('.chip').forEach(c=>c.remove());
+  chips.forEach((c,i)=>{const s=document.createElement('span');s.className='chip'+(c.bad?' bad':'');s.title=c.bad;
+    s.innerHTML=`${esc(c.e)}<button type="button" aria-label="Remove ${esc(c.e)}">×</button>`;
+    s.querySelector('button').onclick=()=>{chips.splice(i,1);drawChips();$('#emailIn').focus()};
+    $('#chips').insertBefore(s,$('#emailIn'))});
+  const bad=chips.filter(c=>c.bad), good=chips.length-bad.length, free=SEATS-seatsUsed();
+  const err=$('#emailErr');
+  const reasons=[...new Set(bad.map(c=>c.bad))];
+  err.hidden=!bad.length; err.textContent = bad.length ? `${bad.length} address${bad.length>1?'es':''} can’t be invited: ${reasons.join('; ').toLowerCase()}. Remove ${bad.length>1?'them':'it'} to continue.`:'';
+  const needs = $('#invRole').value==='Viewer'?0:good;
+  $('#seatNote').textContent = `${free} seat${free===1?'':'s'} available. ${needs?`This invite uses ${needs}.`:'Invites expire after 7 days.'}${needs>free?' Not enough seats: remove someone or add seats in Billing.':''}`;
+  $('#sendInv').disabled = !good || bad.length>0 || needs>free;
+  $('#sendInv').textContent = good?`Send ${good} invite${good>1?'s':''}`:'Send invites';
+}
+$('#invRole').innerHTML = Object.keys(ROLES).filter(r=>r!=='Owner').map(r=>`<option ${r==='Member'?'selected':''}>${r}</option>`).join('')+'<option>Owner</option>';
+$('#invRole').addEventListener('change',()=>{$('#invRoleDesc').textContent=ROLES[$('#invRole').value].d;drawChips()});
+$('#emailIn').addEventListener('keydown',e=>{
+  if(['Enter',',',' ','Tab'].includes(e.key)&&e.target.value.trim()){e.preventDefault();addChips(e.target.value);e.target.value=''}
+  else if(e.key==='Enter'){e.preventDefault()}
+  else if(e.key==='Backspace'&&!e.target.value&&chips.length){chips.pop();drawChips()}
+});
+$('#emailIn').addEventListener('paste',e=>{e.preventDefault();addChips(e.clipboardData.getData('text'))});
+$('#emailIn').addEventListener('blur',e=>{if(e.target.value.trim()){addChips(e.target.value);e.target.value=''}});
+$('#chips').addEventListener('click',()=>$('#emailIn').focus());
+$('#inviteBtn').onclick=()=>{chips=[];$('#emailIn').value='';$('#invRole').value='Member';$('#invRoleDesc').textContent=ROLES.Member.d;drawChips();$('#inviteDlg').showModal();$('#emailIn').focus()};
+$('#inviteForm').addEventListener('submit',e=>{
+  if($('#emailIn').value.trim()){addChips($('#emailIn').value);$('#emailIn').value=''}
+  if($('#sendInv').disabled){e.preventDefault();return}
+  const s=snapshot(), role=$('#invRole').value;
+  chips.forEach(c=>members.unshift({id:nextId++,name:'',email:c.e,role,status:'invited',src:'manual',last:'—',sent:'Sent just now · expires in 7 days'}));
+  toast(`${chips.length} invite${chips.length>1?'s':''} sent. They’ll sign in with Okta.`,s);
+  filt={q:'',s:'all',r:'all'};$('#q').value='';$('#roleF').value='all';syncSeg();render();
+});
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{b.closest('dialog').returnValue='cancel';b.closest('dialog').close()});
+
+/* toast */
+function toast(msg,undoSnap){
+  const t=document.createElement('div');t.className='toast';
+  t.innerHTML=`<span>${esc(msg)}</span>`;
+  if(undoSnap){const b=document.createElement('button');b.textContent='Undo';b.onclick=()=>{members=JSON.parse(undoSnap);sel.clear();render();t.remove()};t.append(b)}
+  $('#toasts').append(t);setTimeout(()=>t.remove(),7000);
+}
+render();
+</script>
+</body>
+</html>

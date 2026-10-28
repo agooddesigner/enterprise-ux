@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Ticket Board</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --surface: #ffffff; --col: #e9ebef; --text: #1b1f27; --muted: #4a5262;
+    --border: #8a93a3; --accent: #0b57d0; --accent-text: #ffffff; --focus: #0b57d0;
+    --drop: #d6e4ff; --grab: #fff3c4;
+    --high-bg: #ffe0de; --high-fg: #8a1410; --med-bg: #ffecc2; --med-fg: #6b4200; --low-bg: #dcf0e0; --low-fg: #124d22;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b; --surface: #1d222b; --col: #181c23; --text: #eef0f4; --muted: #b4bccb;
+      --border: #7b8597; --accent: #8ab4ff; --accent-text: #0a1530; --focus: #8ab4ff;
+      --drop: #1f3558; --grab: #4a3f12;
+      --high-bg: #5a1c19; --high-fg: #ffd2cf; --med-bg: #4d3a0b; --med-fg: #ffe2a3; --low-bg: #17401f; --low-fg: #bfe9c8;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
+  .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  .skip { position: absolute; left: 8px; top: -60px; background: var(--accent); color: var(--accent-text); padding: 8px 12px; border-radius: 6px; z-index: 10; }
+  .skip:focus { top: 8px; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  header, main { max-width: 1400px; margin: 0 auto; padding: 16px; }
+  h1 { margin: 0 0 4px; font-size: 1.5rem; }
+  .help { margin: 0 0 16px; color: var(--muted); max-width: 70ch; }
+  kbd { font: inherit; font-weight: 600; border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; }
+  form { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field.grow { flex: 1 1 240px; }
+  label { font-weight: 600; font-size: .875rem; }
+  input, select, button { font: inherit; color: var(--text); }
+  input, select { min-height: 44px; padding: 6px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; }
+  button { min-height: 44px; min-width: 44px; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
+  .error { color: var(--high-fg); background: var(--high-bg); padding: 2px 8px; border-radius: 4px; font-size: .875rem; }
+  .board { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 16px; align-items: start; }
+  .column { background: var(--col); border: 1px solid var(--border); border-radius: 10px; padding: 12px; min-height: 140px; }
+  .column.over { background: var(--drop); outline: 2px dashed var(--accent); }
+  .column h2 { margin: 0 0 12px; font-size: 1.05rem; display: flex; justify-content: space-between; gap: 8px; }
+  .count { font-weight: 400; color: var(--muted); }
+  ul.cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; min-height: 48px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .card[draggable="true"] { cursor: grab; }
+  .card.dragging { opacity: .5; }
+  .card.grabbed { background: var(--grab); outline: 3px solid var(--accent); }
+  .card.drop-before { box-shadow: 0 -4px 0 0 var(--accent); }
+  ul.cards.drop-end { box-shadow: 0 4px 0 0 var(--accent); }
+  .card h3 { margin: 0 0 4px; font-size: 1rem; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: .875rem; color: var(--muted); margin: 0 0 8px; }
+  .badge { font-weight: 600; padding: 0 8px; border-radius: 999px; }
+  .badge.High { background: var(--high-bg); color: var(--high-fg); }
+  .badge.Medium { background: var(--med-bg); color: var(--med-fg); }
+  .badge.Low { background: var(--low-bg); color: var(--low-fg); }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+  .actions .field { flex: 1 1 120px; }
+  .empty { color: var(--muted); font-style: italic; margin: 0; padding: 8px 0; }
+  @media (prefers-reduced-motion: no-preference) { .column, .card { transition: background-color .15s, opacity .15s; } }
+  @media (forced-colors: active) { .card.grabbed, .column.over { outline: 3px solid Highlight; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#board">Skip to board</a>
+<header>
+  <h1>Support ticket board</h1>
+  <p class="help" id="instructions">
+    Move tickets between columns by dragging with a mouse, by choosing a column in each ticket's
+    “Move to” menu, or with the keyboard: focus a ticket's “Reorder” button and press <kbd>Space</kbd> to pick it up,
+    use the <kbd>Arrow</kbd> keys to move it, <kbd>Space</kbd> to drop, or <kbd>Esc</kbd> to cancel.
+  </p>
+  <form id="add-form" novalidate>
+    <div class="field grow">
+      <label for="title">New ticket summary</label>
+      <input id="title" name="title" autocomplete="off" aria-describedby="title-error">
+      <span id="title-error" class="error" role="alert" hidden></span>
+    </div>
+    <div class="field">
+      <label for="priority">Priority</label>
+      <select id="priority"><option>Low</option><option selected>Medium</option><option>High</option></select>
+    </div>
+    <button class="primary" type="submit">Add ticket</button>
+  </form>
+</header>
+<main id="board" class="board" tabindex="-1" aria-label="Ticket board"></main>
+<div id="live" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+const COLUMNS = [
+  { id: 'new', name: 'New' },
+  { id: 'progress', name: 'In progress' },
+  { id: 'waiting', name: 'Waiting' },
+  { id: 'done', name: 'Done' },
+];
+const colName = id => COLUMNS.find(c => c.id === id).name;
+
+let tickets = [
+  { id: 1, title: 'Cannot reset password', priority: 'High', col: 'new', who: 'Ana P.' },
+  { id: 2, title: 'Invoice shows wrong VAT number', priority: 'Medium', col: 'new', who: 'Liam K.' },
+  { id: 3, title: 'Export to CSV times out', priority: 'High', col: 'progress', who: 'Priya S.' },
+  { id: 4, title: 'Request: dark mode for dashboard', priority: 'Low', col: 'waiting', who: 'Tom W.' },
+  { id: 5, title: 'Webhook retries not firing', priority: 'Medium', col: 'progress', who: 'Chen L.' },
+  { id: 6, title: 'Update billing email', priority: 'Low', col: 'done', who: 'Sara M.' },
+];
+let nextId = 7;
+let grab = null;       // { id, origCol, origIndex } while keyboard-moving
+let dragId = null;     // id during pointer drag
+
+const $board = document.getElementById('board');
+const $live = document.getElementById('live');
+const inCol = c => tickets.filter(t => t.col === c);
+const announce = msg => { $live.textContent = ''; setTimeout(() => { $live.textContent = msg; }, 30); };
+const esc = s => s.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
+function render(focusSel) {
+  $board.innerHTML = COLUMNS.map(c => {
+    const list = inCol(c.id);
+    return `<section class="column" data-col="${c.id}" aria-labelledby="h-${c.id}">
+      <h2 id="h-${c.id}">${c.name} <span class="count"><span class="sr-only">, </span>${list.length}<span class="sr-only"> ${list.length === 1 ? 'ticket' : 'tickets'}</span></span></h2>
+      ${list.length ? '' : '<p class="empty">No tickets</p>'}
+      <ul class="cards" data-col="${c.id}" aria-labelledby="h-${c.id}">
+        ${list.map((t, i) => `
+        <li class="card${grab && grab.id === t.id ? ' grabbed' : ''}" data-id="${t.id}" draggable="true">
+          <h3 id="t-${t.id}">${esc(t.title)}</h3>
+          <p class="meta"><span class="badge ${t.priority}">${t.priority} priority</span><span>${esc(t.who)}</span></p>
+          <div class="actions">
+            <button type="button" class="grab" data-id="${t.id}" aria-pressed="${!!(grab && grab.id === t.id)}" aria-describedby="t-${t.id} instructions">Reorder<span class="sr-only"> ${esc(t.title)}, position ${i + 1} of ${list.length}</span></button>
+            <div class="field">
+              <label for="mv-${t.id}">Move to<span class="sr-only"> column: ${esc(t.title)}</span></label>
+              <select id="mv-${t.id}" class="move" data-id="${t.id}">
+                ${COLUMNS.map(o => `<option value="${o.id}"${o.id === t.col ? ' selected' : ''}>${o.name}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+        </li>`).join('')}
+      </ul>
+    </section>`;
+  }).join('');
+  if (focusSel) { const el = $board.querySelector(focusSel); if (el) el.focus(); }
+}
+
+function moveTicket(id, col, index) {
+  const t = tickets.find(x => x.id === id);
+  tickets = tickets.filter(x => x !== t);
+  t.col = col;
+  const list = inCol(col);
+  if (index >= list.length) {
+    const last = list[list.length - 1];
+    tickets.splice(last ? tickets.indexOf(last) + 1 : tickets.length, 0, t);
+  } else {
+    tickets.splice(tickets.indexOf(list[index]), 0, t);
+  }
+}
+const posOf = id => { const t = tickets.find(x => x.id === id); return { col: t.col, index: inCol(t.col).indexOf(t) }; };
+const where = id => { const p = posOf(id), n = inCol(p.col).length; return `position ${p.index + 1} of ${n} in ${colName(p.col)}`; };
+const titleOf = id => tickets.find(x => x.id === id).title;
+
+/* Native select: simple, touch- and screen-reader-friendly alternative to dragging */
+$board.addEventListener('change', e => {
+  if (!e.target.matches('select.move')) return;
+  const id = +e.target.dataset.id;
+  moveTicket(id, e.target.value, Infinity);
+  render(`select.move[data-id="${id}"]`);
+  announce(`Moved “${titleOf(id)}” to ${where(id)}.`);
+});
+
+/* Keyboard drag and drop on the Reorder button */
+$board.addEventListener('click', e => {
+  const b = e.target.closest('button.grab'); if (!b) return;
+  const id = +b.dataset.id;
+  if (grab && grab.id === id) {
+    grab = null; render(`button.grab[data-id="${id}"]`);
+    announce(`Dropped “${titleOf(id)}” at ${where(id)}.`);
+  } else {
+    grab = { id, origCol: posOf(id).col, origIndex: posOf(id).index };
+    render(`button.grab[data-id="${id}"]`);
+    announce(`Picked up “${titleOf(id)}”, ${where(id)}. Arrow keys move it, Space drops, Escape cancels.`);
+  }
+});
+$board.addEventListener('keydown', e => {
+  const b = e.target.closest('button.grab');
+  if (!b || !grab || grab.id !== +b.dataset.id) return;
+  const id = grab.id, p = posOf(id), ci = COLUMNS.findIndex(c => c.id === p.col);
+  let handled = true;
+  if (e.key === 'ArrowUp') { if (p.index > 0) moveTicket(id, p.col, p.index - 1); else return keep(e); }
+  else if (e.key === 'ArrowDown') { if (p.index < inCol(p.col).length - 1) moveTicket(id, p.col, p.index + 1); else return keep(e); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const n = COLUMNS[ci + (e.key === 'ArrowLeft' ? -1 : 1)];
+    if (!n) return keep(e);
+    moveTicket(id, n.id, Math.min(p.index, inCol(n.id).length));
+  }
+  else if (e.key === 'Escape') {
+    moveTicket(id, grab.origCol, grab.origIndex); grab = null;
+    e.preventDefault(); render(`button.grab[data-id="${id}"]`);
+    return announce(`Cancelled. “${titleOf(id)}” returned to ${where(id)}.`);
+  }
+  else handled = false;
+  if (!handled) return;
+  e.preventDefault();
+  render(`button.grab[data-id="${id}"]`);
+  announce(`${where(id)}.`);
+});
+function keep(e) { e.preventDefault(); announce('Cannot move further in that direction.'); }
+// Dropping on blur so a picked-up ticket never stays "stuck" when focus leaves the button
+$board.addEventListener('focusout', e => {
+  if (!grab || !e.target.matches('button.grab')) return;
+  setTimeout(() => {
+    if (grab && !document.activeElement.matches('button.grab[aria-pressed="true"]')) {
+      const id = grab.id; grab = null; render();
+      announce(`Dropped “${titleOf(id)}” at ${where(id)}.`);
+    }
+  }, 0);
+});
+
+/* Pointer drag and drop */
+function clearMarks() {
+  $board.querySelectorAll('.over,.drop-before,.drop-end').forEach(n => n.classList.remove('over', 'drop-before', 'drop-end'));
+}
+function dropTarget(ul, y) {
+  const cards = [...ul.querySelectorAll('.card:not(.dragging)')];
+  const before = cards.find(c => { const r = c.getBoundingClientRect(); return y < r.top + r.height / 2; });
+  return { before, index: before ? cards.indexOf(before) : cards.length };
+}
+$board.addEventListener('dragstart', e => {
+  const li = e.target.closest('.card'); if (!li) return;
+  dragId = +li.dataset.id; li.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(dragId));
+});
+$board.addEventListener('dragover', e => {
+  const sec = e.target.closest('.column'); if (dragId === null || !sec) return;
+  e.preventDefault(); clearMarks(); sec.classList.add('over');
+  const ul = sec.querySelector('ul.cards'), { before } = dropTarget(ul, e.clientY);
+  (before || ul).classList.add(before ? 'drop-before' : 'drop-end');
+});
+$board.addEventListener('drop', e => {
+  const sec = e.target.closest('.column'); if (dragId === null || !sec) return;
+  e.preventDefault();
+  const id = dragId, { index } = dropTarget(sec.querySelector('ul.cards'), e.clientY);
+  dragId = null; moveTicket(id, sec.dataset.col, index);
+  render(`button.grab[data-id="${id}"]`);
+  announce(`Moved “${titleOf(id)}” to ${where(id)}.`);
+});
+$board.addEventListener('dragend', () => { dragId = null; clearMarks(); $board.querySelectorAll('.dragging').forEach(n => n.classList.remove('dragging')); });
+
+/* Add ticket, with an inline, announced error */
+document.getElementById('add-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const input = document.getElementById('title'), err = document.getElementById('title-error');
+  const title = input.value.trim();
+  if (!title) {
+    err.textContent = 'Enter a ticket summary.'; err.hidden = false;
+    input.setAttribute('aria-invalid', 'true'); input.focus(); return;
+  }
+  err.hidden = true; input.removeAttribute('aria-invalid');
+  const t = { id: nextId++, title, priority: document.getElementById('priority').value, col: 'new', who: 'You' };
+  tickets.push(t); input.value = ''; render();
+  announce(`Added “${title}” to New, ${where(t.id)}.`);
+  input.focus();
+});
+
+render();
+</script>
+</body>
+</html>

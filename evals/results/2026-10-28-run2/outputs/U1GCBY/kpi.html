@@ -1,0 +1,219 @@
+<title>Manager KPI Dashboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: Lightning-style app shell. Global header, tab bar, grey canvas, white bordered panels. Blue is the only accent; status colors are separate. */
+:root{
+  --bg:#f3f3f3; --panel:#ffffff; --line:#dddbda; --line-soft:#ecebea;
+  --ink:#181818; --ink2:#444444; --muted:#706e6b;
+  --brand:#0176d3; --brand-ink:#014486; --brand-wash:#eef4ff; --header:#032d60;
+  --good:#2e844a; --warn:#a96404; --crit:#ba0517; --good-bg:#ebf7e6; --warn-bg:#fff4e0; --crit-bg:#feded8;
+  --font:"Source Sans 3",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#16191f; --panel:#1f242c; --line:#3a4350; --line-soft:#2b323c;
+  --ink:#f1f3f5; --ink2:#c9cfd6; --muted:#9aa4b0;
+  --brand:#57a7f0; --brand-ink:#9fcdf7; --brand-wash:#1b2f45; --header:#0b1220;
+  --good:#5fc27a; --warn:#e8a54b; --crit:#ff7a73; --good-bg:#17301f; --warn-bg:#3a2b10; --crit-bg:#3d1b1a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#16191f; --panel:#1f242c; --line:#3a4350; --line-soft:#2b323c;
+  --ink:#f1f3f5; --ink2:#c9cfd6; --muted:#9aa4b0;
+  --brand:#57a7f0; --brand-ink:#9fcdf7; --brand-wash:#1b2f45; --header:#0b1220;
+  --good:#5fc27a; --warn:#e8a54b; --crit:#ff7a73; --good-bg:#17301f; --warn-bg:#3a2b10; --crit-bg:#3d1b1a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.4;margin:0}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.wrap{padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px))}
+.gh{background:var(--header);color:#fff}
+.gh .wrap{display:flex;align-items:center;gap:16px;height:48px}
+.logo{font-weight:700;font-size:15px;white-space:nowrap}
+.search{flex:1;max-width:480px;background:rgba(255,255,255,.14);border:0;border-radius:4px;color:#fff;padding:6px 10px;font:inherit;min-width:0}
+.search::placeholder{color:#c5d3e6}
+.gh .sp{flex:1}
+.avatar{width:28px;height:28px;border-radius:50%;background:#5eb4ff;color:#032d60;display:grid;place-items:center;font-weight:700;font-size:12px}
+.tabs{background:var(--panel);border-bottom:1px solid var(--line)}
+.tabs .wrap{display:flex;gap:4px;overflow-x:auto}
+.tab{padding:12px 14px;border:0;background:none;color:var(--ink2);border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;font-weight:600}
+.tab[aria-selected="true"]{color:var(--brand-ink);border-bottom-color:var(--brand)}
+.tab:hover{color:var(--brand-ink)}
+main{display:flex;flex-direction:column;gap:12px;padding-block:16px 32px}
+.head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+h1{font-size:22px;margin:0;font-weight:700}
+.sub{color:var(--muted);font-size:12px;margin-top:2px}
+.sample{display:inline-block;background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:1px 8px;font-size:11px;font-weight:600;margin-left:6px}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.seg{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:none;padding:6px 12px;cursor:pointer;color:var(--brand-ink);font-weight:600;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--brand);color:#fff}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--brand-ink);border-radius:4px;padding:6px 14px;font-weight:600;cursor:pointer}
+.btn:hover{background:var(--brand-wash)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.danger{background:var(--crit);border-color:var(--crit);color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:4px;min-width:0}
+.kpi{padding:12px 16px;display:flex;flex-direction:column;gap:4px}
+.kpi .lab{color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.kpi .row{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.kpi .val{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi .meta{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)}
+.delta{font-weight:600;font-variant-numeric:tabular-nums}
+.delta.good{color:var(--good)}.delta.crit{color:var(--crit)}
+.grid2{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px}
+@media(max-width:860px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.ph{padding:12px 16px;border-bottom:1px solid var(--line-soft);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
+.ph h2{margin:0;font-size:15px;font-weight:700}
+.pb{padding:12px 16px;position:relative}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--ink2)}
+.legend i{display:inline-block;width:14px;height:0;border-top:2px solid var(--brand);vertical-align:middle;margin-right:6px}
+.legend i.t{border-top:2px dashed var(--muted)}
+svg text{fill:var(--muted);font-family:var(--font);font-size:11px}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);padding:6px 10px;border-radius:4px;font-size:12px;white-space:nowrap;transform:translate(-50%,-110%);opacity:0}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:640px}
+th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:8px 16px;background:var(--bg);border-bottom:1px solid var(--line);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+td{padding:10px 16px;border-bottom:1px solid var(--line-soft);font-variant-numeric:tabular-nums}
+td.n,th.n{text-align:right}
+tr:last-child td{border-bottom:0}
+.pill{display:inline-flex;gap:4px;align-items:center;border-radius:10px;padding:1px 8px;font-size:12px;font-weight:600}
+.pill.good{background:var(--good-bg);color:var(--good)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.crit{background:var(--crit-bg);color:var(--crit)}
+.lnk{border:0;background:none;color:var(--brand-ink);cursor:pointer;padding:2px 6px;font-weight:600}
+.lnk:hover{text-decoration:underline}
+.lnk.d{color:var(--crit)}
+.bars{display:flex;flex-direction:column;gap:12px}
+.bar .t{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.bar .track{height:8px;background:var(--line-soft);border-radius:0 4px 4px 0;position:relative}
+.bar .fill{height:100%;background:var(--brand);border-radius:0 4px 4px 0}
+.bar .goal{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink2)}
+.note{font-size:12px;color:var(--muted);margin-top:12px}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);display:grid;place-items:center;padding:16px;z-index:50}
+.modal{background:var(--panel);border-radius:6px;max-width:440px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.35)}
+.modal h3{margin:0;padding:16px 20px;border-bottom:1px solid var(--line);font-size:18px}
+.modal p{margin:0;padding:16px 20px;color:var(--ink2)}
+.modal .ft{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;background:var(--bg);border-top:1px solid var(--line);border-radius:0 0 6px 6px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--header);color:#fff;border-radius:4px;padding:10px 16px;display:flex;gap:16px;align-items:center;z-index:60;max-width:calc(100% - 32px)}
+.toast button{border:0;background:none;color:#9fcdf7;font-weight:700;cursor:pointer}
+@media(prefers-reduced-motion:no-preference){.bar .fill{transition:width .4s}}
+</style>
+
+<header class="gh"><div class="wrap">
+  <span class="logo">Team Performance</span>
+  <input class="search" id="q" type="search" placeholder="Search KPIs, owners, teams" aria-label="Search KPIs">
+  <span class="sp"></span>
+  <span class="avatar" aria-label="Signed in user">MG</span>
+</div></header>
+<nav class="tabs" aria-label="Sections"><div class="wrap" role="tablist">
+  <button class="tab" role="tab" aria-selected="true">Overview</button>
+  <button class="tab" role="tab" aria-selected="false">Sales</button>
+  <button class="tab" role="tab" aria-selected="false">Support</button>
+  <button class="tab" role="tab" aria-selected="false">People</button>
+</div></nav>
+
+<div class="wrap"><main>
+  <div class="head">
+    <div>
+      <h1>KPI overview</h1>
+      <div class="sub">All teams · As of Oct 28, 2026, 9:00 AM <span class="sample">Sample data</span></div>
+    </div>
+    <div class="tools">
+      <div class="seg" role="group" aria-label="Date range" id="range">
+        <button aria-pressed="false" data-n="4">4 wk</button>
+        <button aria-pressed="false" data-n="8">8 wk</button>
+        <button aria-pressed="true" data-n="12">12 wk</button>
+      </div>
+      <button class="btn" id="export">Export</button>
+    </div>
+  </div>
+
+  <section class="kpis" id="kpis" aria-label="Headline KPIs"></section>
+
+  <section class="grid2">
+    <div class="panel">
+      <div class="ph"><h2>Revenue vs target</h2>
+        <div class="legend"><span><i></i>Revenue</span><span><i class="t"></i>Target</span></div></div>
+      <div class="pb" id="chartbox"><svg id="chart" width="100%" role="img" aria-label="Weekly revenue against target"></svg><div class="tip" id="tip"></div></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><h2>Quota attainment by team</h2></div>
+      <div class="pb"><div class="bars" id="bars"></div>
+        <div class="note">Marker shows 100% of quota.</div></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="ph"><h2>All KPIs</h2><span class="sub" id="count"></span></div>
+    <div class="tbl"><table>
+      <thead><tr><th>KPI</th><th>Owner</th><th class="n">Current</th><th class="n">Target</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="rows"></tbody></table></div>
+  </section>
+</main></div>
+
+<script>
+const K=[
+ {n:"Revenue",o:"Dana Reyes",v:"$2.84M",t:"$3.00M",s:"warn",d:"+4.2%",up:1,sp:[2.1,2.2,2.15,2.4,2.5,2.45,2.6,2.7,2.65,2.75,2.8,2.84]},
+ {n:"Pipeline coverage",o:"Dana Reyes",v:"3.2x",t:"3.0x",s:"good",d:"+0.3x",up:1,sp:[2.6,2.7,2.7,2.8,2.9,2.85,3,3,3.1,3.1,3.15,3.2]},
+ {n:"Win rate",o:"Priya Nair",v:"24%",t:"28%",s:"crit",d:"-2.1 pts",up:0,sp:[28,27,27,26,26,25,26,25,25,24,25,24]},
+ {n:"Avg. resolution time",o:"Sam Okafor",v:"6.4 h",t:"8.0 h",s:"good",d:"-0.8 h",up:1,sp:[8.2,8,7.9,7.6,7.4,7.5,7.2,7,6.9,6.7,6.5,6.4]},
+ {n:"Customer satisfaction",o:"Sam Okafor",v:"4.5 / 5",t:"4.6 / 5",s:"warn",d:"+0.1",up:1,sp:[4.3,4.3,4.4,4.4,4.35,4.4,4.45,4.4,4.5,4.45,4.5,4.5]},
+ {n:"Attrition (annualized)",o:"Lee Tran",v:"3.1%",t:"≤ 4.0%",s:"good",d:"-0.4 pts",up:1,sp:[4.1,4,3.9,3.8,3.8,3.6,3.5,3.4,3.3,3.3,3.2,3.1]}];
+const ST={good:["✓","On track"],warn:["!","At risk"],crit:["✕","Off track"]};
+const $=s=>document.querySelector(s), NS="http://www.w3.org/2000/svg";
+function spark(a){const w=96,h=32,mn=Math.min(...a),mx=Math.max(...a),x=i=>i*(w-6)/(a.length-1)+3,y=v=>h-4-(v-mn)/(mx-mn||1)*(h-8);
+ const p=a.map((v,i)=>x(i)+","+y(v)).join(" ");
+ return `<svg width="${w}" height="${h}" aria-hidden="true"><polyline points="${p}" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linejoin="round"/><circle cx="${x(a.length-1)}" cy="${y(a[a.length-1])}" r="3.5" fill="var(--brand)" stroke="var(--panel)" stroke-width="2"/></svg>`}
+$("#kpis").innerHTML=K.map(k=>`<div class="panel kpi"><span class="lab">${k.n}</span>
+ <div class="row"><span class="val">${k.v}</span>${spark(k.sp)}</div>
+ <div class="meta"><span class="delta ${k.up?"good":"crit"}">${k.d}</span><span>vs prior 4 wk · target ${k.t}</span></div></div>`).join("");
+
+let hidden=new Set();
+function rows(){const q=$("#q").value.toLowerCase();
+ const list=K.filter(k=>!hidden.has(k.n)&&(k.n+k.o).toLowerCase().includes(q));
+ $("#rows").innerHTML=list.map(k=>`<tr><td><b>${k.n}</b></td><td>${k.o}</td><td class="n">${k.v}</td><td class="n">${k.t}</td>
+ <td><span class="pill ${k.s}"><span aria-hidden="true">${ST[k.s][0]}</span>${ST[k.s][1]}</span></td>
+ <td><button class="lnk" data-a="refresh" data-n="${k.n}">Refresh</button><button class="lnk d" data-a="remove" data-n="${k.n}">Remove</button></td></tr>`).join("")
+ ||`<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">No KPIs match "${$("#q").value}".</td></tr>`;
+ $("#count").textContent=list.length+" of "+K.length+" KPIs"}
+$("#q").addEventListener("input",rows);rows();
+
+const T=[["Platform",104],["Enterprise",97],["Mid-market",88],["SMB",71],["Partners",63]];
+$("#bars").innerHTML=T.map(([n,p])=>`<div class="bar"><div class="t"><span>${n}</span><b style="font-variant-numeric:tabular-nums">${p}%</b></div>
+ <div class="track"><div class="fill" style="width:${Math.min(p,120)/1.2}%"></div><div class="goal" style="left:${100/1.2}%"></div></div></div>`).join("");
+
+const REV=[1.9,2.0,2.05,2.2,2.3,2.25,2.4,2.5,2.45,2.6,2.7,2.84],TGT=[2.2,2.25,2.3,2.4,2.5,2.55,2.6,2.7,2.75,2.85,2.95,3.0];
+const WK=REV.map((_,i)=>"Wk "+(i+27));
+function chart(n){const svg=$("#chart"),W=svg.parentNode.clientWidth-32,H=260,m={l:40,r:12,t:12,b:26};
+ svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.setAttribute("height",H);svg.innerHTML="";
+ const r=REV.slice(-n),t=TGT.slice(-n),w=WK.slice(-n),lo=1.5,hi=3.5,
+ x=i=>m.l+i*(W-m.l-m.r)/(n-1),y=v=>H-m.b-(v-lo)/(hi-lo)*(H-m.t-m.b);
+ const el=(tag,a,txt)=>{const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt)e.textContent=txt;svg.appendChild(e);return e};
+ [1.5,2,2.5,3,3.5].forEach(v=>{el("line",{x1:m.l,x2:W-m.r,y1:y(v),y2:y(v),stroke:"var(--line-soft)"});el("text",{x:m.l-6,y:y(v)+4,"text-anchor":"end"},"$"+v.toFixed(1)+"M")});
+ w.forEach((l,i)=>{if(n<=8||i%2==0||i==n-1)el("text",{x:x(i),y:H-8,"text-anchor":"middle"},l)});
+ const pts=a=>a.map((v,i)=>x(i)+","+y(v)).join(" ");
+ el("polygon",{points:`${x(0)},${y(lo)} ${pts(r)} ${x(n-1)},${y(lo)}`,fill:"var(--brand)","fill-opacity":.1});
+ el("polyline",{points:pts(t),fill:"none",stroke:"var(--muted)","stroke-width":2,"stroke-dasharray":"5 4"});
+ el("polyline",{points:pts(r),fill:"none",stroke:"var(--brand)","stroke-width":2,"stroke-linejoin":"round"});
+ el("circle",{cx:x(n-1),cy:y(r[n-1]),r:4,fill:"var(--brand)",stroke:"var(--panel)","stroke-width":2});
+ const cur=el("line",{y1:m.t,y2:H-m.b,stroke:"var(--ink2)","stroke-width":1,opacity:0}),dot=el("circle",{r:5,fill:"var(--brand)",stroke:"var(--panel)","stroke-width":2,opacity:0}),tip=$("#tip");
+ const hit=el("rect",{x:m.l,y:m.t,width:W-m.l-m.r,height:H-m.t-m.b,fill:"transparent"});
+ const move=e=>{const b=svg.getBoundingClientRect(),px=(e.clientX-b.left)/b.width*W;const i=Math.max(0,Math.min(n-1,Math.round((px-m.l)/((W-m.l-m.r)/(n-1)))));
+  cur.setAttribute("x1",x(i));cur.setAttribute("x2",x(i));cur.setAttribute("opacity",1);dot.setAttribute("cx",x(i));dot.setAttribute("cy",y(r[i]));dot.setAttribute("opacity",1);
+  tip.innerHTML=`<b>${w[i]}</b> · Revenue $${r[i].toFixed(2)}M · Target $${t[i].toFixed(2)}M`;tip.style.left=Math.max(110,Math.min(W-110,x(i)+16))+"px";tip.style.top=(y(r[i])+12)+"px";tip.style.opacity=1};
+ hit.addEventListener("pointermove",move);hit.addEventListener("pointerleave",()=>{cur.setAttribute("opacity",0);dot.setAttribute("opacity",0);tip.style.opacity=0})}
+let N=12;chart(N);addEventListener("resize",()=>chart(N));
+$("#range").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;N=+b.dataset.n;
+ document.querySelectorAll("#range button").forEach(x=>x.setAttribute("aria-pressed",x===b));chart(N)});
+
+let tt;function toast(msg,undo){document.querySelector(".toast")?.remove();clearTimeout(tt);
+ const d=document.createElement("div");d.className="toast";d.setAttribute("role","status");d.innerHTML=`<span>${msg}</span>`+(undo?`<button>Undo</button>`:"");
+ document.body.appendChild(d);if(undo)d.querySelector("button").onclick=()=>{undo();d.remove()};tt=setTimeout(()=>d.remove(),6000)}
+function confirmBox(title,body,label,ok){const s=document.createElement("div");s.className="scrim";
+ s.innerHTML=`<div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="mt"><h3 id="mt">${title}</h3><p>${body}</p><div class="ft"><button class="btn" data-c>Cancel</button><button class="btn danger" data-o>${label}</button></div></div>`;
+ const prev=document.activeElement,close=()=>{s.remove();removeEventListener("keydown",esc);prev?.focus()},esc=e=>{if(e.key==="Escape")close()};
+ s.querySelector("[data-c]").onclick=close;s.querySelector("[data-o]").onclick=()=>{close();ok()};s.onclick=e=>{if(e.target===s)close()};
+ addEventListener("keydown",esc);document.body.appendChild(s);s.querySelector("[data-c]").focus()}
+$("#export").onclick=()=>toast("Exported KPI overview (12 wk) as CSV.");
+$("#rows").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const n=b.dataset.n;
+ if(b.dataset.a==="refresh")toast(`${n} refreshed.`);
+ else confirmBox(`Remove "${n}"?`,"This deletes the KPI and its history for everyone. It can't be undone.","Remove KPI",()=>{hidden.add(n);rows();toast(`${n} removed.`)})});
+</script>

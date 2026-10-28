@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Staffing Briefing</title>
+<style>
+/* Art direction: a calm morning briefing. Tinted canvas, white rounded cards, one ink card that answers
+   "where do my agents go", violet as the single data accent, lime used once for the key outcome. */
+:root{
+  --canvas:#eceef6; --card:#fff; --ink:#14131f; --ink-2:#4a4960; --ink-3:#6b6a80;
+  --line:#e4e5ef; --track:#eef0f7; --accent:#5b4bdb; --accent-soft:#e9e6ff;
+  --anchor:#14131f; --anchor-ink:#fff; --anchor-2:#b9b8cf; --lime:#d7f36b;
+  --crit:#c42b45; --crit-bg:#fde8ec; --warn:#a85d00; --warn-bg:#fff0d6; --ok:#17744c; --ok-bg:#dff5e9;
+  --shadow:0 1px 2px rgba(20,19,31,.04),0 8px 24px rgba(20,19,31,.04);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --canvas:#0e0d16; --card:#181724; --ink:#f2f1fa; --ink-2:#c3c2d6; --ink-3:#9a99b0;
+  --line:#2a2938; --track:#232234; --accent:#9d92ff; --accent-soft:#2a2650;
+  --anchor:#262347; --anchor-ink:#fff; --anchor-2:#b9b8d6;
+  --crit:#ff7088; --crit-bg:#3a1822; --warn:#ffb454; --warn-bg:#3a2a10; --ok:#4fd39b; --ok-bg:#12332a;
+  --shadow:none;}}
+:root[data-theme=dark]{
+  --canvas:#0e0d16; --card:#181724; --ink:#f2f1fa; --ink-2:#c3c2d6; --ink-3:#9a99b0;
+  --line:#2a2938; --track:#232234; --accent:#9d92ff; --accent-soft:#2a2650;
+  --anchor:#262347; --anchor-ink:#fff; --anchor-2:#b9b8d6;
+  --crit:#ff7088; --crit-bg:#3a1822; --warn:#ffb454; --warn-bg:#3a2a10; --ok:#4fd39b; --ok-bg:#12332a;--shadow:none;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--canvas);color:var(--ink);font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+.wrap{max-width:1360px;margin:0 auto;padding:28px 24px 56px}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+header{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;margin-bottom:20px}
+.eyebrow{font-size:13px;color:var(--ink-3);font-weight:600;letter-spacing:.02em}
+h1{font-size:clamp(30px,4vw,44px);line-height:1.05;margin:4px 0 8px;letter-spacing:-.02em;font-weight:700}
+.fresh{display:flex;align-items:center;gap:8px;color:var(--ink-3);font-size:13px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 14px;font-weight:600;font-size:13px;min-height:40px}
+.pill:hover{border-color:var(--accent)}
+.pill.static{cursor:default;color:var(--ink-2)}
+.icon-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;font-size:16px}
+
+.incident{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;background:var(--crit-bg);color:var(--ink);border-radius:20px;padding:14px 20px;margin-bottom:20px;border:1px solid color-mix(in srgb,var(--crit) 30%,transparent)}
+.incident b.tag{color:var(--crit);display:inline-flex;gap:6px;align-items:center}
+.incident a{color:var(--ink);font-weight:600;margin-left:auto}
+
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:20px}
+.card{background:var(--card);border-radius:24px;padding:24px;box-shadow:var(--shadow);min-width:0}
+.c12{grid-column:span 12}.c7{grid-column:span 7}.c5{grid-column:span 5}.c8{grid-column:span 8}.c4{grid-column:span 4}
+.card h2{font-size:16px;margin:0;font-weight:700}
+.card .sub{color:var(--ink-3);font-size:13px;margin:2px 0 0}
+.card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:16px}
+
+/* hero */
+.hero{background:var(--anchor);color:var(--anchor-ink);display:flex;flex-direction:column;justify-content:space-between;gap:20px;min-height:300px}
+.hero .eyebrow{color:var(--anchor-2)}
+.hero h2{font-size:clamp(22px,2.4vw,30px);line-height:1.2;font-weight:650;max-width:30ch;margin:8px 0 0;letter-spacing:-.01em}
+.big{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.big .from{font-size:clamp(36px,4vw,52px);color:var(--anchor-2);text-decoration:line-through;text-decoration-thickness:2px;font-weight:600}
+.big .arrow{font-size:32px;color:var(--anchor-2)}
+.big .to{font-size:clamp(64px,8vw,96px);line-height:.95;font-weight:700;color:var(--lime);letter-spacing:-.03em}
+.big .unit{font-size:16px;color:var(--anchor-2);font-weight:500}
+.hero-foot{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.hero-foot p{margin:0;color:var(--anchor-2);font-size:13px;max-width:46ch}
+.btn{border:0;border-radius:999px;padding:12px 22px;font-weight:700;min-height:44px}
+.btn.primary{background:var(--lime);color:#14131f}
+.btn.primary:hover{filter:brightness(.95)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+
+/* kpis */
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.kpi{display:flex;flex-direction:column;justify-content:space-between;gap:10px;min-height:140px}
+.kpi .label{color:var(--ink-3);font-size:13px;font-weight:600}
+.kpi .v{font-size:40px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.kpi .v small{font-size:18px;color:var(--ink-3);font-weight:600;margin-left:2px}
+.delta{display:inline-flex;gap:4px;align-items:center;font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;width:fit-content}
+.delta.bad{background:var(--crit-bg);color:var(--crit)}.delta.good{background:var(--ok-bg);color:var(--ok)}.delta.flat{background:var(--track);color:var(--ink-2)}
+.kpi .note{font-size:12px;color:var(--ink-3)}
+.kpi-link{all:unset;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;gap:10px;min-height:140px;width:100%}
+.kpi-link:focus-visible{outline:3px solid var(--accent);outline-offset:6px;border-radius:12px}
+
+/* moves */
+.move{display:grid;grid-template-columns:auto 1fr;gap:12px;padding:14px 0;border-top:1px solid var(--line)}
+.move:first-of-type{border-top:0;padding-top:0}
+.move input{width:22px;height:22px;accent-color:var(--accent);margin-top:2px}
+.move label{cursor:pointer;display:block}
+.route{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;font-weight:700}
+.chip{background:var(--track);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;color:var(--ink-2)}
+.chip.n{background:var(--accent-soft);color:var(--accent)}
+.why{color:var(--ink-3);font-size:13px;margin-top:3px;display:block}
+.move.off .route{opacity:.55}
+
+/* table */
+.tbl-wrap{overflow-x:auto;margin:0 -8px}
+table{width:100%;border-collapse:collapse;min-width:900px}
+th,td{padding:12px 8px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;color:var(--ink-3);font-weight:700;white-space:nowrap}
+th button{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+th button:focus-visible{outline:3px solid var(--accent);border-radius:6px}
+td.r,th.r{text-align:right}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+.qname{font-weight:700}
+.qsub{color:var(--ink-3);font-size:12px}
+.agents{display:inline-flex;gap:8px;align-items:center;font-weight:700}
+.agents .chg{font-size:12px;border-radius:999px;padding:1px 8px}
+.chg.up{background:var(--ok-bg);color:var(--ok)}.chg.down{background:var(--track);color:var(--ink-2)}
+.cov{display:flex;align-items:center;gap:10px;min-width:160px}
+.bar{flex:1;height:12px;border-radius:999px;background:var(--track);position:relative;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;border-radius:999px}
+.status{display:inline-flex;gap:6px;align-items:center;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.s-crit{background:var(--crit-bg);color:var(--crit)}.s-warn{background:var(--warn-bg);color:var(--warn)}.s-ok{background:var(--ok-bg);color:var(--ok)}
+.fill-crit{background:var(--crit)}.fill-warn{background:#e8920c}.fill-ok{background:var(--ok)}
+.tag-inc{font-size:11px;font-weight:700;background:var(--crit-bg);color:var(--crit);border-radius:999px;padding:1px 8px;margin-left:6px}
+.arrow-s{color:var(--ink-3);margin:0 4px}
+
+/* chart */
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);align-items:center}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.sw{width:12px;height:12px;border-radius:4px;display:inline-block}
+.chart{position:relative}
+.chart svg{width:100%;height:auto;display:block;overflow:visible}
+.tip{position:absolute;pointer-events:none;background:var(--anchor);color:#fff;border-radius:12px;padding:8px 12px;font-size:12px;opacity:0;transition:opacity .1s;white-space:nowrap;z-index:2;transform:translate(-50%,-100%)}
+details.dt{margin-top:12px;font-size:13px;color:var(--ink-2)}
+details.dt summary{cursor:pointer;font-weight:600}
+details.dt table{min-width:0;margin-top:8px}
+
+/* accounts */
+.acct{display:grid;grid-template-columns:1.3fr 2fr auto auto;gap:16px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.acct:first-of-type{border-top:0}
+.acct .arr{color:var(--ink-3);font-size:12px}
+.eta{font-weight:700;border-radius:999px;padding:4px 12px;font-size:13px}
+.acct a{color:var(--accent);font-weight:700;text-decoration:none;white-space:nowrap}
+.acct a:hover{text-decoration:underline}
+ul.changes{margin:0;padding:0;list-style:none}
+ul.changes li{padding:12px 0;border-top:1px solid var(--line);display:flex;gap:12px}
+ul.changes li:first-child{border-top:0;padding-top:0}
+ul.changes .ic{flex:none;width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:700;font-size:13px}
+
+/* states */
+.skel{border-radius:12px;background:linear-gradient(90deg,var(--track),color-mix(in srgb,var(--track) 50%,var(--card)),var(--track));background-size:200% 100%;animation:sh 1.2s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.state{display:grid;place-items:center;text-align:center;gap:8px;min-height:140px;color:var(--ink-2)}
+.state b{color:var(--ink)}
+.state-dark{color:var(--anchor-2)}.state-dark b{color:#fff}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#14131f;color:#fff;border-radius:999px;padding:10px 12px 10px 20px;display:flex;gap:16px;align-items:center;opacity:0;pointer-events:none;transition:.2s;z-index:10;box-shadow:0 12px 32px rgba(0,0,0,.3);max-width:calc(100vw - 32px)}
+.toast.show{opacity:1;transform:translateX(-50%);pointer-events:auto}
+.toast button{background:var(--lime);color:#14131f;border:0;border-radius:999px;padding:8px 16px;font-weight:700}
+dialog{border:0;border-radius:24px;padding:28px;max-width:460px;width:calc(100vw - 32px);background:var(--card);color:var(--ink);box-shadow:0 24px 64px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(14,13,22,.5)}
+dialog h3{margin:0 0 8px;font-size:20px}
+dialog ul{padding-left:18px;color:var(--ink-2)}
+.dlg-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.dlg-actions .primary{background:var(--accent);color:#fff}
+
+@media (max-width:1100px){.c7,.c5,.c8,.c4{grid-column:span 12}}
+@media (max-width:640px){.wrap{padding:16px}.kpis{grid-template-columns:1fr 1fr;gap:12px}.card{padding:18px;border-radius:20px}.acct{grid-template-columns:1fr auto}.acct .desc{grid-column:1/-1;order:3}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Customer Support · Morning briefing · Wednesday, Oct 28</div>
+      <h1>Where should today's 40 agents go?</h1>
+      <div class="fresh"><span class="dot" aria-hidden="true"></span><span id="fresh">Updated 08:10 PT · live queue data, forecast from 90-day model</span></div>
+    </div>
+    <div class="tools">
+      <span class="pill static">Window: today, 07:00–19:00 PT</span>
+      <span class="pill static">Agents on shift: 40 of 46</span>
+      <button class="icon-btn" id="refresh" aria-label="Refresh data" title="Refresh">↻</button>
+    </div>
+  </header>
+
+  <div class="incident" role="status" id="incident">
+    <b class="tag"><span aria-hidden="true">▲</span> Active incident</b>
+    <span><b>INC-4821</b> · Okta SSO login failures since 06:42 PT · 71 tickets linked, +9 in the last 15 min · Engineering ETA 11:00</span>
+    <a href="#" aria-label="Open incident INC-4821">Open incident →</a>
+  </div>
+
+  <main class="grid" id="grid" aria-live="polite">
+    <section class="card hero c7" id="hero" aria-labelledby="hero-t"></section>
+    <section class="c5 kpis" id="kpis" aria-label="Key numbers"></section>
+    <section class="card c5" id="moves" aria-labelledby="moves-t"></section>
+    <section class="card c7" id="inflow" aria-labelledby="inflow-t"></section>
+    <section class="card c12" id="queues" aria-labelledby="queues-t"></section>
+    <section class="card c7" id="accts" aria-labelledby="accts-t"></section>
+    <section class="card c5" id="changes" aria-labelledby="changes-t"></section>
+  </main>
+</div>
+
+<dialog id="dlg" aria-labelledby="dlg-t">
+  <h3 id="dlg-t">Send reassignment plan?</h3>
+  <p id="dlg-body"></p>
+  <ul id="dlg-list"></ul>
+  <p style="color:var(--ink-3);font-size:13px">Team leads are notified in Slack and agents' queue assignments change at 09:00 PT. You can reverse this from the toast for 10 seconds, or later in Workforce.</p>
+  <div class="dlg-actions"><button class="btn ghost" id="dlg-cancel">Cancel</button><button class="btn primary" id="dlg-ok">Send to team leads</button></div>
+</dialog>
+<div class="toast" id="toast" role="status"><span id="toast-t"></span><button id="toast-undo">Undo</button></div>
+
+<script>
+/* ---------- data ---------- */
+// rate = tickets one agent resolves in a shift on that queue; due = backlog due today + forecast inbound.
+const Q=[
+ {id:'sso',  name:'SSO & Login',          sub:'Tier 1 · Auth',          agents:4,rate:24,backlog:96,inflow:104,oldest:'3h 40m',incident:true},
+ {id:'ent',  name:'Enterprise Escalations',sub:'Tier 2 · named accounts',agents:5,rate:9, backlog:30,inflow:36, oldest:'2h 05m'},
+ {id:'bill', name:'Billing & Invoicing',  sub:'Tier 1 · Finance',       agents:6,rate:28,backlog:70,inflow:116,oldest:'1h 50m'},
+ {id:'api',  name:'Integrations & API',   sub:'Tier 2 · Technical',     agents:5,rate:14,backlog:40,inflow:48, oldest:'4h 15m'},
+ {id:'onb',  name:'Onboarding & Setup',   sub:'Tier 1 · New customers', agents:5,rate:20,backlog:14,inflow:80, oldest:'55m'},
+ {id:'how',  name:'How-to & General',     sub:'Tier 1 · Self-serve',    agents:8,rate:40,backlog:20,inflow:180,oldest:'38m'},
+ {id:'bug',  name:'Bug Reports',          sub:'Tier 2 · Triage',        agents:4,rate:12,backlog:14,inflow:36, oldest:'1h 10m'},
+ {id:'data', name:'Data & Reporting',     sub:'Tier 2 · Analytics',     agents:3,rate:15,backlog:8, inflow:22, oldest:'45m'},
+];
+const MOVES=[
+ {id:1,from:'how', to:'sso', n:3,why:'Auth-certified agents; How-to is covered with 3 to spare and shows no breach risk.'},
+ {id:2,from:'onb', to:'ent', n:1,why:'Onboarding inflow is low until 11:00 and has the Enterprise-certified agent with the lightest queue.'},
+ {id:3,from:'data',to:'api', n:1,why:'Data & Reporting is above the 95% coverage line; this agent holds the API skill tag.'},
+];
+const HOURS=[
+ {h:'07',act:22,fc:22,typ:41},{h:'08',fc:44,typ:38},{h:'09',fc:78,typ:56},{h:'10',fc:92,typ:62},{h:'11',fc:80,typ:58},{h:'12',fc:58,typ:44},
+ {h:'13',fc:62,typ:48},{h:'14',fc:66,typ:52},{h:'15',fc:56,typ:46},{h:'16',fc:44,typ:38},{h:'17',fc:28,typ:24},{h:'18',fc:14,typ:14}];
+const ACCTS=[
+ {n:'Northwind Logistics',arr:412,d:'Okta login loop blocks ~300 users',q:'SSO & Login',eta:38},
+ {n:'Meridian Capital',arr:198,d:'SAML certificate rejected after renewal',q:'SSO & Login',eta:52},
+ {n:'Halcyon Health',arr:286,d:'Duplicate invoice charged twice, finance hold',q:'Billing & Invoicing',eta:65},
+ {n:'Brightwave Retail',arr:240,d:'API 429 errors ahead of Black Friday load test',q:'Integrations & API',eta:80},
+ {n:'Tessera Labs',arr:175,d:'Scheduled export stuck for 3 days',q:'Data & Reporting',eta:130},
+];
+const CHANGES=[
+ ['↑','Inbound is +29% vs. the last four Wednesdays, almost all from SSO (Okta incident).'],
+ ['!','Enterprise Escalations lost 1 agent to sick leave; 6 of 46 agents are out today.'],
+ ['✓','Billing backlog fell from 118 to 70 after yesterday evening’s macro rollout.'],
+ ['i','Black Friday readiness tickets start rising from Friday; Integrations is thin all week.'],
+];
+const KPIS=[
+ {l:'Open tickets',v:'1,184',d:'+16% vs last Wed',t:'bad',n:'292 due today'},
+ {l:'First response (median)',v:'14',u:'min',d:'Target 15 min',t:'flat',n:'p90 is 47 min'},
+ {l:'Oldest unanswered',v:'4h 15m',d:'Integrations & API',t:'bad',n:'SLA is 4h on Pro'},
+ {l:'CSAT, last 7 days',v:'4.5',u:'/5',d:'−0.1 vs prior week',t:'bad',n:'412 responses'},
+];
+
+/* ---------- state ---------- */
+const params=new URLSearchParams(location.search);
+let sort={k:params.get('sort')||'cov',dir:params.get('dir')||'asc'};
+let on=new Set((params.get('moves')??'1,2,3').split(',').filter(Boolean).map(Number));
+const view=params.get('state')||'ready'; // ready | loading | error | empty
+let lastSent=null;
+
+const $=s=>document.querySelector(s);
+const fmt=n=>n.toLocaleString('en-US');
+const need=q=>(q.inflow+q.backlog)/q.rate;
+function plan(applied){
+  const a={};Q.forEach(q=>a[q.id]=q.agents);
+  MOVES.filter(m=>applied.has(m.id)).forEach(m=>{a[m.from]-=m.n;a[m.to]+=m.n});
+  return a;
+}
+const breach=(q,ag)=>Math.max(0,Math.round(q.backlog+q.inflow-ag*q.rate));
+function status(c){return c>=.95?['ok','Covered','✓']:c>=.75?['warn','Tight','!']:['crit','Short','▲']}
+function metrics(){
+  const after=plan(on),now=plan(new Set());
+  const bNow=Q.reduce((s,q)=>s+breach(q,now[q.id]),0),bAfter=Q.reduce((s,q)=>s+breach(q,after[q.id]),0);
+  const shortNeed=Q.reduce((s,q)=>s+Math.max(0,need(q)-after[q.id]),0);
+  return{after,now,bNow,bAfter,shortNeed};
+}
+const qn=id=>Q.find(q=>q.id===id).name;
+
+/* ---------- state blocks ---------- */
+function skeleton(h=200){return `<div class="skel" style="height:${h}px" aria-hidden="true"></div><span class="sr">Loading</span>`}
+function errorBlock(what,dark){return `<div class="state ${dark?'state-dark':''}"><div><b>Couldn't load ${what}</b><br>The ticketing API timed out. Last good data was 07:55 PT.</div><button class="btn ghost" onclick="setState('ready')">Retry</button></div>`}
+function stateOr(el,what,h,dark){
+  if(view==='loading'){el.innerHTML=skeleton(h);return true}
+  if(view==='error'){el.innerHTML=errorBlock(what,dark);return true}
+  return false;
+}
+
+/* ---------- render ---------- */
+function renderHero(){
+  const el=$('#hero');if(stateOr(el,'the staffing recommendation',200,true))return;
+  if(view==='empty'){el.innerHTML=`<div class="state state-dark"><div><b>All queues are within SLA coverage</b><br>No moves needed today.</div></div>`;return}
+  const m=metrics(),k=on.size,moved=MOVES.filter(x=>on.has(x.id)).reduce((s,x)=>s+x.n,0);
+  const short=Math.round(m.shortNeed);
+  el.innerHTML=`
+   <div>
+     <div class="eyebrow">Today's answer</div>
+     <h2 id="hero-t">${k?`Move ${moved} agent${moved>1?'s':''} before 09:00 — most to SSO &amp; Login, where inbound is twice normal.`:'No moves selected. Staffing as rostered.'}</h2>
+   </div>
+   <div>
+     <div class="big num" aria-label="Tickets projected to breach SLA: ${m.bNow} now, ${m.bAfter} after moves">
+       <span class="from">${m.bNow}</span><span class="arrow" aria-hidden="true">→</span><span class="to">${m.bAfter}</span>
+       <span class="unit">tickets projected to breach SLA today</span>
+     </div>
+   </div>
+   <div class="hero-foot">
+     <p>${short>0?`Even with all moves the team is about <b style="color:#fff">${short} agent-equivalents short</b> against today's demand. Consider overtime for the 09:00–12:00 peak or a macro for Okta tickets.`:'After these moves every queue has the coverage it needs.'}</p>
+     <button class="btn primary" id="send" ${k?'':'disabled'}>Review &amp; send plan (${k})</button>
+   </div>`;
+  $('#send')?.addEventListener('click',openDlg);
+}
+function renderKpis(){
+  const el=$('#kpis');
+  if(view==='loading'){el.innerHTML=KPIS.map(()=>`<div class="card kpi">${skeleton(100)}</div>`).join('');return}
+  if(view==='error'){el.innerHTML=`<div class="card" style="grid-column:span 2">${errorBlock('headline numbers')}</div>`;return}
+  el.innerHTML=KPIS.map((k,i)=>`<div class="card"><a class="kpi-link" href="#tickets-${i}" aria-label="${k.l}: ${k.v}${k.u||''}, ${k.d}. View tickets">
+    <span class="label">${k.l}</span>
+    <span class="v num">${k.v}${k.u?`<small>${k.u}</small>`:''}</span>
+    <span><span class="delta ${k.t}">${k.t==='bad'?'▲':k.t==='good'?'▼':'●'} ${k.d}</span><br><span class="note">${k.n}</span></span></a></div>`).join('');
+}
+function renderMoves(){
+  const el=$('#moves');
+  if(stateOr(el,'recommended moves',260))return;
+  el.innerHTML=`<div class="card-head"><div><h2 id="moves-t">Recommended moves</h2><p class="sub">Untick any you disagree with; everything updates.</p></div></div>`+
+   (view==='empty'?`<div class="state"><div><b>No moves recommended</b><br>Every queue is at 95%+ coverage.</div></div>`:
+   MOVES.map(m=>`<div class="move ${on.has(m.id)?'':'off'}"><input type="checkbox" id="mv${m.id}" ${on.has(m.id)?'checked':''} data-id="${m.id}">
+    <label for="mv${m.id}"><span class="route"><span class="chip n">${m.n} agent${m.n>1?'s':''}</span> ${qn(m.from)} <span aria-hidden="true">→</span><span class="sr">to</span> ${qn(m.to)}</span><span class="why">${m.why}</span></label></div>`).join(''));
+  el.querySelectorAll('input').forEach(i=>i.addEventListener('change',e=>{const id=+e.target.dataset.id;e.target.checked?on.add(id):on.delete(id);sync();renderAll()}));
+}
+function renderChart(){
+  const el=$('#inflow');
+  if(stateOr(el,'the inbound forecast',260))return;
+  if(view==='empty'){el.innerHTML=`<h2 id="inflow-t">Inbound by hour</h2><div class="state"><div><b>No forecast available</b><br>The model needs at least 14 days of history.</div></div>`;return}
+  const W=640,H=250,L=34,R=8,T=26,B=28,max=100,iw=W-L-R,ih=H-T-B,bw=iw/HOURS.length;
+  const y=v=>T+ih-(v/max)*ih;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="inflow-t inflow-d">`;
+  [0,25,50,75,100].forEach(g=>s+=`<line x1="${L}" x2="${W-R}" y1="${y(g)}" y2="${y(g)}" stroke="var(--line)" ${g?'stroke-dasharray="3 4"':''}/><text x="${L-8}" y="${y(g)+4}" text-anchor="end" font-size="11" fill="var(--ink-3)">${g}</text>`);
+  // peak window
+  s+=`<rect x="${L+bw*2+2}" y="${T}" width="${bw*3-4}" height="${ih}" rx="12" fill="var(--accent-soft)" opacity=".55"/>`;
+  HOURS.forEach((d,i)=>{
+    const x=L+i*bw+bw*.2,w=bw*.6,h=ih*d.fc/max,past=i===0;
+    s+=`<g class="bar-g" data-i="${i}" tabindex="0" role="img" aria-label="${d.h}:00, forecast ${d.fc} tickets, typical Wednesday ${d.typ}">
+      <rect x="${L+i*bw}" y="${T}" width="${bw}" height="${ih}" fill="transparent"/>
+      <path d="M${x} ${T+ih}V${y(d.fc)+8}Q${x} ${y(d.fc)} ${x+8} ${y(d.fc)}H${x+w-8}Q${x+w} ${y(d.fc)} ${x+w} ${y(d.fc)+8}V${T+ih}Z" fill="var(--accent)" opacity="${past?.45:1}"/></g>
+      <text x="${L+i*bw+bw/2}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--ink-3)">${d.h}</text>`;
+  });
+  const pts=HOURS.map((d,i)=>`${L+i*bw+bw/2},${y(d.typ)}`).join(' ');
+  s+=`<polyline points="${pts}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="5 4" stroke-linecap="round" pointer-events="none"/>`;
+  s+=`<text x="${L+bw*3.5}" y="${y(92)-8}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">Peak 10:00 · 92/h</text></svg><span id="inflow-d" class="sr">Hourly inbound ticket forecast for today, peaking at 92 tickets at 10:00, compared with a typical Wednesday.</span>`;
+  const tot=HOURS.reduce((a,d)=>a+d.fc,0),typ=HOURS.reduce((a,d)=>a+d.typ,0);
+  el.innerHTML=`<div class="card-head"><div><h2 id="inflow-t">Inbound tickets by hour</h2><p class="sub">Peak window 09:00–12:00 is when the moves matter most.</p></div>
+    <div class="legend"><span><i class="sw" style="background:var(--accent)"></i>Today's forecast (${tot})</span><span><i class="sw" style="background:none;border-top:2px dashed var(--ink);height:0;width:16px;border-radius:0"></i>Typical Wed (${typ})</span></div></div>
+    <div class="chart">${s}<div class="tip" id="tip"></div></div>
+    <details class="dt"><summary>View as table</summary><table><thead><tr><th>Hour</th><th class="r">Forecast</th><th class="r">Typical Wed</th></tr></thead><tbody>${HOURS.map(d=>`<tr><td>${d.h}:00</td><td class="r num">${d.fc}</td><td class="r num">${d.typ}</td></tr>`).join('')}</tbody></table></details>`;
+  const tip=$('#tip'),box=el.querySelector('.chart');
+  const show=g=>{const d=HOURS[+g.dataset.i],r=g.getBoundingClientRect(),b=box.getBoundingClientRect();
+    tip.innerHTML=`<b>${d.h}:00–${String(+d.h+1).padStart(2,'0')}:00</b><br>Forecast ${d.fc}${d.act?' (22 so far)':''} · typical ${d.typ} <b>(${d.fc>=d.typ?'+':''}${Math.round((d.fc/d.typ-1)*100)}%)</b>`;
+    tip.style.left=r.left-b.left+r.width/2+'px';tip.style.top=r.top-b.top+20+'px';tip.style.opacity=1};
+  el.querySelectorAll('.bar-g').forEach(g=>{g.addEventListener('mouseenter',()=>show(g));g.addEventListener('focus',()=>show(g));g.addEventListener('mouseleave',()=>tip.style.opacity=0);g.addEventListener('blur',()=>tip.style.opacity=0)});
+}
+function renderQueues(){
+  const el=$('#queues');
+  if(stateOr(el,'queue coverage',320))return;
+  const m=metrics();
+  const rows=Q.map(q=>({q,due:q.backlog+q.inflow,need:need(q),now:q.agents,after:m.after[q.id],cov:m.after[q.id]/need(q),bn:breach(q,q.agents),ba:breach(q,m.after[q.id])}));
+  const val={queue:r=>r.q.name,due:r=>r.due,agents:r=>r.after,need:r=>r.need,cov:r=>r.cov,breach:r=>r.ba};
+  rows.sort((a,b)=>{const x=val[sort.k](a),y=val[sort.k](b);return (x>y?1:x<y?-1:0)*(sort.dir==='asc'?1:-1)});
+  const th=(k,label,cls='')=>`<th class="${cls}" aria-sort="${sort.k===k?(sort.dir==='asc'?'ascending':'descending'):'none'}"><button data-k="${k}">${label} <span aria-hidden="true">${sort.k===k?(sort.dir==='asc'?'↑':'↓'):''}</span></button></th>`;
+  el.innerHTML=`<div class="card-head"><div><h2 id="queues-t">Coverage by queue</h2><p class="sub">Coverage = agents assigned ÷ agents needed to clear work due today. Shown with your selected moves applied.</p></div>
+    <div class="legend"><span><span class="status s-ok">✓ Covered</span> ≥95%</span><span><span class="status s-warn">! Tight</span> 75–94%</span><span><span class="status s-crit">▲ Short</span> &lt;75%</span></div></div>
+    <div class="tbl-wrap"><table><caption class="sr">Queue coverage for today, sortable</caption><thead><tr>
+    ${th('queue','Queue')}${th('due','Due today','r')}<th class="r">Oldest ticket</th>${th('agents','Agents (now → plan)')}${th('need','Needed','r')}${th('cov','Coverage')}${th('breach','Projected breaches','r')}<th></th></tr></thead><tbody>
+    ${rows.map(r=>{const[c,lab,ic]=status(r.cov),d=r.after-r.now;return `<tr>
+      <td><span class="qname">${r.q.name}</span>${r.q.incident?'<span class="tag-inc">Incident</span>':''}<div class="qsub">${r.q.sub}</div></td>
+      <td class="r num"><b>${r.due}</b><div class="qsub">${r.q.backlog} backlog + ${r.q.inflow} inbound</div></td>
+      <td class="r num">${r.q.oldest}</td>
+      <td><span class="agents num">${r.now}<span class="arrow-s" aria-hidden="true">→</span>${r.after}${d?`<span class="chg ${d>0?'up':'down'}">${d>0?'+':'−'}${Math.abs(d)}</span>`:''}</span></td>
+      <td class="r num">${r.need.toFixed(1)}</td>
+      <td><div class="cov"><div class="bar"><i class="fill-${c}" style="width:${Math.min(100,r.cov*100)}%"></i></div><span class="num" style="min-width:38px;text-align:right;font-weight:700">${Math.round(r.cov*100)}%</span></div></td>
+      <td class="r num">${r.bn!==r.ba?`<span style="color:var(--ink-3)">${r.bn}</span><span class="arrow-s" aria-hidden="true">→</span>`:''}<b>${r.ba}</b></td>
+      <td><span class="status s-${c}"><span aria-hidden="true">${ic}</span>${lab}</span></td></tr>`}).join('')}
+    </tbody></table></div>`;
+  el.querySelectorAll('th button').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;sort=sort.k===k?{k,dir:sort.dir==='asc'?'desc':'asc'}:{k,dir:k==='queue'?'asc':k==='cov'?'asc':'desc'};sync();renderQueues()}));
+}
+function renderAccts(){
+  const el=$('#accts');
+  if(stateOr(el,'at-risk accounts',260))return;
+  if(view==='empty'){el.innerHTML=`<h2 id="accts-t">Accounts closest to SLA breach</h2><div class="state"><div><b>No accounts at risk</b><br>Nothing is within 2 hours of breaching.</div></div>`;return}
+  el.innerHTML=`<div class="card-head"><div><h2 id="accts-t">Accounts closest to SLA breach</h2><p class="sub">Top 5 by time-to-breach, Enterprise and Business plans only.</p></div><a class="pill" href="#all-at-risk" style="text-decoration:none;color:inherit">View all 23</a></div>`+
+   ACCTS.map(a=>{const c=a.eta<60?'s-crit':a.eta<100?'s-warn':'s-ok',t=a.eta>=60?`${Math.floor(a.eta/60)}h ${a.eta%60}m`:`${a.eta}m`;
+    return `<div class="acct"><div><b>${a.n}</b><div class="arr num">$${a.arr}K ARR</div></div><div class="desc">${a.d}<div class="arr">${a.q}</div></div>
+     <span class="eta ${c}">${a.eta<60?'▲ ':''}${t} left</span><a href="#ticket" aria-label="Open ticket for ${a.n}">Open →</a></div>`}).join('');
+}
+function renderChanges(){
+  const el=$('#changes');
+  if(stateOr(el,'what changed',260))return;
+  el.innerHTML=`<div class="card-head"><div><h2 id="changes-t">What changed since yesterday</h2></div></div><ul class="changes">${CHANGES.map(c=>`<li><span class="ic" aria-hidden="true">${c[0]}</span><span>${c[1]}</span></li>`).join('')}</ul>`;
+}
+function renderAll(){renderHero();renderKpis();renderMoves();renderChart();renderQueues();renderAccts();renderChanges();
+  if(view==='error'||view==='loading')$('#incident').style.display='none'}
+
+/* ---------- interactions ---------- */
+function sync(){const p=new URLSearchParams(location.search);
+  p.set('sort',sort.k);p.set('dir',sort.dir);p.set('moves',[...on].join(','));
+  history.replaceState(null,'','?'+p)}
+window.setState=s=>{const p=new URLSearchParams(location.search);s==='ready'?p.delete('state'):p.set('state',s);location.search=p.toString()};
+const dlg=$('#dlg');
+function openDlg(){
+  const moved=MOVES.filter(m=>on.has(m.id));
+  $('#dlg-body').textContent=`${moved.reduce((s,m)=>s+m.n,0)} agents across ${moved.length} moves will be reassigned:`;
+  $('#dlg-list').innerHTML=moved.map(m=>`<li><b>${m.n}</b> from ${qn(m.from)} to ${qn(m.to)}</li>`).join('');
+  dlg.showModal();
+}
+$('#dlg-cancel').onclick=()=>dlg.close();
+let toastTimer;
+$('#dlg-ok').onclick=()=>{
+  lastSent=new Set(on);dlg.close();
+  $('#toast-t').textContent=`Plan sent to ${new Set(MOVES.filter(m=>on.has(m.id)).flatMap(m=>[m.from,m.to])).size} team leads`;
+  $('#toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),10000);
+};
+$('#toast-undo').onclick=()=>{$('#toast').classList.remove('show');$('#toast-t').textContent='';
+  $('#toast-t').textContent='Plan recalled';$('#toast').classList.add('show');$('#toast-undo').style.display='none';
+  setTimeout(()=>{$('#toast').classList.remove('show');$('#toast-undo').style.display=''},2500)};
+$('#refresh').onclick=()=>{
+  const now=new Date(),t=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/Los_Angeles'});
+  $('#fresh').textContent=`Updated ${t} PT · live queue data, forecast from 90-day model`};
+
+renderAll();
+</script>
+</body>
+</html>

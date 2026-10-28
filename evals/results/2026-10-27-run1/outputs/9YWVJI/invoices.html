@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Invoices</title>
+<style>
+:root{
+  --bg:#f6f7f9; --surface:#fff; --line:#e3e6eb; --line-strong:#cfd4dc;
+  --text:#1b2129; --muted:#5d6775; --accent:#2557d6; --accent-bg:#e8eefc;
+  --ok:#17693a; --ok-bg:#e3f4ea; --bad:#a3262a; --bad-bg:#fbe9e9;
+  --warn:#8a5a00; --warn-bg:#fdf1d6; --pend:#3b4656; --pend-bg:#eceff3;
+  --focus:#2557d6; --row-hover:#f3f6fb; --row-sel:#eaf0fd;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#12161c; --surface:#1a2028; --line:#2a323d; --line-strong:#3a4452;
+    --text:#e8ecf1; --muted:#9aa5b4; --accent:#7ba2ff; --accent-bg:#1f2c4a;
+    --ok:#6fd49a; --ok-bg:#16301f; --bad:#ff8f93; --bad-bg:#3a1c1e;
+    --warn:#f0c264; --warn-bg:#3a2e12; --pend:#c3ccd8; --pend-bg:#262e39;
+    --focus:#7ba2ff; --row-hover:#1f2631; --row-sel:#1f2c4a;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.wrap{max-width:1240px;margin:0 auto;padding:20px 16px 80px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px}
+h1{font-size:20px;margin:0}
+.sub{color:var(--muted);margin-top:2px}
+.sub b{color:var(--text);font-variant-numeric:tabular-nums}
+.btn{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:4px 12px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--row-hover)}
+.btn.ok{color:var(--ok);border-color:currentColor}
+.btn.bad{color:var(--bad);border-color:currentColor}
+.btn.ok:hover{background:var(--ok-bg)} .btn.bad:hover{background:var(--bad-bg)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+@media (prefers-color-scheme: dark){.btn.primary{color:#0b1220}}
+.btn.ghost{border-color:transparent;background:none;color:var(--muted)}
+.btn.ghost:hover{color:var(--bad);background:var(--bad-bg)}
+.btn.sm{min-height:28px;padding:2px 10px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+.tabs{display:flex;gap:2px;flex-wrap:wrap}
+.tab{border:0;background:none;padding:6px 12px;border-radius:6px;cursor:pointer;color:var(--muted)}
+.tab:hover{background:var(--row-hover)}
+.tab[aria-selected=true]{background:var(--accent-bg);color:var(--accent);font-weight:600}
+.tab .n{font-variant-numeric:tabular-nums;margin-left:4px;opacity:.85}
+.spacer{flex:1}
+.search{position:relative}
+.search input{width:260px;max-width:100%;min-height:32px;padding:4px 30px 4px 10px;border:1px solid var(--line-strong);border-radius:6px;background:var(--bg)}
+.search kbd{position:absolute;right:8px;top:6px}
+kbd{font:11px ui-monospace,monospace;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:4px;padding:0 5px;color:var(--muted);background:var(--surface)}
+label.chk{display:inline-flex;gap:6px;align-items:center;cursor:pointer;color:var(--muted)}
+
+.bulk{display:none;position:sticky;top:0;z-index:5;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;background:var(--accent-bg);border-bottom:1px solid var(--line)}
+.bulk.on{display:flex}
+.bulk .info{font-weight:600}
+.bulk .info span{font-weight:400;color:var(--muted)}
+
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:980px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+thead th{position:sticky;top:0;background:var(--surface);z-index:2;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+.bulk.on ~ .tablewrap thead th{top:0}
+th button{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+th button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+th[aria-sort] button{color:var(--text)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+th.num button{justify-content:flex-end}
+td.cb,th.cb{width:36px;padding-right:0}
+td.cb input,th.cb input{width:16px;height:16px;cursor:pointer}
+tbody tr{cursor:default}
+tbody tr:hover{background:var(--row-hover)}
+tbody tr.sel{background:var(--row-sel)}
+tbody tr.cur{box-shadow:inset 3px 0 0 var(--accent)}
+.vendor{font-weight:600}
+.mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+.muted{color:var(--muted)}
+.late{color:var(--bad);font-weight:600}
+.tag{display:inline-block;margin-top:2px;padding:0 6px;border-radius:4px;font-size:12px;background:var(--warn-bg);color:var(--warn)}
+.tag.dup{background:var(--bad-bg);color:var(--bad)}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap}
+.badge::before{content:"";width:7px;height:7px;background:currentColor}
+.badge.pending{background:var(--pend-bg);color:var(--pend)} .badge.pending::before{border-radius:50%}
+.badge.approved{background:var(--ok-bg);color:var(--ok)} .badge.approved::before{border-radius:1px;transform:rotate(45deg)}
+.badge.rejected{background:var(--bad-bg);color:var(--bad)} .badge.rejected::before{clip-path:polygon(0 0,100% 0,50% 100%)}
+.reason{display:block;font-size:12px;color:var(--muted);margin-top:2px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+td.act{white-space:nowrap;text-align:right}
+td.act .btn{margin-left:4px}
+td.act .del{margin-left:14px}
+.empty{padding:48px 16px;text-align:center;color:var(--muted)}
+.foot{padding:8px 12px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+.toasts{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:50;display:flex;flex-direction:column;gap:8px;align-items:center;width:calc(100% - 32px);max-width:480px}
+.toast{display:flex;gap:14px;align-items:center;justify-content:space-between;width:100%;padding:10px 14px;border-radius:8px;background:#1b2129;color:#fff;box-shadow:0 6px 24px rgba(0,0,0,.28)}
+.toast button{background:none;border:0;color:#9fc0ff;font-weight:600;cursor:pointer;padding:2px 6px}
+.toast button:focus-visible{outline-color:#fff}
+
+dialog{border:1px solid var(--line-strong);border-radius:10px;background:var(--surface);color:var(--text);padding:0;width:min(440px,calc(100% - 32px))}
+dialog::backdrop{background:rgba(10,14,20,.5)}
+dialog form{padding:18px}
+dialog h2{font-size:16px;margin:0 0 4px}
+dialog p{margin:0 0 12px;color:var(--muted)}
+.opts{display:grid;gap:6px;margin-bottom:12px;border:0;padding:0}
+.opts legend{font-weight:600;margin-bottom:6px;padding:0}
+.opts label{display:flex;gap:8px;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:6px;cursor:pointer}
+.opts label:has(input:checked){border-color:var(--accent);background:var(--accent-bg)}
+textarea{width:100%;min-height:60px;padding:6px 8px;border:1px solid var(--line-strong);border-radius:6px;background:var(--bg);resize:vertical}
+.err{color:var(--bad);min-height:18px;margin:6px 0 0;font-size:13px}
+.dlg-act{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.help dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0 0 8px}
+.help dd{margin:0;color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion:no-preference){.toast{animation:in .15s ease-out}@keyframes in{from{opacity:0;transform:translateY(8px)}}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Vendor invoices</h1>
+      <div class="sub" id="summary"></div>
+    </div>
+    <button class="btn" id="helpBtn" type="button">Keyboard shortcuts <kbd>?</kbd></button>
+  </header>
+
+  <section class="card" aria-label="Invoices">
+    <div class="toolbar">
+      <div class="tabs" role="tablist" aria-label="Status filter" id="tabs"></div>
+      <span class="spacer"></span>
+      <label class="chk"><input type="checkbox" id="flagOnly"> Flagged only</label>
+      <div class="search">
+        <label class="sr" for="q">Search invoices</label>
+        <input id="q" type="search" placeholder="Vendor, invoice # or PO" autocomplete="off">
+        <kbd aria-hidden="true">/</kbd>
+      </div>
+    </div>
+    <div class="bulk" id="bulk" role="region" aria-label="Bulk actions">
+      <span class="info" id="bulkInfo"></span>
+      <button class="btn ok sm" data-bulk="approve" type="button">Approve</button>
+      <button class="btn bad sm" data-bulk="reject" type="button">Reject…</button>
+      <button class="btn ghost sm" data-bulk="delete" type="button">Delete…</button>
+      <span class="spacer"></span>
+      <button class="btn sm" data-bulk="clear" type="button">Clear selection</button>
+    </div>
+    <div class="tablewrap">
+      <table id="tbl">
+        <thead><tr>
+          <th class="cb"><input type="checkbox" id="all" aria-label="Select all shown invoices"></th>
+          <th data-k="vendor" aria-sort="none"><button type="button">Vendor</button></th>
+          <th data-k="number"><button type="button">Invoice</button></th>
+          <th data-k="po"><button type="button">PO</button></th>
+          <th data-k="date"><button type="button">Received</button></th>
+          <th data-k="due"><button type="button">Due</button></th>
+          <th data-k="amount" class="num"><button type="button">Amount</button></th>
+          <th data-k="status"><button type="button">Status</button></th>
+          <th><span class="sr">Actions</span></th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="empty" id="empty" hidden></div>
+    </div>
+    <div class="foot"><span id="count"></span><span>Click a row to select · Shift-click for a range</span></div>
+  </section>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div class="sr" id="live" aria-live="polite"></div>
+
+<dialog id="rejectDlg">
+  <form method="dialog" id="rejectForm" novalidate>
+    <h2 id="rejectTitle">Reject invoice</h2>
+    <p id="rejectSub"></p>
+    <fieldset class="opts">
+      <legend>Reason</legend>
+    </fieldset>
+    <label class="sr" for="rejectNote">Note</label>
+    <textarea id="rejectNote" placeholder="Optional note to the vendor / AP team"></textarea>
+    <p class="err" id="rejectErr" role="alert"></p>
+    <div class="dlg-act">
+      <button class="btn" value="cancel" type="button" data-close>Cancel</button>
+      <button class="btn bad" type="submit">Reject</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="delDlg">
+  <form method="dialog" id="delForm">
+    <h2 id="delTitle"></h2>
+    <p id="delSub"></p>
+    <div class="dlg-act">
+      <button class="btn" type="button" data-close>Cancel</button>
+      <button class="btn bad" type="submit" id="delOk">Delete</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="helpDlg" class="help">
+  <form method="dialog">
+    <h2>Keyboard shortcuts</h2>
+    <p>Actions apply to selected rows, or to the highlighted row if none are selected.</p>
+    <dl>
+      <dt><kbd>j</kbd> <kbd>k</kbd></dt><dd>Move down / up</dd>
+      <dt><kbd>x</kbd></dt><dd>Select row</dd>
+      <dt><kbd>a</kbd></dt><dd>Approve</dd>
+      <dt><kbd>r</kbd></dt><dd>Reject (asks for a reason)</dd>
+      <dt><kbd>d</kbd></dt><dd>Delete (can be undone)</dd>
+      <dt><kbd>Ctrl/⌘ Z</kbd></dt><dd>Undo last action</dd>
+      <dt><kbd>/</kbd></dt><dd>Search</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Clear selection</dd>
+    </dl>
+    <div class="dlg-act"><button class="btn primary" type="submit">Close</button></div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  const REASONS = ["Duplicate invoice","Amount doesn't match PO","No valid PO","Wrong entity or bill-to","Missing documentation","Other"];
+  const DAY = 864e5;
+
+  // ---------- mock data (deterministic) ----------
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const pick = a => a[Math.floor(rnd() * a.length)];
+  const vendors = ["Northwind Logistics","Acme Industrial Supply","Brightline Software","Cedar & Pine Legal","Delta Freight Co.","Evergreen Facilities","Fulton Office Products","Granite Cloud Services","Harbor Print Works","Ironclad Security","Juniper Marketing","Keystone Staffing","Lumen Energy","Meridian Travel","Orbit Telecom","Pioneer Catering","Quanta Analytics","Redwood Insurance Brokers","Summit Equipment Rental","Tidewater Consulting"];
+  const today = new Date(); today.setHours(0,0,0,0);
+  const items = [];
+  for (let i = 0; i < 200; i++) {
+    const v = pick(vendors);
+    const recv = new Date(today - Math.floor(rnd() * 3) * DAY);
+    const due = new Date(+recv + (Math.floor(rnd() * 50) - 8) * DAY);
+    const r = rnd();
+    const amount = Math.round((r < .6 ? 200 + rnd() * 4000 : r < .93 ? 4000 + rnd() * 26000 : 30000 + rnd() * 120000) * 100) / 100;
+    const f = rnd();
+    const noPo = f > .93;
+    items.push({
+      id: i, vendor: v, number: "INV-" + (40100 + Math.floor(rnd() * 9000)),
+      po: noPo ? "" : "PO-" + (7000 + Math.floor(rnd() * 2500)),
+      date: +recv, due: +due, amount,
+      status: i < 12 ? (i % 3 ? "approved" : "rejected") : "pending",
+      flag: noPo ? "No PO" : f > .87 ? "Over PO by " + (3 + Math.floor(rnd()*15)) + "%" : f > .82 ? "Possible duplicate" : "",
+      reason: "", deleted: false
+    });
+  }
+  items.filter(x => x.status === "rejected").forEach(x => x.reason = "Missing documentation");
+
+  // ---------- state ----------
+  const S = { tab: "pending", q: "", flagOnly: false, sort: { k: "due", dir: 1 }, sel: new Set(), cur: null, anchor: null, undo: [] };
+  const $ = id => document.getElementById(id);
+  const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+  const money0 = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+  const fmtDate = t => new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+  const live = m => { $("live").textContent = ""; setTimeout(() => $("live").textContent = m, 30); };
+
+  const live_items = () => items.filter(x => !x.deleted);
+  function visible() {
+    const q = S.q.trim().toLowerCase();
+    const { k, dir } = S.sort;
+    return live_items().filter(x =>
+      (S.tab === "all" || x.status === S.tab) &&
+      (!S.flagOnly || x.flag) &&
+      (!q || (x.vendor + " " + x.number + " " + x.po).toLowerCase().includes(q))
+    ).sort((a, b) => {
+      const A = a[k], B = b[k];
+      const c = typeof A === "string" ? A.localeCompare(B) : A - B;
+      return (c || a.id - b.id) * dir;
+    });
+  }
+
+  // ---------- render ----------
+  function render() {
+    const list = visible();
+    const ids = new Set(list.map(x => x.id));
+    S.sel.forEach(id => { if (!ids.has(id)) S.sel.delete(id); });
+    if (!list.some(x => x.id === S.cur)) S.cur = list.length ? list[0].id : null;
+
+    const all = live_items();
+    const cnt = s => all.filter(x => s === "all" || x.status === s).length;
+    $("tabs").innerHTML = [["pending","Needs review"],["approved","Approved"],["rejected","Rejected"],["all","All"]]
+      .map(([k, l]) => `<button class="tab" role="tab" data-tab="${k}" aria-selected="${S.tab === k}">${l}<span class="n">${cnt(k)}</span></button>`).join("");
+
+    const pend = all.filter(x => x.status === "pending");
+    $("summary").innerHTML = `<b>${pend.length}</b> awaiting review · <b>${money0.format(pend.reduce((s, x) => s + x.amount, 0))}</b> total` +
+      ` · <b>${pend.filter(x => x.due < +today).length}</b> overdue`;
+
+    $("rows").innerHTML = list.map(x => {
+      const days = Math.round((x.due - today) / DAY);
+      const dueTxt = x.status === "pending" && days < 0 ? `<span class="late">${fmtDate(x.due)} · ${-days}d overdue</span>`
+        : `${fmtDate(x.due)}${x.status === "pending" && days <= 3 ? ` <span class="muted">· ${days === 0 ? "today" : "in " + days + "d"}</span>` : ""}`;
+      const flag = x.flag ? `<br><span class="tag ${x.flag.startsWith("Possible") ? "dup" : ""}">⚠ ${esc(x.flag)}</span>` : "";
+      const label = `${x.vendor} ${x.number}`;
+      return `<tr data-id="${x.id}" class="${S.sel.has(x.id) ? "sel" : ""} ${S.cur === x.id ? "cur" : ""}">
+        <td class="cb"><input type="checkbox" ${S.sel.has(x.id) ? "checked" : ""} aria-label="Select ${esc(label)}"></td>
+        <td><span class="vendor">${esc(x.vendor)}</span>${flag}</td>
+        <td class="mono">${x.number}</td>
+        <td class="mono ${x.po ? "" : "muted"}">${x.po || "—"}</td>
+        <td>${fmtDate(x.date)}</td>
+        <td>${dueTxt}</td>
+        <td class="num mono">${money.format(x.amount)}</td>
+        <td><span class="badge ${x.status}">${x.status[0].toUpperCase() + x.status.slice(1)}</span>${x.reason ? `<span class="reason" title="${esc(x.reason)}">${esc(x.reason)}</span>` : ""}</td>
+        <td class="act">
+          ${x.status !== "approved" ? `<button class="btn ok sm" data-act="approve" type="button" aria-label="Approve ${esc(label)}">Approve</button>` : ""}
+          ${x.status !== "rejected" ? `<button class="btn bad sm" data-act="reject" type="button" aria-label="Reject ${esc(label)}">Reject</button>` : ""}
+          <button class="btn ghost sm del" data-act="delete" type="button" aria-label="Delete ${esc(label)}">Delete</button>
+        </td></tr>`;
+    }).join("");
+
+    $("empty").hidden = list.length > 0;
+    $("empty").textContent = list.length ? "" : (S.q || S.flagOnly) ? "No invoices match your filters."
+      : S.tab === "pending" ? "All caught up — nothing left to review. 🎉" : "Nothing here.";
+    $("count").textContent = `${list.length} invoice${list.length === 1 ? "" : "s"} shown`;
+
+    const n = S.sel.size;
+    $("bulk").classList.toggle("on", n > 0);
+    if (n) {
+      const sum = list.filter(x => S.sel.has(x.id)).reduce((s, x) => s + x.amount, 0);
+      $("bulkInfo").innerHTML = `${n} selected <span>· ${money.format(sum)}</span>`;
+    }
+    const a = $("all"); a.checked = n > 0 && n === list.length; a.indeterminate = n > 0 && n < list.length;
+
+    document.querySelectorAll("th[data-k]").forEach(th => {
+      const on = th.dataset.k === S.sort.k;
+      th.setAttribute("aria-sort", on ? (S.sort.dir > 0 ? "ascending" : "descending") : "none");
+      th.querySelector("button").textContent = th.dataset.label || (th.dataset.label = th.textContent.trim());
+      if (on) th.querySelector("button").textContent += S.sort.dir > 0 ? " ▲" : " ▼";
+    });
+    const cur = document.querySelector("tr.cur");
+    if (cur && S.scroll) cur.scrollIntoView({ block: "nearest" });
+    S.scroll = false;
+  }
+
+  // ---------- actions ----------
+  const byId = id => items[id];
+  function targets(id) { // selected rows if any, else the given/current row
+    if (S.sel.size) return [...S.sel].map(byId);
+    const t = id ?? S.cur; return t == null ? [] : [byId(t)];
+  }
+  function apply(label, rows, patch) {
+    if (!rows.length) return;
+    const list = visible(); const idx = Math.max(0, list.findIndex(x => x.id === S.cur));
+    const prev = rows.map(x => ({ id: x.id, status: x.status, reason: x.reason, deleted: x.deleted }));
+    rows.forEach(x => Object.assign(x, typeof patch === "function" ? patch(x) : patch));
+    S.undo.push(prev);
+    S.sel.clear();
+    const after = visible(); // keep position so the reviewer can keep going
+    S.cur = after.length ? after[Math.min(idx, after.length - 1)].id : null; S.scroll = true;
+    render();
+    toast(label);
+  }
+  const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+  function approve(id) { const r = targets(id).filter(x => x.status !== "approved"); apply(`Approved ${plural(r.length, "invoice")}`, r, { status: "approved", reason: "" }); }
+  function undo() {
+    const prev = S.undo.pop(); if (!prev) return toast("Nothing to undo", 2000);
+    prev.forEach(p => Object.assign(byId(p.id), { status: p.status, reason: p.reason, deleted: p.deleted }));
+    S.cur = prev[0].id; S.scroll = true; render(); toast(`Undid change to ${plural(prev.length, "invoice")}`, 2500);
+  }
+
+  function askReject(id) {
+    const rows = targets(id).filter(x => x.status !== "rejected"); if (!rows.length) return;
+    const dlg = $("rejectDlg"), tot = rows.reduce((s, x) => s + x.amount, 0);
+    $("rejectTitle").textContent = rows.length === 1 ? `Reject ${rows[0].number}` : `Reject ${rows.length} invoices`;
+    $("rejectSub").textContent = rows.length === 1 ? `${rows[0].vendor} · ${money.format(rows[0].amount)}` : `${money.format(tot)} total`;
+    dlg.querySelector(".opts").innerHTML = "<legend>Reason</legend>" + REASONS.map((r, i) =>
+      `<label><input type="radio" name="reason" value="${esc(r)}" ${i === 0 && rows.some(x => x.flag.startsWith("Possible")) ? "checked" : ""}> ${esc(r)}</label>`).join("");
+    $("rejectNote").value = ""; $("rejectErr").textContent = "";
+    dlg._rows = rows; dlg.showModal();
+  }
+  $("rejectForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const dlg = $("rejectDlg"), r = dlg.querySelector("input[name=reason]:checked");
+    if (!r) { $("rejectErr").textContent = "Choose a reason so AP can follow up with the vendor."; return; }
+    const note = $("rejectNote").value.trim(), text = note ? `${r.value} — ${note}` : r.value;
+    const rows = dlg._rows; dlg.close();
+    apply(`Rejected ${plural(rows.length, "invoice")}`, rows, { status: "rejected", reason: text });
+  });
+
+  function askDelete(id) {
+    const rows = targets(id); if (!rows.length) return;
+    if (rows.length === 1 && !S.sel.size) return apply(`Deleted ${rows[0].number}`, rows, { deleted: true });
+    $("delTitle").textContent = `Delete ${plural(rows.length, "invoice")}?`;
+    $("delSub").textContent = `${money.format(rows.reduce((s, x) => s + x.amount, 0))} will be removed from the list. You can undo right after.`;
+    $("delDlg")._rows = rows; $("delDlg").showModal();
+  }
+  $("delForm").addEventListener("submit", e => {
+    e.preventDefault(); const rows = $("delDlg")._rows; $("delDlg").close();
+    apply(`Deleted ${plural(rows.length, "invoice")}`, rows, { deleted: true });
+  });
+  document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => b.closest("dialog").close()));
+
+  let toastTimer;
+  function toast(msg, ms = 8000) {
+    live(msg);
+    const box = $("toasts"); box.innerHTML = "";
+    const t = document.createElement("div"); t.className = "toast";
+    t.innerHTML = `<span>${esc(msg)}</span>`;
+    if (ms > 3000) { const b = document.createElement("button"); b.type = "button"; b.textContent = "Undo"; b.onclick = () => { undo(); }; t.append(b); }
+    box.append(t); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.remove(), ms);
+  }
+
+  // ---------- events ----------
+  $("tabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (b) { S.tab = b.dataset.tab; S.sel.clear(); render(); } });
+  $("q").addEventListener("input", e => { S.q = e.target.value; render(); });
+  $("flagOnly").addEventListener("change", e => { S.flagOnly = e.target.checked; render(); });
+  $("all").addEventListener("change", e => { const l = visible(); S.sel = e.target.checked ? new Set(l.map(x => x.id)) : new Set(); render(); });
+  document.querySelector("thead").addEventListener("click", e => {
+    const th = e.target.closest("th[data-k]"); if (!th) return;
+    S.sort = { k: th.dataset.k, dir: S.sort.k === th.dataset.k ? -S.sort.dir : 1 }; render();
+  });
+  $("bulk").addEventListener("click", e => {
+    const a = e.target.closest("[data-bulk]")?.dataset.bulk;
+    if (a === "approve") approve(); else if (a === "reject") askReject(); else if (a === "delete") askDelete();
+    else if (a === "clear") { S.sel.clear(); render(); }
+  });
+  $("helpBtn").onclick = () => $("helpDlg").showModal();
+
+  $("rows").addEventListener("click", e => {
+    const tr = e.target.closest("tr"); if (!tr) return;
+    const id = +tr.dataset.id, act = e.target.closest("[data-act]")?.dataset.act;
+    if (act) { S.cur = id; return act === "approve" ? (S.sel.clear(), approve(id)) : act === "reject" ? (S.sel.clear(), askReject(id)) : (S.sel.clear(), askDelete(id)); }
+    const list = visible().map(x => x.id);
+    if (e.shiftKey && S.anchor != null && list.includes(S.anchor)) {
+      const [a, b] = [list.indexOf(S.anchor), list.indexOf(id)].sort((m, n) => m - n);
+      list.slice(a, b + 1).forEach(i => S.sel.add(i));
+    } else { S.sel.has(id) ? S.sel.delete(id) : S.sel.add(id); S.anchor = id; }
+    S.cur = id; render();
+  });
+
+  document.addEventListener("keydown", e => {
+    if (document.querySelector("dialog[open]")) return;
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName) && document.activeElement.type !== "checkbox";
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !typing) { e.preventDefault(); return undo(); }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (typing) { if (e.key === "Escape") document.activeElement.blur(); return; }
+    if (document.activeElement.closest("button,th")) { if (e.key === " " || e.key === "Enter") return; }
+    const list = visible(), i = list.findIndex(x => x.id === S.cur);
+    const move = d => { if (!list.length) return; S.cur = list[Math.max(0, Math.min(list.length - 1, i + d))].id; S.scroll = true; render(); };
+    switch (e.key) {
+      case "j": case "ArrowDown": e.preventDefault(); move(1); break;
+      case "k": case "ArrowUp": e.preventDefault(); move(-1); break;
+      case "x": if (S.cur != null) { S.sel.has(S.cur) ? S.sel.delete(S.cur) : S.sel.add(S.cur); S.anchor = S.cur; render(); } break;
+      case "a": approve(); break;
+      case "r": e.preventDefault(); askReject(); break;
+      case "d": case "Delete": askDelete(); break;
+      case "/": e.preventDefault(); $("q").focus(); break;
+      case "?": $("helpDlg").showModal(); break;
+      case "Escape": if (S.sel.size) { S.sel.clear(); render(); } break;
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

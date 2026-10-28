@@ -1,0 +1,146 @@
+[
+  {
+    "code": "9SNA5X",
+    "case": "E8",
+    "condition": "v1",
+    "run": 1
+  },
+  {
+    "code": "B9Y5LX",
+    "case": "E5",
+    "condition": "baseline",
+    "run": 1
+  },
+  {
+    "code": "QM5P67",
+    "case": "E2",
+    "condition": "v1",
+    "run": 1
+  },
+  {
+    "code": "9YWVJI",
+    "case": "E1",
+    "condition": "baseline",
+    "run": 1
+  },
+  {
+    "code": "TJEIUB",
+    "case": "E6",
+    "condition": "v2",
+    "run": 1
+  },
+  {
+    "code": "K0M5PM",
+    "case": "E6",
+    "condition": "baseline",
+    "run": 1
+  },
+  {
+    "code": "GDLX7P",
+    "case": "E8",
+    "condition": "baseline",
+    "run": 1
+  },
+  {
+    "code": "197ZF1",
+    "case": "E2",
+    "condition": "v2",
+    "run": 1
+  },
+  {
+    "code": "T59682",
+    "case": "E2",
+    "condition": "baseline",
+    "run": 1
+  },
+  {
+    "code": "EIHDD0",
+    "case": "E5",
+    "condition": "v1",
+    "run": 1
+  },
+  {
+    "code": "5LV11T",
+    "case": "E4",
+    "condition": "v1",
+    "run": 1
+  },
+  {
+    "code": "RDIF8M",
+    "case": "E1",
+    "condition": "v2",
+    "run": 1
+  },
+  {
+    "code": "3X8NEQ",
+    "case": "E5",
+    "condition": "v2",
+    "run": 1
+  },
+  {
+    "code": "7PWIB4",
+    "case": "E3",
+    "condition": "baseline",
+    "run": 1
+  },
+  {
+    "code": "KM1CFP",
+    "case": "E3",
+    "condition": "v1",
+    "run": 1
+  },
+  {
+    "code": "HOTBRR",
+    "case": "E4",
+    "condition": "v2",
+    "run": 1
+  },
+  {
+    "code": "HB875G",
+    "case": "E3",
+    "condition": "v2",
+    "run": 1
+  },
+  {
+    "code": "GQMDIZ",
+    "case": "E8",
+    "condition": "v2",
+    "run": 1
+  },
+  {
+    "code": "U71Z6B",
+    "case": "E4",
+    "condition": "baseline",
+    "run": 1
+  },
+  {
+    "code": "92P3GN",
+    "case": "E6",
+    "condition": "v1",
+    "run": 1
+  },
+  {
+    "code": "4ZQLSE",
+    "case": "E1",
+    "condition": "v1",
+    "run": 1
+  },
+  {
+    "code": "HQU3TN",
+    "case": "E7",
+    "condition": "v1",
+    "run": 1
+  },
+  {
+    "code": "TLC5FE",
+    "case": "E7",
+    "condition": "v2",
+    "run": 1
+  },
+  {
+    "code": "VR5LJL",
+    "case": "E7",
+    "condition": "baseline",
+    "run": 1
+  }
+]

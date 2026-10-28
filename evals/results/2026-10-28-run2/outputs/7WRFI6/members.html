@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Members · Admin console</title>
+<style>
+:root{
+  --bg:#f6f7f9; --surface:#fff; --line:#e3e6eb; --line-2:#eef0f3;
+  --text:#14171c; --muted:#5d6675; --accent:#2f5bea; --accent-ink:#fff; --accent-soft:#eaf0ff;
+  --danger:#c62f3b; --danger-soft:#fdecee; --ok:#17794d; --ok-soft:#e6f5ed; --warn:#8a5a00; --warn-soft:#fff3d6;
+  --shadow:0 8px 28px rgba(16,24,40,.16); --radius:10px;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0f1115; --surface:#171a20; --line:#2a2f38; --line-2:#21252d;
+  --text:#eceff4; --muted:#98a1b0; --accent:#6f8fff; --accent-ink:#0b1020; --accent-soft:#1c2540;
+  --danger:#ff7b85; --danger-soft:#3a1c20; --ok:#5fd29a; --ok-soft:#14291f; --warn:#f0bf5a; --warn-soft:#33270d;
+  --shadow:0 8px 28px rgba(0,0,0,.5);
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+nav.side{background:var(--surface);border-right:1px solid var(--line);padding:16px 12px;position:sticky;top:0;height:100vh}
+.brand{font-weight:700;padding:4px 10px 16px;display:flex;gap:8px;align-items:center}
+.brand i{width:22px;height:22px;border-radius:6px;background:var(--accent);display:inline-block}
+nav.side a{display:block;padding:8px 10px;border-radius:7px;color:var(--muted);text-decoration:none}
+nav.side a:hover{background:var(--line-2)}
+nav.side a[aria-current]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+nav.side h2{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 10px 4px}
+main{padding:28px clamp(16px,4vw,48px) 80px;max-width:1120px;width:100%}
+.head{display:flex;gap:16px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}
+h1{font-size:22px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:550}
+.btn:hover{background:var(--line-2)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{background:var(--danger);color:#fff;border-color:var(--danger)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:5px 10px;font-size:13px}
+
+.sso{display:flex;gap:12px;align-items:flex-start;margin:20px 0;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius)}
+.sso svg{flex:none;margin-top:2px;color:var(--ok)}
+.sso b{font-weight:600}
+.sso p{margin:0;color:var(--muted)}
+.sso a{color:var(--accent)}
+
+.seats{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;margin-top:8px}
+.bar{width:120px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar span{display:block;height:100%;background:var(--accent)}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.tabs{display:flex;gap:4px;padding:0 12px;border-bottom:1px solid var(--line)}
+.tab{background:none;border:0;padding:12px 10px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;font-weight:550}
+.tab[aria-selected=true]{color:var(--text);border-color:var(--accent)}
+.tab .n{background:var(--line-2);border-radius:99px;padding:1px 7px;font-size:12px;margin-left:4px}
+.tools{display:flex;gap:8px;padding:12px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.tools input[type=search]{flex:1 1 220px;min-width:0}
+.field{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px}
+select.field{padding-right:6px}
+
+.bulk{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--accent-soft);border-bottom:1px solid var(--line)}
+.bulk[hidden]{display:none}
+.bulk .sp{flex:1}
+
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:720px}
+th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:color-mix(in srgb,var(--line-2) 55%,transparent)}
+tbody tr.sel{background:var(--accent-soft)}
+td.chk,th.chk{width:36px;padding-right:0}
+.who{display:flex;gap:10px;align-items:center;min-width:0}
+.av{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:650;font-size:12px;color:#fff}
+.who .nm{font-weight:600;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.who .em{color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis}
+.tag{font-size:11px;font-weight:600;border-radius:5px;padding:1px 6px;background:var(--line-2);color:var(--muted)}
+.tag.you{background:var(--accent-soft);color:var(--accent)}
+.pill{display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:600;border-radius:99px;padding:2px 9px}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.muted{color:var(--muted)}
+.lock{display:inline-flex;gap:6px;align-items:center;color:var(--muted)}
+.role-sel{min-width:112px}
+.kebab{background:none;border:0;border-radius:6px;padding:6px 8px;cursor:pointer;color:var(--muted)}
+.kebab:hover{background:var(--line-2);color:var(--text)}
+.empty{padding:48px 16px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--text);margin-bottom:4px}
+.foot{padding:10px 14px;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+
+.menu{position:fixed;z-index:50;background:var(--surface);border:1px solid var(--line);border-radius:9px;box-shadow:var(--shadow);padding:4px;min-width:200px}
+.menu button{display:block;width:100%;text-align:left;background:none;border:0;border-radius:6px;padding:8px 10px;cursor:pointer}
+.menu button:hover,.menu button:focus-visible{background:var(--line-2)}
+.menu button.d{color:var(--danger)}
+.menu hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+.menu button[disabled]{opacity:.5;cursor:not-allowed}
+
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--text);padding:0;width:min(520px,calc(100vw - 32px));box-shadow:var(--shadow)}
+dialog::backdrop{background:rgba(10,12,16,.5)}
+dialog form{padding:22px}
+dialog h2{margin:0 0 6px;font-size:18px}
+dialog .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+label.l{display:block;font-weight:600;margin:16px 0 6px}
+.hint{color:var(--muted);font-size:13px;margin:4px 0 0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;border:1px solid var(--line);border-radius:8px;padding:6px;min-height:44px;cursor:text}
+.chips:focus-within{outline:2px solid var(--accent)}
+.chips input{border:0;outline:0;background:none;flex:1;min-width:160px;padding:4px}
+.chip{display:inline-flex;gap:4px;align-items:center;background:var(--line-2);border-radius:6px;padding:2px 4px 2px 8px;font-size:13px}
+.chip.bad{background:var(--danger-soft);color:var(--danger)}
+.chip button{border:0;background:none;cursor:pointer;color:inherit;padding:0 4px;font-size:15px;line-height:1}
+.err{color:var(--danger);font-size:13px;margin:6px 0 0}
+.roles{display:grid;gap:6px}
+.roleopt{display:flex;gap:10px;border:1px solid var(--line);border-radius:8px;padding:10px;cursor:pointer}
+.roleopt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.roleopt b{display:block}
+.roleopt span{color:var(--muted);font-size:13px}
+.callout{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:10px 12px;margin-top:14px;font-size:13px}
+.callout.d{background:var(--danger-soft);color:var(--danger)}
+
+.toasts{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);display:grid;gap:8px;z-index:100}
+.toast{background:var(--text);color:var(--bg);padding:10px 14px;border-radius:9px;display:flex;gap:14px;align-items:center;box-shadow:var(--shadow)}
+.toast button{background:none;border:0;color:inherit;text-decoration:underline;cursor:pointer;font-weight:600}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+@media(max-width:820px){
+  .app{grid-template-columns:1fr}
+  nav.side{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="side" aria-label="Admin">
+    <div class="brand"><i></i> Acme Admin</div>
+    <a href="#">Overview</a>
+    <a href="#" aria-current="page">Members</a>
+    <a href="#">Groups</a>
+    <h2>Security</h2>
+    <a href="#">Single sign-on</a>
+    <a href="#">Domains</a>
+    <a href="#">Audit log</a>
+    <h2>Workspace</h2>
+    <a href="#">Billing</a>
+    <a href="#">Settings</a>
+  </nav>
+
+  <main>
+    <div class="head">
+      <div>
+        <h1>Members</h1>
+        <p class="sub">Manage who has access to the Acme workspace and what they can do.</p>
+        <div class="seats" id="seats"></div>
+      </div>
+      <button class="btn primary" id="inviteBtn">Invite members</button>
+    </div>
+
+    <div class="sso" role="note">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="m9 12 2 2 4-4"/></svg>
+      <div>
+        <b>Sign-in is enforced through Okta SSO.</b>
+        <p>Invited people create their account by signing in with their <b>@acme.com</b> or <b>@acme.io</b> identity — no passwords. Members synced from Okta groups have roles managed there. <a href="#">SSO settings</a></p>
+      </div>
+    </div>
+
+    <section class="card" aria-label="Members list">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="tab-active" aria-selected="true" aria-controls="panel">Active <span class="n" id="nActive"></span></button>
+        <button class="tab" role="tab" id="tab-pending" aria-selected="false" aria-controls="panel">Pending invites <span class="n" id="nPending"></span></button>
+      </div>
+      <div class="tools">
+        <input class="field" type="search" id="q" placeholder="Search by name or email" aria-label="Search members">
+        <select class="field" id="fRole" aria-label="Filter by role">
+          <option value="">All roles</option><option>Owner</option><option>Admin</option><option>Member</option><option>Viewer</option>
+        </select>
+      </div>
+      <div class="bulk" id="bulk" hidden>
+        <b id="bulkN"></b>
+        <span class="sp"></span>
+        <label class="sr" for="bulkRole">Change role of selected</label>
+        <select class="field" id="bulkRole"><option value="">Change role…</option><option>Admin</option><option>Member</option><option>Viewer</option></select>
+        <button class="btn sm danger" id="bulkRemove">Remove</button>
+        <button class="btn sm" id="bulkClear">Clear</button>
+      </div>
+      <div class="tablewrap" id="panel" role="tabpanel" aria-live="polite"></div>
+      <div class="foot" id="foot"></div>
+    </section>
+  </main>
+</div>
+
+<!-- Invite -->
+<dialog id="inviteDlg" aria-labelledby="invT">
+  <form method="dialog" id="inviteForm" novalidate>
+    <h2 id="invT">Invite members</h2>
+    <p class="sub">They'll get an email with a link to sign in through Okta.</p>
+    <label class="l" for="invIn">Email addresses</label>
+    <div class="chips" id="chips"><input id="invIn" placeholder="name@acme.com — press Enter or comma" autocomplete="off"></div>
+    <p class="hint">Only verified domains: acme.com, acme.io. Paste a list to add many at once.</p>
+    <p class="err" id="invErr" role="alert" hidden></p>
+    <fieldset style="border:0;padding:0;margin:0">
+      <legend class="l" style="padding:0">Role</legend>
+      <div class="roles" id="roleOpts"></div>
+    </fieldset>
+    <div class="actions">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="submit" class="btn primary" id="invSend">Send invites</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Confirm -->
+<dialog id="confirmDlg" aria-labelledby="cT">
+  <form method="dialog">
+    <h2 id="cT"></h2>
+    <div id="cBody"></div>
+    <div class="actions">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="submit" class="btn" id="cOk"></button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+const ROLES = {
+  Owner:{d:"Full control, including billing, SSO and deleting the workspace."},
+  Admin:{d:"Manage members, groups and settings. No billing access."},
+  Member:{d:"Create and edit content. Can't manage people or settings."},
+  Viewer:{d:"Read-only access. Doesn't use a paid seat."}
+};
+const SEATS = 50, ME = "m1";
+const hues = ["#5b6ee1","#c2562f","#2a8f6a","#a14fb8","#b1801a","#2b7fb0","#c0457a"];
+let members = [
+  ["m1","Priya Raman","priya.raman@acme.com","Owner","today",null],
+  ["m2","Daniel Okafor","daniel.okafor@acme.com","Owner","2 hours ago",null],
+  ["m3","Sofia Lindqvist","sofia.l@acme.com","Admin","Yesterday","eng-admins"],
+  ["m4","Marcus Chen","marcus.chen@acme.com","Admin","3 days ago",null],
+  ["m5","Aiko Tanaka","aiko.tanaka@acme.io","Member","Today","engineering"],
+  ["m6","Jonas Weber","jonas.weber@acme.com","Member","5 days ago","engineering"],
+  ["m7","Lena Fischer","lena.fischer@acme.com","Member","Oct 14",null],
+  ["m8","Omar Haddad","omar.haddad@acme.io","Member","Never signed in",null],
+  ["m9","Grace Mbeki","grace.mbeki@acme.com","Viewer","Oct 2","finance"],
+  ["m10","Tomás Ruiz","tomas.ruiz@acme.com","Viewer","Sep 21",null],
+  ["m11","Hannah Brooks","hannah.brooks@acme.com","Member","Oct 27","design"],
+  ["m12","Ravi Patel","ravi.patel@acme.io","Member","Oct 26","design"]
+].map(([id,name,email,role,last,group])=>({id,name,email,role,last,group}));
+let invites = [
+  {id:"i1",email:"nora.vance@acme.com",role:"Member",by:"Priya Raman",sent:"2 days ago"},
+  {id:"i2",email:"kai.suzuki@acme.io",role:"Viewer",by:"Marcus Chen",sent:"6 days ago",expiring:true},
+  {id:"i3",email:"ellis.moore@acme.com",role:"Admin",by:"Daniel Okafor",sent:"Today"}
+];
+let tab="active", sel=new Set();
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const initials = n=>n.split(/[\s.@]+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join("");
+const hue = s=>hues[[...s].reduce((a,c)=>a+c.charCodeAt(0),0)%hues.length];
+const owners = ()=>members.filter(m=>m.role==="Owner").length;
+
+function render(){
+  const q=$("#q").value.trim().toLowerCase(), fr=$("#fRole").value;
+  const used = members.filter(m=>m.role!=="Viewer").length + invites.filter(i=>i.role!=="Viewer").length;
+  $("#seats").innerHTML = `<div class="bar" aria-hidden="true"><span style="width:${used/SEATS*100}%"></span></div>${used} of ${SEATS} seats used · Viewers are free`;
+  $("#nActive").textContent=members.length; $("#nPending").textContent=invites.length;
+  $("#tab-active").setAttribute("aria-selected",tab==="active");
+  $("#tab-pending").setAttribute("aria-selected",tab==="pending");
+  const match=x=>(!q||(x.name||"").toLowerCase().includes(q)||x.email.toLowerCase().includes(q))&&(!fr||x.role===fr);
+  const rows = (tab==="active"?members:invites).filter(match);
+  let h;
+  if(!rows.length){
+    h = `<div class="empty"><b>${q||fr?"No matches":tab==="active"?"No members":"No pending invites"}</b>${q||fr?"Try a different search or clear the role filter.":"Invite teammates to get started."}</div>`;
+  } else if(tab==="active"){
+    const all = rows.every(r=>sel.has(r.id));
+    h = `<table><thead><tr><th class="chk"><input type="checkbox" id="all" aria-label="Select all" ${all?"checked":""}></th><th>Member</th><th>Role</th><th>Last active</th><th><span class="sr">Actions</span></th></tr></thead><tbody>`+
+    rows.map(m=>{
+      const me=m.id===ME, lastOwner=m.role==="Owner"&&owners()===1, managed=!!m.group;
+      let roleCell;
+      if(lastOwner) roleCell=`<span class="lock" title="Workspaces need at least one Owner. Promote someone else first.">${lockI()} Owner</span>`;
+      else if(me) roleCell=`<span class="lock" title="You can't change your own role.">${lockI()} ${m.role}</span>`;
+      else if(managed) roleCell=`<span class="lock" title="Role is set by the Okta group “${esc(m.group)}”. Change it in Okta.">${lockI()} ${m.role} <span class="tag">Okta</span></span>`;
+      else roleCell=`<select class="field role-sel" data-role="${m.id}" aria-label="Role for ${esc(m.name)}">${Object.keys(ROLES).map(r=>`<option ${r===m.role?"selected":""}>${r}</option>`).join("")}</select>`;
+      return `<tr class="${sel.has(m.id)?"sel":""}"><td class="chk"><input type="checkbox" data-sel="${m.id}" aria-label="Select ${esc(m.name)}" ${sel.has(m.id)?"checked":""} ${me?"disabled":""}></td>
+      <td><div class="who"><span class="av" style="background:${hue(m.email)}" aria-hidden="true">${initials(m.name)}</span><div style="min-width:0"><div class="nm">${esc(m.name)}${me?'<span class="tag you">You</span>':""}</div><div class="em">${esc(m.email)}</div></div></div></td>
+      <td>${roleCell}</td>
+      <td class="muted">${m.last==="Never signed in"?'<span class="pill warn">Never signed in</span>':esc(m.last)}</td>
+      <td style="text-align:right"><button class="kebab" data-menu="${m.id}" aria-haspopup="menu" aria-label="Actions for ${esc(m.name)}">${dotsI()}</button></td></tr>`}).join("")+`</tbody></table>`;
+  } else {
+    h = `<table><thead><tr><th>Email</th><th>Role</th><th>Invited by</th><th>Status</th><th><span class="sr">Actions</span></th></tr></thead><tbody>`+
+    rows.map(i=>`<tr><td><div class="who"><span class="av" style="background:${hue(i.email)}" aria-hidden="true">${initials(i.email)}</span><div class="nm">${esc(i.email)}</div></div></td>
+      <td>${i.role}</td><td class="muted">${esc(i.by)}</td>
+      <td>${i.expiring?'<span class="pill warn">Expires tomorrow</span>':'<span class="pill ok">Sent</span>'} <span class="muted">· ${i.sent}</span></td>
+      <td style="text-align:right;white-space:nowrap"><button class="btn sm" data-resend="${i.id}">Resend</button> <button class="kebab" data-imenu="${i.id}" aria-haspopup="menu" aria-label="Actions for ${esc(i.email)}">${dotsI()}</button></td></tr>`).join("")+`</tbody></table>`;
+  }
+  $("#panel").innerHTML=h;
+  $("#foot").textContent = tab==="active"?`${rows.length} of ${members.length} members`:`${rows.length} pending. Invites expire after 7 days.`;
+  $("#bulk").hidden = !(tab==="active"&&sel.size);
+  $("#bulkN").textContent = `${sel.size} selected`;
+}
+const lockI=()=>`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`;
+const dotsI=()=>`<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>`;
+
+/* toasts */
+function toast(msg,undo){
+  const t=document.createElement("div"); t.className="toast"; t.innerHTML=`<span>${msg}</span>`;
+  if(undo){const b=document.createElement("button");b.textContent="Undo";b.onclick=()=>{undo();t.remove()};t.append(b)}
+  $("#toasts").append(t); setTimeout(()=>t.remove(),6000);
+}
+
+/* confirm */
+function confirmDlg({title,body,ok,danger}){
+  return new Promise(res=>{
+    const d=$("#confirmDlg"); $("#cT").textContent=title; $("#cBody").innerHTML=body;
+    const b=$("#cOk"); b.textContent=ok; b.className="btn "+(danger?"danger":"primary");
+    d.returnValue=""; d.onclose=()=>res(d.returnValue==="ok"); b.onclick=()=>{d.returnValue="ok"};
+    d.showModal();
+  });
+}
+
+/* role change */
+async function setRole(id,role){
+  const m=members.find(x=>x.id===id), prev=m.role; if(prev===role) return;
+  if(role==="Owner"){
+    const ok=await confirmDlg({title:`Make ${m.name} an Owner?`,ok:"Make Owner",
+      body:`<p class="sub">Owners have full control, including billing, SSO configuration and deleting the workspace.</p>`});
+    if(!ok){render();return}
+  } else if(prev==="Owner" || (prev==="Admin"&&role!=="Admin")){
+    // demotions of privileged roles are applied immediately but are undoable
+  }
+  m.role=role; render();
+  toast(`${esc(m.name.split(" ")[0])} is now ${role==="Admin"?"an":"a"} ${role}.`,()=>{m.role=prev;render()});
+}
+
+/* remove */
+async function removeMembers(ids){
+  const list=members.filter(m=>ids.includes(m.id));
+  const owns=list.filter(m=>m.role==="Owner").length;
+  if(owns && owners()-owns<1){
+    await confirmDlg({title:"Can't remove every Owner",ok:"OK",body:`<p class="sub">A workspace needs at least one Owner. Promote another member to Owner first.</p>`});
+    return;
+  }
+  const one=list.length===1?list[0]:null;
+  const ok=await confirmDlg({danger:true,ok:one?"Remove member":`Remove ${list.length} members`,
+    title:one?`Remove ${one.name}?`:`Remove ${list.length} members?`,
+    body:`<p class="sub">${one?esc(one.email)+" will":"They will"} lose access to the workspace immediately and be signed out of active sessions. Their content stays and is reassigned to you.</p>
+    <div class="callout">Removing someone here doesn't deprovision them in Okta. ${list.some(m=>m.group)?"<b>"+list.filter(m=>m.group).length+" of these are synced from Okta groups</b> and will be re-added on the next sync unless you also remove them from the group.":"To stop them signing in for good, also unassign Acme in Okta."}</div>`});
+  if(!ok) return;
+  const snapshot=[...members];
+  members=members.filter(m=>!ids.includes(m.id)); sel.clear(); render();
+  toast(one?`${esc(one.name)} was removed.`:`${list.length} members removed.`,()=>{members=snapshot;render()});
+}
+
+/* menus */
+let menuEl;
+function closeMenu(){menuEl&&menuEl.remove();menuEl=null}
+function openMenu(btn,items){
+  closeMenu();
+  const el=document.createElement("div"); el.className="menu"; el.setAttribute("role","menu");
+  items.forEach(it=>{
+    if(it==="-"){el.append(document.createElement("hr"));return}
+    const b=document.createElement("button"); b.role="menuitem"; b.textContent=it.t; if(it.d)b.className="d"; if(it.off){b.disabled=true;b.title=it.off}
+    b.onclick=()=>{closeMenu();btn.focus();it.f()}; el.append(b);
+  });
+  document.body.append(el);
+  const r=btn.getBoundingClientRect(); el.style.top=Math.min(r.bottom+4,innerHeight-el.offsetHeight-8)+"px"; el.style.left=Math.max(8,r.right-el.offsetWidth)+"px";
+  menuEl=el; el.querySelector("button:not([disabled])")?.focus();
+  el.onkeydown=e=>{const bs=[...el.querySelectorAll("button:not([disabled])")],i=bs.indexOf(document.activeElement);
+    if(e.key==="ArrowDown"){bs[(i+1)%bs.length].focus();e.preventDefault()}
+    if(e.key==="ArrowUp"){bs[(i-1+bs.length)%bs.length].focus();e.preventDefault()}
+    if(e.key==="Escape"){closeMenu();btn.focus()}};
+}
+document.addEventListener("click",e=>{if(menuEl&&!menuEl.contains(e.target)&&!e.target.closest("[data-menu],[data-imenu]"))closeMenu()});
+
+/* events */
+$("#panel").addEventListener("click",e=>{
+  const t=e.target.closest("button");
+  if(!t){ return }
+  if(t.dataset.menu){
+    const m=members.find(x=>x.id===t.dataset.menu), me=m.id===ME, last=m.role==="Owner"&&owners()===1;
+    openMenu(t,[{t:"Copy email",f:()=>{navigator.clipboard?.writeText(m.email);toast("Email copied.")}},
+      {t:"View activity",f:()=>toast("Opens audit log filtered to "+esc(m.name))},"-",
+      {t:me?"Leave workspace":"Remove from workspace",d:true,off:last?"Promote another Owner first":"",f:()=>removeMembers([m.id])}]);
+  }
+  if(t.dataset.imenu){
+    const i=invites.find(x=>x.id===t.dataset.imenu);
+    openMenu(t,[{t:"Copy invite link",f:()=>toast("Invite link copied.")},"-",
+      {t:"Revoke invite",d:true,f:()=>{const s=[...invites];invites=invites.filter(x=>x!==i);render();toast(`Invite to ${esc(i.email)} revoked.`,()=>{invites=s;render()})}}]);
+  }
+  if(t.dataset.resend){const i=invites.find(x=>x.id===t.dataset.resend);i.sent="Just now";i.expiring=false;render();toast(`Invite re-sent to ${esc(i.email)}.`)}
+});
+$("#panel").addEventListener("change",e=>{
+  const t=e.target;
+  if(t.id==="all"){const vis=[...document.querySelectorAll("[data-sel]:not(:disabled)")].map(c=>c.dataset.sel);vis.forEach(id=>t.checked?sel.add(id):sel.delete(id));render()}
+  else if(t.dataset.sel){t.checked?sel.add(t.dataset.sel):sel.delete(t.dataset.sel);render()}
+  else if(t.dataset.role){setRole(t.dataset.role,t.value)}
+});
+$("#q").oninput=render; $("#fRole").onchange=render;
+["active","pending"].forEach(k=>$("#tab-"+k).onclick=()=>{tab=k;sel.clear();render()});
+$("#bulkClear").onclick=()=>{sel.clear();render()};
+$("#bulkRemove").onclick=()=>removeMembers([...sel]);
+$("#bulkRole").onchange=async e=>{
+  const role=e.target.value; e.target.value=""; if(!role) return;
+  const ids=[...sel].filter(id=>{const m=members.find(x=>x.id===id);return !m.group&&!(m.role==="Owner"&&owners()===1)});
+  const skipped=sel.size-ids.length;
+  if(!ids.length){toast("Selected roles are managed in Okta or locked.");return}
+  const prev=ids.map(id=>[id,members.find(m=>m.id===id).role]);
+  ids.forEach(id=>members.find(m=>m.id===id).role=role); sel.clear(); render();
+  toast(`${ids.length} set to ${role}${skipped?` · ${skipped} skipped (managed in Okta or locked)`:""}.`,()=>{prev.forEach(([id,r])=>members.find(m=>m.id===id).role=r);render()});
+};
+
+/* dialogs */
+document.addEventListener("click",e=>{if(e.target.closest("[data-close]"))e.target.closest("dialog").close()});
+const DOMAINS=["acme.com","acme.io"], emailRe=/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
+let chips=[];
+function renderChips(){
+  $("#chips").querySelectorAll(".chip").forEach(c=>c.remove());
+  chips.forEach((c,i)=>{const s=document.createElement("span");s.className="chip"+(c.bad?" bad":"");
+    s.innerHTML=`${esc(c.v)}<button type="button" aria-label="Remove ${esc(c.v)}">×</button>`;
+    s.querySelector("button").onclick=()=>{chips.splice(i,1);renderChips();$("#invIn").focus()};
+    $("#chips").insertBefore(s,$("#invIn"))});
+  const bad=chips.filter(c=>c.bad);
+  const err=$("#invErr"); err.hidden=!bad.length;
+  if(bad.length) err.textContent=bad.some(c=>c.why==="domain")
+    ?`${bad.filter(c=>c.why==="domain").map(c=>c.v).join(", ")} isn't on a verified domain, so it can't sign in through SSO. Remove it or add the domain in Domains settings.`
+    :"Fix or remove the highlighted addresses.";
+  $("#invSend").disabled=!chips.length||!!bad.length;
+}
+function addChips(text){
+  text.split(/[\s,;]+/).map(s=>s.trim().toLowerCase()).filter(Boolean).forEach(v=>{
+    if(chips.some(c=>c.v===v))return;
+    const ok=emailRe.test(v), domOk=ok&&DOMAINS.includes(v.split("@")[1]);
+    const dup=members.some(m=>m.email===v)||invites.some(i=>i.email===v);
+    chips.push({v,bad:!ok||!domOk||dup,why:!ok?"format":!domOk?"domain":dup?"dup":""});
+    if(dup) toast(`${esc(v)} is already a member or invited.`);
+  }); renderChips();
+}
+$("#invIn").addEventListener("keydown",e=>{
+  if(["Enter",",",";"," "].includes(e.key)&&e.target.value.trim()){e.preventDefault();addChips(e.target.value);e.target.value=""}
+  if(e.key==="Backspace"&&!e.target.value&&chips.length){chips.pop();renderChips()}
+});
+$("#invIn").addEventListener("paste",e=>{e.preventDefault();addChips(e.clipboardData.getData("text"))});
+$("#invIn").addEventListener("blur",e=>{if(e.target.value.trim()){addChips(e.target.value);e.target.value=""}});
+$("#chips").onclick=()=>$("#invIn").focus();
+$("#roleOpts").innerHTML=["Admin","Member","Viewer"].map(r=>`<label class="roleopt"><input type="radio" name="irole" value="${r}" ${r==="Member"?"checked":""}><div><b>${r}</b><span>${ROLES[r].d}</span></div></label>`).join("");
+$("#inviteBtn").onclick=()=>{chips=[];renderChips();$("#invIn").value="";$("#inviteDlg").showModal();$("#invIn").focus()};
+$("#inviteForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  if($("#invIn").value.trim())addChips($("#invIn").value),$("#invIn").value="";
+  if(!chips.length||chips.some(c=>c.bad))return;
+  const role=document.querySelector("[name=irole]:checked").value;
+  chips.forEach((c,i)=>invites.unshift({id:"n"+Date.now()+i,email:c.v,role,by:"You",sent:"Just now"}));
+  const n=chips.length; $("#inviteDlg").close(); tab="pending"; render();
+  toast(`${n} invite${n>1?"s":""} sent.`);
+});
+render();
+</script>
+</body>
+</html>

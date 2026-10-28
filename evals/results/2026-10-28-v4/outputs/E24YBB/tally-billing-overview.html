@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Billing overview · Tally</title>
+<meta name="color-scheme" content="light dark">
+<style>
+/* Direction: cool Stripe-grey canvas, white 16px cards with hairline borders, indigo as the single data accent,
+   one ink anchor card (the hero). Hero: "Next invoice" as a 64px number. Restraint everywhere else. */
+:root{
+  --bg:#f6f8fb; --card:#ffffff; --card-2:#f6f8fb; --line:#e3e8ef; --line-strong:#cfd7e3;
+  --text:#1a1f36; --text-2:#4a5268; --text-3:#5b6479;
+  --accent:#5b4fe9; --accent-ink:#ffffff; --accent-soft:#eeedfd;
+  --bar:#8f87f2; --bar-track:#eff1f6;
+  --anchor:#14172b; --anchor-text:#ffffff; --anchor-2:#b6bbd2; --anchor-line:#2c3150;
+  --seg-1:#ffffff; --seg-2:#a59fff; --seg-3:#6b62d9;
+  --ok:#0b6b45; --ok-bg:#dcf5e7; --bad:#b4281f; --bad-bg:#fdebe9; --warn:#8a5300; --warn-bg:#fff1d6; --info:#3b4a6b; --info-bg:#e9edf5;
+  --shadow:0 1px 2px rgba(26,31,54,.04);
+  --radius:16px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b0d18; --card:#141828; --card-2:#0f1220; --line:#252a40; --line-strong:#363c5a;
+    --text:#eceefa; --text-2:#aeb3cc; --text-3:#9097b4;
+    --accent:#9a92ff; --accent-ink:#0b0d18; --accent-soft:#22254a;
+    --bar:#6b64d0; --bar-track:#1d2136;
+    --anchor:#1d1f4a; --anchor-text:#ffffff; --anchor-2:#bcc0e0; --anchor-line:#35397a;
+    --seg-1:#ffffff; --seg-2:#a59fff; --seg-3:#6b62d9;
+    --ok:#6fe0a8; --ok-bg:#12382a; --bad:#ff9d94; --bad-bg:#3d1b1f; --warn:#ffcb70; --warn-bg:#3a2c10; --info:#b4bdd8; --info-bg:#222740;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b0d18; --card:#141828; --card-2:#0f1220; --line:#252a40; --line-strong:#363c5a;
+  --text:#eceefa; --text-2:#aeb3cc; --text-3:#9097b4;
+  --accent:#9a92ff; --accent-ink:#0b0d18; --accent-soft:#22254a;
+  --bar:#6b64d0; --bar-track:#1d2136;
+  --anchor:#1d1f4a; --anchor-text:#ffffff; --anchor-2:#bcc0e0; --anchor-line:#35397a;
+  --seg-1:#ffffff; --seg-2:#a59fff; --seg-3:#6b62d9;
+  --ok:#6fe0a8; --ok-bg:#12382a; --bad:#ff9d94; --bad-bg:#3d1b1f; --warn:#ffcb70; --warn-bg:#3a2c10; --info:#b4bdd8; --info-bg:#222740;
+  --shadow:none;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-feature-settings:"tnum" 1,"cv11" 1;-webkit-font-smoothing:antialiased}
+h1,h2,h3,p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.num{font-variant-numeric:tabular-nums}
+
+/* top bar */
+.top{background:var(--card);border-bottom:1px solid var(--line)}
+.top-in{max-width:1240px;margin:0 auto;padding:0 32px;display:flex;align-items:center;gap:28px;height:56px}
+.logo{font-weight:700;font-size:17px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.logo i{width:22px;height:22px;border-radius:6px;background:var(--text);display:grid;place-items:center}
+.logo i::after{content:"";width:10px;height:10px;border:2px solid var(--bg);border-radius:50%;border-right-color:transparent}
+.top nav{display:flex;gap:4px;height:100%}
+.top nav a{display:flex;align-items:center;padding:0 12px;color:var(--text-2);text-decoration:none;font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px}
+.top nav a:hover{color:var(--text)}
+.top nav a[aria-current="page"]{color:var(--text);border-bottom-color:var(--accent)}
+.top .sp{flex:1}
+.icon-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;color:var(--text-2)}
+.icon-btn:hover{color:var(--text);border-color:var(--line-strong)}
+.icon-btn svg{width:18px;height:18px}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:600;font-size:12px}
+
+/* page */
+main{max-width:1240px;margin:0 auto;padding:32px 32px 64px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:24px}
+h1{font-size:36px;line-height:1.1;letter-spacing:-.03em;font-weight:700}
+.fresh{color:var(--text-3);margin-top:8px;font-size:13px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.fresh .dot{width:3px;height:3px;border-radius:50%;background:var(--text-3)}
+.head-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line-strong);background:var(--card);font-weight:600;font-size:13px;white-space:nowrap}
+.btn:hover{background:var(--card-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.sm{height:30px;padding:0 12px}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--accent)}
+.btn.ghost:hover{background:var(--accent-soft)}
+.btn svg{width:14px;height:14px}
+.state-pick{display:flex;align-items:center;gap:6px;color:var(--text-3);font-size:12px}
+.state-pick select{height:30px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--text-2);font:inherit;font-size:12px;padding:0 6px}
+
+/* alert */
+.alert{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--bad-bg);border:1px solid color-mix(in srgb,var(--bad) 25%,transparent);border-radius:var(--radius);padding:14px 18px;margin-bottom:20px}
+.alert svg{width:20px;height:20px;color:var(--bad);flex:none}
+.alert p{flex:1 1 320px;color:var(--text)}
+.alert p b{font-weight:600}
+.alert .btns{display:flex;gap:8px;flex-wrap:wrap}
+
+/* bento */
+.bento{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;min-width:0;display:flex;flex-direction:column}
+.label{font-size:13px;font-weight:500;color:var(--text-2);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card h2{font-size:16px;font-weight:600;letter-spacing:-.01em}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.card-head p{color:var(--text-3);font-size:13px;margin-top:2px}
+
+.hero{grid-column:span 6;grid-row:span 2;background:var(--anchor);border-color:var(--anchor);color:var(--anchor-text);padding:28px}
+.hero .label{color:var(--anchor-2)}
+.hero .big{font-size:68px;line-height:1;font-weight:600;letter-spacing:-.04em;margin:18px 0 12px}
+.hero .big small{font-size:32px;color:var(--anchor-2);letter-spacing:-.02em;font-weight:500}
+.hero .sentence{color:var(--anchor-2);max-width:46ch}
+.hero .sentence b{color:#fff;font-weight:600}
+.pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill.on-ink{background:rgba(255,255,255,.12);color:#fff}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.pill.bad{background:var(--bad-bg);color:var(--bad)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.info{background:var(--info-bg);color:var(--info)}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.no-dot::before{display:none}
+.spacer{flex:1;min-height:20px}
+.seg{display:flex;gap:3px;height:12px;border-radius:999px;overflow:hidden}
+.seg span{display:block;min-width:4px}
+.seg span:first-child{border-radius:999px 0 0 999px}
+.seg span:last-child{border-radius:0 999px 999px 0}
+.legend{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
+.legend div{min-width:0}
+.legend .k{display:flex;align-items:center;gap:8px;color:var(--anchor-2);font-size:12px}
+.legend .k i{width:8px;height:8px;border-radius:50%;flex:none}
+.legend .v{font-size:18px;font-weight:600;letter-spacing:-.02em;margin-top:2px}
+.hero-foot{display:flex;gap:8px;flex-wrap:wrap;margin-top:24px;padding-top:20px;border-top:1px solid var(--anchor-line)}
+.btn.on-ink{background:#fff;color:#14172b;border-color:#fff}
+.btn.on-ink:hover{background:#e9eaf5}
+.btn.ghost-ink{background:transparent;color:#fff;border-color:rgba(255,255,255,.28)}
+.btn.ghost-ink:hover{background:rgba(255,255,255,.08)}
+.hero :focus-visible{outline-color:#fff}
+
+.kpi{grid-column:span 3}
+.kpi .n{font-size:38px;line-height:1.05;font-weight:600;letter-spacing:-.03em;margin:14px 0 6px}
+.kpi .n small{font-size:20px;color:var(--text-3);font-weight:500;letter-spacing:-.01em}
+.kpi .sub{color:var(--text-3);font-size:13px}
+.kpi .viz{margin-top:auto;padding-top:16px}
+.meter{height:8px;border-radius:999px;background:var(--bar-track);position:relative;overflow:hidden}
+.meter i{position:absolute;inset:0 auto 0 0;background:var(--bar);border-radius:999px}
+.meter i.over{background:var(--accent)}
+.meter-meta{display:flex;justify-content:space-between;color:var(--text-3);font-size:12px;margin-top:6px}
+.spark{width:100%;height:36px;display:block}
+
+.chart-card{grid-column:span 8}
+.plan-card{grid-column:span 4}
+.table-card{grid-column:span 12;padding:22px 0 0}
+.table-card .card-head,.table-card .toolbar,.table-card .foot{padding:0 22px}
+
+.seg-ctl{display:inline-flex;background:var(--card-2);border:1px solid var(--line);border-radius:999px;padding:2px}
+.seg-ctl button{border:0;background:transparent;height:26px;padding:0 12px;border-radius:999px;font-size:12px;font-weight:600;color:var(--text-2)}
+.seg-ctl button[aria-pressed="true"]{background:var(--text);color:var(--bg)}
+
+/* chart */
+.chart{position:relative;height:250px;margin-top:4px;padding-left:44px}
+.grid-lines{position:absolute;inset:0 0 28px 44px}
+.grid-lines div{position:absolute;left:0;right:0;border-top:1px solid var(--line)}
+.grid-lines div span{position:absolute;left:-44px;top:-9px;width:38px;text-align:right;font-size:11px;color:var(--text-3)}
+.bars{position:absolute;inset:0 0 0 44px;display:grid;grid-template-columns:repeat(13,1fr);gap:8px}
+.col{position:relative;display:flex;flex-direction:column;align-items:stretch;min-width:0}
+.col .plot{position:relative;flex:1;margin-bottom:28px}
+.col .track{position:absolute;inset:0;border-radius:8px;background:var(--bar-track);opacity:.55}
+.col .bar{position:absolute;left:0;right:0;bottom:0;border-radius:8px 8px 3px 3px;background:var(--bar);border:0;padding:0;transition:filter .15s}
+.col:hover .bar,.col .bar:focus-visible{filter:brightness(1.12)}
+.col.proj .bar{background:repeating-linear-gradient(135deg,var(--accent) 0 5px,color-mix(in srgb,var(--accent) 35%,transparent) 5px 9px);outline:1.5px solid var(--accent);outline-offset:-1.5px}
+.col.cur .bar{background:var(--accent)}
+.col .val{position:absolute;left:50%;transform:translateX(-50%);font-size:11px;font-weight:600;white-space:nowrap;color:var(--text)}
+.col .m{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:11px;color:var(--text-3)}
+.col .tip{position:absolute;z-index:3;bottom:calc(var(--h) + 8px);left:50%;transform:translateX(-50%);background:#14172b;color:#fff;border-radius:10px;padding:8px 10px;font-size:12px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .1s;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.col:hover .tip,.col:focus-within .tip{opacity:1}
+.col .tip b{display:block;font-size:13px}
+.col .tip span{color:#b6bbd2}
+.col:nth-child(-n+2) .tip{left:0;transform:none}
+.col:nth-last-child(-n+2) .tip{left:auto;right:0;transform:none}
+.chart-note{display:flex;gap:16px;flex-wrap:wrap;color:var(--text-3);font-size:12px;margin-top:10px}
+.chart-note span{display:flex;align-items:center;gap:6px}
+.chart-note i{width:10px;height:10px;border-radius:3px;background:var(--bar)}
+.chart-note i.p{background:repeating-linear-gradient(135deg,var(--accent) 0 3px,transparent 3px 5px);outline:1px solid var(--accent);outline-offset:-1px}
+
+/* plan card */
+dl{margin:0;display:grid;gap:0}
+.row{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0;padding-top:0}
+.row dt{color:var(--text-3)}
+.row dd{margin:0;font-weight:500;text-align:right;min-width:0;overflow-wrap:anywhere}
+.pay{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:12px;margin:4px 0 14px}
+.pay .brand{width:40px;height:28px;border-radius:6px;background:var(--info-bg);display:grid;place-items:center;font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--info)}
+.pay .t{flex:1;min-width:0}
+.pay .t b{font-weight:600;display:block}
+.pay .t span{color:var(--text-3);font-size:12px}
+
+/* table */
+.toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{height:30px;padding:0 14px;border-radius:999px;border:1px solid var(--line-strong);background:transparent;font-size:13px;font-weight:500;color:var(--text-2)}
+.chip:hover{background:var(--card-2)}
+.chip[aria-pressed="true"]{background:var(--text);border-color:var(--text);color:var(--bg)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+caption{text-align:left}
+th,td{padding:12px 16px;text-align:left;white-space:nowrap}
+th:first-child,td:first-child{padding-left:22px}
+th:last-child,td:last-child{padding-right:22px;text-align:right}
+thead th{font-size:12px;font-weight:600;color:var(--text-2);background:var(--card-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding-top:9px;padding-bottom:9px}
+th.r,td.r{text-align:right}
+th button{border:0;background:none;padding:0;font:inherit;font-weight:600;color:inherit;display:inline-flex;gap:4px;align-items:center}
+th button:hover{color:var(--text)}
+tbody tr+tr td{border-top:1px solid var(--line)}
+tbody tr:hover td{background:var(--card-2)}
+td a.inv{font-weight:600;text-decoration:none;color:var(--text)}
+td a.inv:hover{color:var(--accent);text-decoration:underline}
+td .muted{color:var(--text-3)}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-top:14px!important;padding-bottom:14px!important;border-top:1px solid var(--line);color:var(--text-3);font-size:13px}
+
+/* states */
+.sk{position:relative;overflow:hidden;background:var(--bar-track);border-radius:8px}
+.sk::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--card) 70%,transparent),transparent);transform:translateX(-100%);animation:sh 1.4s infinite}
+.hero .sk{background:rgba(255,255,255,.1)}
+.hero .sk::after{background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent)}
+@keyframes sh{to{transform:translateX(100%)}}
+.msg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:32px 20px;color:var(--text-2);min-height:160px}
+.msg b{color:var(--text);font-size:15px;font-weight:600}
+.msg p{max-width:44ch;color:var(--text-3)}
+.hero .msg b{color:#fff}.hero .msg p{color:var(--anchor-2)}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:#14172b;color:#fff;padding:10px 18px;border-radius:999px;font-weight:500;opacity:0;pointer-events:none;transition:.2s;z-index:10;max-width:calc(100vw - 32px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+:root[data-theme="dark"] .toast{background:#e9eaff;color:#14172b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .toast{background:#e9eaff;color:#14172b}}
+
+@media (max-width:1100px){
+  .hero{grid-column:span 12;grid-row:auto}
+  .kpi{grid-column:span 6}
+  .chart-card,.plan-card{grid-column:span 12}
+}
+@media (max-width:640px){
+  .top-in,main{padding-left:16px;padding-right:16px}
+  .top nav{display:none}
+  h1{font-size:30px}
+  .kpi{grid-column:span 12}
+  .hero{padding:22px}.hero .big{font-size:52px}
+  .legend{grid-template-columns:1fr}
+  .hide-sm{display:none}
+  .chart{padding-left:36px}.grid-lines{left:36px}.grid-lines div span{left:-36px;width:30px}.bars{left:36px;gap:3px}
+  .col .m{font-size:9px}
+  .col .val{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <div class="logo"><i></i>Tally</div>
+    <nav aria-label="Primary">
+      <a href="#" aria-current="page">Billing</a>
+      <a href="#">Ledger</a>
+      <a href="#">Reports</a>
+      <a href="#">Team</a>
+      <a href="#">Settings</a>
+    </nav>
+    <span class="sp"></span>
+    <button class="icon-btn" id="themeBtn" type="button" aria-label="Switch to dark mode"></button>
+    <span class="avatar" title="Priya Nair · Billing admin" aria-label="Priya Nair, Billing admin">PN</span>
+  </div>
+</header>
+
+<main id="main">
+  <div class="head">
+    <div>
+      <h1>Billing overview</h1>
+      <p class="fresh">
+        <span>Northwind Finance Ltd · Business plan</span><i class="dot"></i>
+        <span>Billing period 1–31 Oct 2026 · USD</span><i class="dot"></i>
+        <span id="asof">Data as of 08:10 PT</span>
+        <button class="btn sm ghost" id="refresh" type="button">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"/></svg>Refresh</button>
+      </p>
+    </div>
+    <div class="head-actions">
+      <label class="state-pick">Preview state
+        <select id="statePick" aria-label="Preview page state">
+          <option value="ready">Ready</option><option value="loading">Loading</option>
+          <option value="error">Error</option><option value="empty">New account</option>
+        </select>
+      </label>
+      <button class="btn" type="button" data-todo="Billing details form opens here">Billing details</button>
+      <button class="btn primary" type="button" data-todo="Payment method form opens here">Update payment method</button>
+    </div>
+  </div>
+
+  <div id="alertSlot"></div>
+
+  <section class="bento" aria-label="Billing summary">
+    <article class="card hero" id="hero" aria-labelledby="heroLabel"></article>
+    <article class="card kpi" id="k1"></article>
+    <article class="card kpi" id="k2"></article>
+    <article class="card kpi" id="k3"></article>
+    <article class="card kpi" id="k4"></article>
+
+    <article class="card chart-card" id="chartCard"></article>
+    <article class="card plan-card" id="planCard"></article>
+    <article class="card table-card" id="tableCard"></article>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ---------- data ---------- */
+const MONTHS = [
+  ["Nov","2025",40150],["Dec","2025",41200],["Jan","2026",42850],["Feb","2026",43120],["Mar","2026",44900],
+  ["Apr","2026",45310],["May","2026",46080],["Jun","2026",47250],["Jul","2026",46900],["Aug","2026",48100],
+  ["Sep","2026",48640],["Oct","2026",49130],["Nov","2026",52184.60,true]
+];
+const NEXT = {seats:33750, usage:14904, addons:3530.60, total:52184.60, prev:49130, overage:2310};
+const INVOICES = [
+  {id:"INV-2026-0112",issued:"2026-10-01",desc:"October subscription · 450 seats + usage",amt:49130,status:"open",due:"2026-10-31"},
+  {id:"INV-2026-0098",issued:"2026-09-22",desc:"Seat true-up · 18 seats",amt:6420,status:"overdue",due:"2026-10-22"},
+  {id:"INV-2026-0104",issued:"2026-09-01",desc:"September subscription",amt:42220,status:"paid",paid:"2026-09-03"},
+  {id:"INV-2026-0090",issued:"2026-08-01",desc:"August subscription",amt:48100,status:"paid",paid:"2026-08-04"},
+  {id:"INV-2026-0081",issued:"2026-07-01",desc:"July subscription",amt:46900,status:"paid",paid:"2026-07-02"},
+  {id:"INV-2026-0073",issued:"2026-06-01",desc:"June subscription",amt:47250,status:"paid",paid:"2026-06-03"},
+  {id:"INV-2026-0066",issued:"2026-05-01",desc:"May subscription",amt:46080,status:"paid",paid:"2026-05-05"},
+  {id:"INV-2026-0058",issued:"2026-04-01",desc:"April subscription",amt:45310,status:"paid",paid:"2026-04-02"}
+];
+const TOTAL_INVOICES = 24;
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const usd = (n,d=2)=>n.toLocaleString("en-US",{style:"currency",currency:"USD",minimumFractionDigits:d,maximumFractionDigits:d});
+const money = n => { const [i,c]=n.toFixed(2).split("."); return `$${Number(i).toLocaleString("en-US")}<small>.${c}</small>`; };
+const dfmt = s => new Date(s+"T12:00:00").toLocaleDateString("en-US",{day:"numeric",month:"short",year:"numeric"});
+const dshort = s => new Date(s+"T12:00:00").toLocaleDateString("en-US",{day:"numeric",month:"short"});
+const sk = (w,h,extra="")=>`<div class="sk" style="width:${w};height:${h}px;${extra}"></div>`;
+const ICON_ALERT = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="M10 6v5M10 13.8v.2"/></svg>';
+const ICON_DL = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v8M4.8 7 8 10.2 11.2 7M3 13h10"/></svg>';
+
+/* ---------- URL state ---------- */
+const params = new URLSearchParams(location.search);
+const S = {
+  state: ["ready","loading","error","empty"].includes(params.get("state")) ? params.get("state") : "ready",
+  status: ["all","open","overdue","paid"].includes(params.get("status")) ? params.get("status") : "all",
+  sort: ["date","-date","amount","-amount"].includes(params.get("sort")) ? params.get("sort") : "-date",
+  view: params.get("view")==="table" ? "table" : "chart"
+};
+function sync(){
+  const p = new URLSearchParams();
+  if (S.state!=="ready") p.set("state",S.state);
+  if (S.status!=="all") p.set("status",S.status);
+  if (S.sort!=="-date") p.set("sort",S.sort);
+  if (S.view!=="chart") p.set("view",S.view);
+  const q = p.toString();
+  history.replaceState(null,"",location.pathname+(q?"?"+q:""));
+}
+
+/* ---------- toast ---------- */
+let tt;
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("show"),2600); }
+
+/* ---------- renderers ---------- */
+function retryBtn(){ return `<button class="btn sm" type="button" data-retry>Retry</button>`; }
+function errorMsg(what){ return `<div class="msg" role="alert"><b>Couldn’t load ${what}</b><p>This is on our side, and your billing hasn’t changed. Try again, or check the status page if it keeps failing.</p>${retryBtn()}</div>`; }
+
+function renderAlert(){
+  const show = S.state==="ready";
+  $("alertSlot").innerHTML = !show ? "" : `
+  <div class="alert" role="alert">
+    ${ICON_ALERT}
+    <p><b>INV-2026-0098 · ${usd(6420)} is 6 days overdue.</b> The payment failed because the Visa ending 4242 expired in 09/2026. Pay by 5 Nov 2026 to avoid your workspace switching to read-only.</p>
+    <div class="btns">
+      <button class="btn sm primary" type="button" data-todo="Payment method form opens here">Update payment method</button>
+      <button class="btn sm" type="button" data-todo="Pay-now flow opens here">Pay ${usd(6420)}</button>
+    </div>
+  </div>`;
+}
+
+function renderHero(){
+  const el = $("hero");
+  if (S.state==="loading"){
+    el.innerHTML = `${sk("40%",14)}<div style="margin:22px 0 16px">${sk("70%",64)}</div>${sk("55%",14)}<div class="spacer"></div>${sk("100%",12,"border-radius:999px")}<div class="legend">${sk("100%",40)}${sk("100%",40)}${sk("100%",40)}</div>`;
+    el.setAttribute("aria-busy","true"); return;
+  }
+  el.removeAttribute("aria-busy");
+  if (S.state==="error"){ el.innerHTML = `<div class="label" id="heroLabel">Next invoice</div>${errorMsg("your next invoice estimate")}`; return; }
+  if (S.state==="empty"){
+    el.innerHTML = `<div class="label" id="heroLabel">Next invoice · 1 Nov 2026</div>
+      <div class="big num">$0<small>.00</small></div>
+      <p class="sentence">Nothing to bill yet. Your first invoice will be issued on <b>1 Nov 2026</b> once your workspace has activity or seats.</p>
+      <div class="spacer"></div>
+      <div class="hero-foot"><button class="btn on-ink" type="button" data-todo="Seat management opens here">Add seats</button></div>`;
+    return;
+  }
+  const d = NEXT.total - NEXT.prev, pct = d/NEXT.prev*100;
+  const parts = [["Seats",NEXT.seats,"var(--seg-1)"],["Usage",NEXT.usage,"var(--seg-2)"],["Add-ons",NEXT.addons,"var(--seg-3)"]];
+  el.innerHTML = `
+    <div class="label"><span id="heroLabel">Next invoice · issues 1 Nov 2026</span><span class="pill on-ink no-dot">Estimate</span></div>
+    <div class="big num">${money(NEXT.total)}</div>
+    <p class="sentence"><span class="pill on-ink no-dot" style="margin-right:6px">▲ ${pct.toFixed(1)}%</span>${usd(d)} above October’s ${usd(NEXT.prev)}. <b>${usd(NEXT.overage)}</b> of that is usage overage: you’re at 115% of included events.</p>
+    <div class="spacer"></div>
+    <div class="seg" role="img" aria-label="Estimate breakdown: ${parts.map(p=>p[0]+" "+usd(p[1])).join(", ")}">
+      ${parts.map(p=>`<span style="flex:${p[1]};background:${p[2]}"></span>`).join("")}
+    </div>
+    <div class="legend">
+      ${parts.map(p=>`<div><div class="k"><i style="background:${p[2]}"></i>${p[0]}</div><div class="v num">${usd(p[1])}</div></div>`).join("")}
+    </div>
+    <div class="hero-foot">
+      <button class="btn on-ink" type="button" data-todo="Estimate breakdown opens here">Review estimate</button>
+      <button class="btn ghost-ink" type="button" data-todo="Preparing estimate PDF…">${ICON_DL}Download estimate</button>
+    </div>`;
+}
+
+function kpiShell(id,label,body){ $(id).innerHTML = `<div class="label">${label}</div>${body}`; }
+function renderKpis(){
+  const ids=["k1","k2","k3","k4"];
+  const labels=["Outstanding balance","Invoiced, last 12 months","Seats in use","Usage this period"];
+  if (S.state==="loading"){
+    ids.forEach((id,i)=>{ $(id).innerHTML = `${sk("50%",13)}<div style="margin:16px 0 10px">${sk("75%",36)}</div>${sk("60%",13)}<div class="viz">${sk("100%",8,"border-radius:999px")}</div>`; $(id).setAttribute("aria-busy","true"); });
+    return;
+  }
+  ids.forEach(id=>$(id).removeAttribute("aria-busy"));
+  if (S.state==="error"){
+    kpiShell("k1",labels[0],`<div class="msg" role="alert"><b>Couldn’t load</b>${retryBtn()}</div>`);
+    kpiShell("k2",labels[1],`<div class="msg" role="alert"><b>Couldn’t load</b>${retryBtn()}</div>`);
+  } else if (S.state==="empty"){
+    kpiShell("k1",labels[0],`<div class="n num">$0<small>.00</small></div><div class="sub">No open invoices</div><div class="viz"><span class="pill ok">Nothing due</span></div>`);
+    kpiShell("k2",labels[1],`<div class="n num">$0<small>.00</small></div><div class="sub">History starts with your first invoice</div>`);
+  } else {
+    kpiShell("k1",labels[0],`<div class="n num">${money(55550)}</div><div class="sub">2 open invoices · next due 31 Oct</div><div class="viz"><span class="pill bad">1 overdue · ${usd(6420)}</span></div>`);
+    const vals = MONTHS.slice(0,12).map(m=>m[2]), mx=Math.max(...vals), mn=Math.min(...vals);
+    const pts = vals.map((v,i)=>`${(i/(vals.length-1)*200).toFixed(1)},${(34-(v-mn)/(mx-mn)*30).toFixed(1)}`).join(" ");
+    kpiShell("k2",labels[1],`<div class="n num">${money(543630)}</div><div class="sub">Average ${usd(45303,0)} per month</div>
+      <div class="viz"><svg class="spark" viewBox="0 0 200 38" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg></div>`);
+  }
+  if (S.state==="empty"){
+    kpiShell("k3",labels[2],`<div class="n num">0<small> / 450</small></div><div class="sub">Invite your team to start using Tally</div><div class="viz"><div class="meter"><i style="width:0"></i></div></div>`);
+    kpiShell("k4",labels[3],`<div class="n num">0<small> events</small></div><div class="sub">5.00M included each month</div><div class="viz"><div class="meter"><i style="width:0"></i></div></div>`);
+  } else {
+    kpiShell("k3",labels[2],`<div class="n num">412<small> / 450</small></div><div class="sub">38 unused seats · ${usd(2850,0)}/mo not in use</div>
+      <div class="viz"><div class="meter" role="img" aria-label="412 of 450 seats in use"><i style="width:${412/450*100}%"></i></div><div class="meter-meta"><span>0</span><span>450 purchased</span></div></div>`);
+    kpiShell("k4",labels[3],`<div class="n num">5.77M<small> events</small></div><div class="sub">115% of 5.00M included · ${usd(2310,0)} overage</div>
+      <div class="viz"><div class="meter" role="img" aria-label="115% of included events used"><i class="over" style="width:100%"></i></div><div class="meter-meta"><span>Included limit reached at 15 Oct</span><span>115%</span></div></div>`);
+  }
+}
+
+function renderChart(){
+  const el = $("chartCard");
+  const head = `<div class="card-head"><div><h2>Invoiced by month</h2><p>Total invoiced per calendar month, USD. November is an estimate.</p></div>
+    <div class="seg-ctl" role="group" aria-label="Chart or table view">
+      <button type="button" data-view="chart" aria-pressed="${S.view==="chart"}">Chart</button>
+      <button type="button" data-view="table" aria-pressed="${S.view==="table"}">Table</button></div></div>`;
+  if (S.state==="loading"){ el.innerHTML = `${sk("40%",16)}<div style="margin-top:22px">${sk("100%",230)}</div>`; return; }
+  if (S.state==="error"){ el.innerHTML = `<div class="card-head"><div><h2>Invoiced by month</h2></div></div>${errorMsg("invoice history")}`; return; }
+  if (S.state==="empty"){ el.innerHTML = `<div class="card-head"><div><h2>Invoiced by month</h2></div></div><div class="msg"><b>No invoices yet</b><p>Monthly totals will appear here after your first invoice on 1 Nov 2026.</p></div>`; return; }
+  if (S.view==="table"){
+    el.innerHTML = head + `<div class="tbl-wrap"><table><caption class="sr">Invoiced by month</caption><thead><tr><th scope="col">Month</th><th scope="col" class="r">Invoiced</th></tr></thead><tbody>
+      ${MONTHS.slice().reverse().map(m=>`<tr><td style="padding-left:0">${m[0]} ${m[1]}${m[3]?' <span class="pill info no-dot">Estimate</span>':''}</td><td class="r num" style="padding-right:0">${usd(m[2])}</td></tr>`).join("")}</tbody></table></div>`;
+    return;
+  }
+  const MAX=60000;
+  el.innerHTML = head + `
+    <div class="chart" role="group" aria-label="Bar chart of invoiced total per month, November 2025 to November 2026">
+      <div class="grid-lines" aria-hidden="true">${[0,20000,40000,60000].map(v=>`<div style="bottom:${v/MAX*100}%;top:auto;margin-bottom:0"><span>${v?'$'+v/1000+'k':'$0'}</span></div>`).join("")}</div>
+      <div class="bars">
+        ${MONTHS.map((m,i)=>{
+          const h=m[2]/MAX*100, cls=m[3]?"proj":(i===11?"cur":"");
+          return `<div class="col ${cls}" style="--h:calc(${h}% * 1)">
+            <div class="plot"><div class="track"></div>
+              <button class="bar" type="button" style="height:${h}%" aria-label="${m[0]} ${m[1]}: ${usd(m[2])}${m[3]?" (estimate)":""}"></button>
+              ${(i>=11)?`<span class="val num" style="bottom:calc(${h}% + 4px)">${usd(m[2]/1000,1).replace(/\.0$/,"")}k</span>`:""}
+              <div class="tip" style="bottom:calc(${h}% + 26px)"><b class="num">${usd(m[2])}</b><span>${m[0]} ${m[1]}${m[3]?" · estimate":""}</span></div>
+            </div>
+            <span class="m">${m[0]}</span></div>`;}).join("")}
+      </div>
+    </div>
+    <div class="chart-note"><span><i></i>Invoiced</span><span><i class="p"></i>Estimate for November</span><span>Axis starts at $0</span></div>`;
+}
+
+function renderPlan(){
+  const el=$("planCard");
+  if (S.state==="loading"){ el.innerHTML = `${sk("50%",16)}<div style="margin-top:20px;display:grid;gap:14px">${sk("100%",54)}${sk("100%",18)}${sk("100%",18)}${sk("100%",18)}${sk("100%",18)}</div>`; return; }
+  if (S.state==="error"){ el.innerHTML = `<div class="card-head"><div><h2>Plan and payment</h2></div></div>${errorMsg("plan details")}`; return; }
+  const expired = S.state==="ready";
+  el.innerHTML = `<div class="card-head"><div><h2>Plan and payment</h2></div><button class="btn sm ghost" type="button" data-todo="Plan comparison opens here">Change plan</button></div>
+    <div class="pay">
+      <span class="brand" aria-hidden="true">VISA</span>
+      <div class="t"><b>Visa ending 4242</b><span>${expired?"Expired 09/2026":"No payment method on file"}</span></div>
+      ${expired?'<span class="pill bad">Expired</span>':'<span class="pill warn">Required</span>'}
+    </div>
+    <dl>
+      <div class="row"><dt>Plan</dt><dd>Business · $75 per seat per month</dd></div>
+      <div class="row"><dt>Billing cycle</dt><dd>Monthly, issued on the 1st</dd></div>
+      <div class="row"><dt>Payment terms</dt><dd>Net 30</dd></div>
+      <div class="row"><dt>Billing contact</dt><dd>finance@northwind.example</dd></div>
+      <div class="row"><dt>Tax ID</dt><dd>GB 123 4567 89</dd></div>
+    </dl>`;
+}
+
+function filteredInvoices(){
+  let rows = S.state==="empty" ? [] : INVOICES.filter(i=>S.status==="all"||i.status===S.status);
+  const key = S.sort.replace("-",""), dir = S.sort.startsWith("-")?-1:1;
+  rows.sort((a,b)=> (key==="date" ? a.issued.localeCompare(b.issued) : a.amt-b.amt)*dir);
+  return rows;
+}
+function statusPill(i){
+  if (i.status==="paid") return `<span class="pill ok">Paid ${dshort(i.paid)}</span>`;
+  if (i.status==="overdue") return `<span class="pill bad">Overdue · 6 days</span>`;
+  return `<span class="pill warn">Open · due ${dshort(i.due)}</span>`;
+}
+function sortBtn(label,key,cls=""){
+  const active = S.sort.replace("-","")===key, desc = S.sort.startsWith("-");
+  const next = active && desc ? key : "-"+key;
+  return `<th scope="col" class="${cls}" aria-sort="${active?(desc?"descending":"ascending"):"none"}"><button type="button" data-sort="${next}">${label}<span aria-hidden="true">${active?(desc?"↓":"↑"):""}</span></button></th>`;
+}
+function renderTable(){
+  const el=$("tableCard");
+  const head = `<div class="card-head"><div><h2>Invoices</h2><p>Most recent first by default. Amounts in USD.</p></div>
+    <button class="btn sm" type="button" data-todo="Preparing CSV export…">${ICON_DL}Export CSV</button></div>`;
+  if (S.state==="loading"){ el.innerHTML = `<div class="card-head">${sk("120px",16)}</div><div style="padding:0 22px 22px;display:grid;gap:14px">${[1,2,3,4,5].map(()=>sk("100%",22)).join("")}</div>`; return; }
+  if (S.state==="error"){ el.innerHTML = `<div class="card-head"><div><h2>Invoices</h2></div></div>${errorMsg("invoices")}`; return; }
+  const rows = filteredInvoices();
+  const chips = [["all","All"],["open","Open"],["overdue","Overdue"],["paid","Paid"]];
+  const toolbar = `<div class="toolbar"><div class="chips" role="group" aria-label="Filter by status">${chips.map(c=>`<button class="chip" type="button" data-status="${c[0]}" aria-pressed="${S.status===c[0]}">${c[1]}</button>`).join("")}</div></div>`;
+  let body;
+  if (!rows.length){
+    body = S.state==="empty"
+      ? `<div class="msg"><b>No invoices yet</b><p>Invoices appear here when they’re issued. Your first one is scheduled for 1 Nov 2026.</p></div>`
+      : `<div class="msg"><b>No ${S.status} invoices</b><p>Nothing matches this filter in the last 8 invoices.</p><button class="btn sm" type="button" data-status="all">Show all invoices</button></div>`;
+  } else {
+    body = `<div class="tbl-wrap"><table><caption class="sr">Invoices, ${rows.length} shown</caption><thead><tr>
+      <th scope="col">Invoice</th>${sortBtn("Issued","date")}<th scope="col" class="hide-sm">Description</th>${sortBtn("Amount","amount","r")}<th scope="col">Status</th><th scope="col"><span class="sr">Actions</span></th></tr></thead><tbody>
+      ${rows.map(i=>`<tr><td><a class="inv" href="#" data-todo="Invoice ${i.id} opens here">${i.id}</a></td><td>${dfmt(i.issued)}</td><td class="muted hide-sm">${i.desc}</td><td class="r num">${usd(i.amt)}</td><td>${statusPill(i)}</td>
+      <td><button class="btn sm ghost" type="button" data-todo="Preparing ${i.id}.pdf…" aria-label="Download PDF for ${i.id}">${ICON_DL}PDF</button></td></tr>`).join("")}</tbody></table></div>`;
+  }
+  el.innerHTML = head + toolbar + body + `<div class="foot"><span>Showing ${rows.length} of ${S.state==="empty"?0:TOTAL_INVOICES} invoices</span><button class="btn sm ghost" type="button" data-todo="Full invoice history opens here">View all invoices →</button></div>`;
+}
+
+/* ---------- orchestrate ---------- */
+function render(){
+  $("statePick").value = S.state;
+  renderAlert(); renderHero(); renderKpis(); renderChart(); renderPlan(); renderTable(); sync();
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click",e=>{
+  const t = e.target.closest("[data-todo],[data-retry],[data-status],[data-sort],[data-view]");
+  if (!t) return;
+  if (t.matches("[data-retry]")){ S.state="loading"; render(); setTimeout(()=>{S.state="ready";render();},700); return; }
+  if (t.dataset.status){ S.status=t.dataset.status; renderTable(); sync(); $("tableCard").querySelector(`[data-status="${S.status}"]`)?.focus(); return; }
+  if (t.dataset.sort){ S.sort=t.dataset.sort; renderTable(); sync(); $("tableCard").querySelector(`[data-sort]`) && $("tableCard").querySelector(`th[aria-sort]:not([aria-sort="none"]) button`)?.focus(); return; }
+  if (t.dataset.view){ S.view=t.dataset.view; renderChart(); sync(); $("chartCard").querySelector(`[data-view="${S.view}"]`)?.focus(); return; }
+  if (t.dataset.todo){ e.preventDefault(); toast(t.dataset.todo.endsWith("…")?t.dataset.todo:"Prototype: "+t.dataset.todo); }
+});
+$("statePick").addEventListener("change",e=>{ S.state=e.target.value; render(); });
+$("refresh").addEventListener("click",()=>{
+  const prev=S.state; S.state="loading"; render();
+  setTimeout(()=>{
+    S.state = prev==="loading" ? "ready" : prev; render();
+    const tz = new Date().toLocaleTimeString("en-US",{timeZoneName:"short",hour:"2-digit",minute:"2-digit",hour12:false}).split(" ");
+    $("asof").textContent = "Data as of "+tz[0]+" "+(tz[1]||""); toast("Billing data refreshed");
+  },700);
+});
+
+/* ---------- theme ---------- */
+const root = document.documentElement, mq = matchMedia("(prefers-color-scheme: dark)");
+try { const s=localStorage.getItem("tally-theme"); if (s==="light"||s==="dark") root.dataset.theme=s; } catch(e){}
+const isDark = () => root.dataset.theme ? root.dataset.theme==="dark" : mq.matches;
+function paintThemeBtn(){
+  const d = isDark(), b=$("themeBtn");
+  b.setAttribute("aria-label", d?"Switch to light mode":"Switch to dark mode");
+  b.innerHTML = d
+    ? '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="3.5"/><path d="M10 2.5v1.8M10 15.7v1.8M2.5 10h1.8M15.7 10h1.8M4.7 4.7l1.3 1.3M14 14l1.3 1.3M4.7 15.3 6 14M14 6l1.3-1.3"/></svg>'
+    : '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 11.5A6.5 6.5 0 0 1 8.5 3.5a6.5 6.5 0 1 0 8 8Z"/></svg>';
+}
+$("themeBtn").addEventListener("click",()=>{
+  const next = isDark()?"light":"dark"; root.dataset.theme=next;
+  try{ localStorage.setItem("tally-theme",next); }catch(e){}
+  paintThemeBtn();
+});
+mq.addEventListener("change",paintThemeBtn);
+paintThemeBtn();
+
+render();
+</script>
+</body>
+</html>

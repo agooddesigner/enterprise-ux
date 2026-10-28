@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Staffing – Morning Brief</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #6f6d67;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,.10); --wash: rgba(11,11,11,.045);
+  --s1: #2a78d6; --s2: #eb6834; --accent: #256abf; --accent-ink: #fff;
+  --good: #0ca30c; --warn: #fab219; --crit: #d03b3b; --crit-soft: rgba(208,59,59,.08); --warn-soft: rgba(250,178,25,.14);
+  --good-text: #006300;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #9b9990;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,.10); --wash: rgba(255,255,255,.06);
+    --s1: #3987e5; --s2: #d95926; --accent: #3987e5; --accent-ink: #0b0b0b;
+    --crit-soft: rgba(208,59,59,.16); --warn-soft: rgba(250,178,25,.12); --good-text: #0ca30c;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #9b9990;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,.10); --wash: rgba(255,255,255,.06);
+  --s1: #3987e5; --s2: #d95926; --accent: #3987e5; --accent-ink: #0b0b0b;
+  --crit-soft: rgba(208,59,59,.16); --warn-soft: rgba(250,178,25,.12); --good-text: #0ca30c;
+}
+* { box-sizing: border-box; }
+html { background: var(--page); }
+body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.wrap { max-width: 1360px; margin: 0 auto; padding: 20px 16px 48px; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* header */
+.top { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+h1 { font-size: 20px; line-height: 1.2; margin: 0; font-weight: 650; }
+.sub { color: var(--ink-2); margin-top: 2px; }
+.tools { display: flex; gap: 8px; align-items: center; }
+.btn { border: 1px solid var(--border); background: var(--surface); border-radius: 6px; padding: 6px 12px; cursor: pointer; min-height: 32px; }
+.btn:hover:not(:disabled) { background: var(--wash); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
+.btn.primary:hover:not(:disabled) { filter: brightness(1.08); background: var(--accent); }
+.btn.sm { padding: 3px 10px; min-height: 26px; font-size: 13px; }
+
+/* cards */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.card + .card, .row + .card, .card + .row, .banner + * { margin-top: 16px; }
+.card h2 { font-size: 15px; margin: 0; font-weight: 650; }
+.card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.hint { color: var(--ink-2); font-size: 13px; margin-top: 2px; }
+.row { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
+.row > .card { margin-top: 0 !important; }
+
+.banner { display: flex; gap: 12px; align-items: flex-start; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); border-left: 4px solid var(--crit); background: var(--crit-soft); margin-bottom: 16px; }
+.banner b { font-weight: 650; }
+.banner .grow { flex: 1; min-width: 0; }
+
+/* KPIs */
+.kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.kpi .l { color: var(--ink-2); font-size: 12.5px; }
+.kpi .v { font-size: 28px; font-weight: 650; line-height: 1.15; margin: 4px 0 2px; letter-spacing: -.01em; }
+.kpi .v small { font-size: 14px; font-weight: 500; color: var(--ink-2); }
+.kpi .d { font-size: 12.5px; color: var(--ink-2); display: flex; gap: 5px; align-items: center; }
+
+/* recommendation */
+.rec { border-left: 4px solid var(--accent); }
+.rec-grid { display: grid; grid-template-columns: 1.1fr 1.4fr; gap: 24px; align-items: start; }
+.rec .big { font-size: 17px; font-weight: 650; line-height: 1.3; }
+.moves { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.moves li { display: grid; grid-template-columns: auto 1fr; gap: 10px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; }
+.moves .n { font-weight: 700; font-size: 16px; min-width: 22px; text-align: center; }
+.moves .why { color: var(--ink-2); font-size: 12.5px; }
+.arrow { color: var(--muted); padding: 0 4px; }
+
+/* table */
+.tw { overflow-x: auto; margin: 0 -16px; padding: 0 16px; }
+table { width: 100%; border-collapse: collapse; min-width: 980px; }
+th, td { padding: 0 10px; height: 48px; border-bottom: 1px solid var(--grid); text-align: left; white-space: nowrap; }
+th { font-size: 12px; font-weight: 600; color: var(--ink-2); height: 36px; vertical-align: bottom; padding-bottom: 6px; white-space: normal; }
+th.r, td.r { text-align: right; }
+tbody tr:hover { background: var(--wash); }
+tfoot td { font-weight: 600; border-bottom: 0; height: 44px; }
+td .q { font-weight: 600; }
+td .q small { display: block; font-weight: 400; color: var(--ink-2); font-size: 12px; }
+.st { display: inline-flex; align-items: center; gap: 6px; }
+.st svg { flex: none; }
+.step { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.step button { width: 28px; height: 28px; border: 0; background: transparent; cursor: pointer; font-size: 16px; }
+.step button:hover:not(:disabled) { background: var(--wash); }
+.step button:disabled { opacity: .3; cursor: not-allowed; }
+.step output { min-width: 32px; text-align: center; font-weight: 650; }
+.chg { color: var(--ink-2); font-size: 12px; margin-left: 6px; }
+.sumline { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-top: 12px; color: var(--ink-2); }
+.sumline .spacer { flex: 1; }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--wash); font-size: 12px; color: var(--ink-2); }
+.trunc { max-width: 340px; overflow: hidden; text-overflow: ellipsis; display: block; }
+
+/* charts */
+.legend { display: flex; gap: 14px; color: var(--ink-2); font-size: 12.5px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; height: auto; touch-action: pan-y; }
+.chart text { fill: var(--muted); font-size: 11.5px; }
+.chart text.lbl { fill: var(--ink-2); font-weight: 600; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); box-shadow: 0 4px 16px rgba(0,0,0,.14); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; z-index: 5; min-width: 150px; }
+.tip .h { font-weight: 650; margin-bottom: 4px; }
+.tip .r { display: flex; justify-content: space-between; gap: 14px; }
+.tip i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.vt { width: 100%; border-collapse: collapse; min-width: 0; }
+.vt th, .vt td { height: 30px; font-size: 13px; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; background: transparent; padding: 3px 10px; font-size: 12.5px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--wash); font-weight: 650; }
+
+/* states */
+.sk { background: linear-gradient(90deg, var(--wash), transparent, var(--wash)); background-size: 200% 100%; animation: sh 1.4s infinite linear; border-radius: 8px; }
+@keyframes sh { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
+.err { text-align: center; padding: 48px 16px; }
+.err h2 { font-size: 16px; margin-bottom: 4px; }
+.err p { color: var(--ink-2); margin: 4px auto 16px; max-width: 460px; }
+.toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--surface); padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .15s; pointer-events: none; z-index: 20; }
+.toast.on { opacity: 1; }
+
+@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(3, 1fr); } .rec-grid, .row { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .kpis { grid-template-columns: repeat(2, 1fr); } .kpi .v { font-size: 24px; } }
+@media print { .tools, .step button, .btn { display: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Support staffing – morning brief</h1>
+      <div class="sub">Wednesday, Oct 28, 2026 · <span id="snap" title="Queue data synced from the ticketing system">Snapshot 08:05 PT</span> · 36 of 40 agents on shift</div>
+    </div>
+    <div class="tools">
+      <button class="btn" id="refresh" title="Re-pull queue data">Refresh</button>
+      <button class="btn" id="theme" title="Switch light / dark theme" aria-label="Toggle theme">Theme</button>
+    </div>
+  </header>
+  <main id="app" aria-live="polite"></main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+"use strict";
+/* ---------- seeded data (snapshot Wed 28 Oct 2026, 08:05 PT) ---------- */
+const AVAIL = 36, ROSTER = 40, PROD_MIN = 330; // productive handle minutes per agent per shift
+const OUT = ["Dana Reyes (PTO)", "Luis Marchetti (sick)", "Aiko Tanaka (training)", "Omar Sayeed (PTO)"];
+// sla/oldest in minutes, aht in minutes
+const Q = [
+  { id: "t1",  name: "Tier 1 General",       note: "Password, how-to, config",   backlog: 118, atRisk: 28, fc: 340, aht: 11, sla: 240, oldest: 171, now: 13 },
+  { id: "t2",  name: "Tier 2 Technical",     note: "Bugs, data issues, escalated", backlog: 64,  atRisk: 22, fc: 70,  aht: 26, sla: 240, oldest: 220, now: 6 },
+  { id: "api", name: "Integrations & API",   note: "Webhooks, SSO, API keys",    backlog: 61,  atRisk: 40, fc: 60,  aht: 32, sla: 240, oldest: 318, now: 5 },
+  { id: "bil", name: "Billing & Account",    note: "Invoices, seats, renewals",  backlog: 27,  atRisk: 5,  fc: 110, aht: 8,  sla: 480, oldest: 80,  now: 4 },
+  { id: "onb", name: "Onboarding",           note: "Implementation, SCIM, import", backlog: 19,  atRisk: 6,  fc: 20,  aht: 36, sla: 480, oldest: 185, now: 3 },
+  { id: "ent", name: "Enterprise Premier",   note: "Named accounts, 1h SLA",     backlog: 15,  atRisk: 8,  fc: 26,  aht: 30, sla: 60,  oldest: 48,  now: 3 },
+  { id: "sec", name: "Security & Compliance", note: "Questionnaires, audits",    backlog: 8,   atRisk: 2,  fc: 8,   aht: 38, sla: 120, oldest: 35,  now: 2 },
+];
+const HOURS = ["6a","7a","8a","9a","10a","11a","12p","1p","2p","3p","4p","5p"];
+const TODAY = [38, 68, 74, 86, 92, 80, 66, 70, 62, 48, 34, 22];   // first 2 = actual, rest forecast
+const LASTWED = [30, 44, 58, 70, 76, 66, 56, 60, 54, 42, 30, 20];
+const ACTUAL_N = 2;
+const BACKLOG_DAYS = ["Oct 15","Oct 16","Oct 17","Oct 18","Oct 19","Oct 20","Oct 21","Oct 22","Oct 23","Oct 24","Oct 25","Oct 26","Oct 27","Oct 28"];
+const BACKLOG = [262, 249, 214, 208, 281, 266, 255, 247, 238, 205, 199, 276, 294, 312];
+const ESC = [
+  { acct: "Halvorsen Logistics",  arr: 412, subj: "Webhooks not firing for order.created – production orders stuck", q: "Integrations & API", left: -78, owner: "Priya Natarajan", renew: 34 },
+  { acct: "Meridian Freight",     arr: 167, subj: "API 429 rate-limit errors on EU cluster since 05:40",             q: "Integrations & API", left: -42, owner: "Unassigned",      renew: 71 },
+  { acct: "Brightwave Health",    arr: 286, subj: "SSO login loop after IdP certificate rotation",                    q: "Enterprise Premier", left: 12,  owner: "Tomás Quiroga",   renew: 112 },
+  { acct: "Tessellate Retail",    arr: 198, subj: "Bulk export times out above 50k records",                          q: "Tier 2 Technical",   left: 34,  owner: "Marguerite Okafor", renew: 58 },
+  { acct: "Ostrander & Pike LLP", arr: 94,  subj: "Onboarding blocked: SCIM provisioning returns 502",                q: "Onboarding",         left: 58,  owner: "Unassigned",      renew: 301 },
+  { acct: "Corvane Financial",    arr: 540, subj: "SOC 2 evidence request – auditor deadline Friday",                 q: "Security & Compliance", left: 100, owner: "Ines Albrecht",  renew: 19 },
+];
+
+/* ---------- derived ---------- */
+const need = q => (q.fc + q.atRisk) * q.aht / PROD_MIN;
+const sum = a => a.reduce((x, y) => x + y, 0);
+const totalNeed = sum(Q.map(need));
+const NOW = Q.map(q => q.now);
+
+function suggest() {               // max-min fairness: each agent goes to the queue with the lowest coverage so far
+  const out = Q.map(() => 0);
+  for (let k = 0; k < AVAIL; k++) {
+    let best = 0;
+    Q.forEach((q, i) => { if (out[i] / need(q) < out[best] / need(Q[best])) best = i; });
+    out[best]++;
+  }
+  return out;
+}
+const SUGGESTED = suggest();
+
+function moves(from, to) {         // pair donors with receivers
+  const don = [], rec = [];
+  Q.forEach((q, i) => { const d = to[i] - from[i]; if (d < 0) don.push({ i, n: -d }); if (d > 0) rec.push({ i, n: d }); });
+  don.sort((a, b) => b.n - a.n); rec.sort((a, b) => b.n - a.n);
+  const res = [];
+  rec.forEach(r => { while (r.n > 0 && don.length) { const d = don[0], k = Math.min(d.n, r.n); res.push({ n: k, from: d.i, to: r.i }); d.n -= k; r.n -= k; if (!d.n) don.shift(); } });
+  return res;
+}
+
+/* ---------- helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const dur = m => { const a = Math.abs(Math.round(m)); return a >= 60 ? `${Math.floor(a / 60)}h ${String(a % 60).padStart(2, "0")}m` : `${a}m`; };
+const f1 = n => n.toFixed(1);
+const ICON = {
+  crit: '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1.5 13 12.5H1z" fill="var(--crit)"/><path d="M7 5.5v3.2M7 10.2v.1" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  warn: '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1 13 7 7 13 1 7z" fill="var(--warn)"/></svg>',
+  good: '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="6" fill="var(--good)"/><path d="m4.2 7.2 2 2 3.6-4" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  over: '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.2" fill="none" stroke="var(--muted)" stroke-width="1.6"/></svg>',
+  up:   '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1 9 8H1z" fill="currentColor"/></svg>',
+  down: '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 9 1 2h8z" fill="currentColor"/></svg>',
+};
+const cover = (assigned, q) => {
+  const c = assigned / need(q);
+  if (c < .85) return { k: "crit", t: "Short" };
+  if (c < .97) return { k: "warn", t: "Tight" };
+  if (c <= 1.15) return { k: "good", t: "Covered" };
+  return { k: "over", t: "Surplus" };
+};
+const waitState = q => q.oldest > q.sla ? { k: "crit", t: "Breached" } : q.oldest / q.sla >= .75 ? { k: "warn", t: "Near SLA" } : { k: "good", t: "Within SLA" };
+
+/* ---------- plan state (kept in URL hash) ---------- */
+let plan = NOW.slice();
+function readHash() {
+  const m = /plan=([\d,]+)/.exec(location.hash);
+  if (!m) return;
+  const p = m[1].split(",").map(Number);
+  if (p.length === Q.length && sum(p) <= AVAIL && p.every(n => n >= 0)) plan = p;
+}
+function writeHash() {
+  try { history.replaceState(null, "", same(plan, NOW) ? location.pathname + location.search : "#plan=" + plan.join(",")); } catch (e) {}
+}
+const same = (a, b) => a.every((v, i) => v === b[i]);
+
+/* ---------- view ---------- */
+function kpiHTML() {
+  const backlog = sum(Q.map(q => q.backlog)), risk = sum(Q.map(q => q.atRisk));
+  const worst = Q.slice().sort((a, b) => b.oldest / b.sla - a.oldest / a.sla)[0];
+  const d = (cls, arrow, txt) => `<div class="d"><span style="color:var(--${cls})">${arrow}</span>${txt}</div>`;
+  return `<section class="kpis" aria-label="Key numbers">
+    <div class="kpi"><div class="l">Open backlog</div><div class="v num">${backlog}</div>${d("crit", ICON.up, "18 vs yesterday (+6%)")}</div>
+    <div class="kpi"><div class="l">First-response SLA, yesterday</div><div class="v num">91.8<small>%</small></div>${d("crit", ICON.down, "Target 95% · 7-day avg 93.7%")}</div>
+    <div class="kpi"><div class="l">At risk of breach today</div><div class="v num">${risk}</div>${d("warn", ICON.up, "38 in Integrations &amp; API")}</div>
+    <div class="kpi"><div class="l">Oldest unanswered</div><div class="v num">${dur(worst.oldest)}</div><div class="d">${esc(worst.name)} · SLA ${dur(worst.sla)}</div></div>
+    <div class="kpi"><div class="l">CSAT, 7-day</div><div class="v num">88<small>%</small></div>${d("muted", ICON.down, "1 pt vs prior 7 days")}</div>
+    <div class="kpi" title="${esc("Out today: " + OUT.join(", "))}"><div class="l">Agents on shift</div><div class="v num">${AVAIL}<small> of ${ROSTER}</small></div><div class="d">4 out · hover for names</div></div>
+  </section>`;
+}
+
+function recHTML() {
+  const mv = moves(NOW, SUGGESTED);
+  const shortBy = Math.max(0, totalNeed - AVAIL);
+  const applied = same(plan, SUGGESTED);
+  const items = mv.map(m => {
+    const r = Q[m.to], why = [];
+    why.push(`oldest ticket at ${Math.round(r.oldest / r.sla * 100)}% of its ${dur(r.sla)} SLA`);
+    why.push(`${r.atRisk} at risk today`);
+    if (r.id === "api") why.push("inbound 3.1× normal since 06:10 (INC-4471)");
+    return `<li><span class="n num">${m.n}</span><div><b>${esc(Q[m.from].name)}</b><span class="arrow">→</span><b>${esc(Q[m.to].name)}</b>
+      <div class="why">${esc(why.join(" · "))}. Needs ${f1(need(r))}, staffed ${NOW[m.to]}.</div></div></li>`;
+  }).join("");
+  return `<section class="card rec" aria-labelledby="rec-h">
+    <div class="rec-grid">
+      <div>
+        <h2 id="rec-h">Recommendation</h2>
+        <p class="big" style="margin:6px 0 4px">${mv.length ? `Move ${sum(mv.map(m => m.n))} agents to ${[...new Set(mv.map(m => Q[m.to].name))].map(esc).join(" and ")}.` : "Current staffing already matches workload."}</p>
+        <p class="hint" style="margin:0 0 12px">Today's workload needs about ${f1(totalNeed)} agents' time; ${AVAIL} are on shift${shortBy > 0.5 ? ` (~${f1(shortBy)} short)` : ""}. The webhook incident is driving inbound ${Math.round((sum(TODAY) / sum(LASTWED) - 1) * 100)}% above last Wednesday.</p>
+        <button class="btn primary" id="apply" ${applied ? "disabled" : ""}>${applied ? "Plan applied" : "Apply recommended plan"}</button>
+        <div class="hint" style="margin-top:8px">Fine-tune per queue in the table below.</div>
+      </div>
+      <ul class="moves" aria-label="Recommended moves">${items || '<li><span class="n">0</span><div>No moves needed – staffing matches workload.</div></li>'}</ul>
+    </div>
+  </section>`;
+}
+
+function tableHTML() {
+  const rows = Q.map((q, i) => {
+    const w = waitState(q), cn = cover(NOW[i], q), cp = cover(plan[i], q);
+    const delta = plan[i] - NOW[i];
+    const noPool = AVAIL - sum(plan) <= 0;
+    return `<tr>
+      <td><div class="q">${esc(q.name)}<small>${esc(q.note)}</small></div></td>
+      <td class="r num">${q.backlog}</td>
+      <td class="r num">${q.atRisk}</td>
+      <td><span class="st">${ICON[w.k]}<span class="num">${dur(q.oldest)}</span> <span style="color:var(--ink-2)">of ${dur(q.sla)} · ${w.t}</span></span></td>
+      <td class="r num">${q.fc}</td>
+      <td class="r num">${f1(need(q))}</td>
+      <td class="r num">${NOW[i]}</td>
+      <td><span class="st">${ICON[cn.k]}${cn.t}</span></td>
+      <td class="r"><span class="step" role="group" aria-label="Agents on ${esc(q.name)}">
+        <button data-q="${i}" data-d="-1" aria-label="Remove one agent from ${esc(q.name)}" ${plan[i] <= 0 ? "disabled" : ""} title="${plan[i] <= 0 ? "Already at zero" : "Remove an agent"}">−</button>
+        <output class="num">${plan[i]}</output>
+        <button data-q="${i}" data-d="1" aria-label="Add one agent to ${esc(q.name)}" ${noPool ? "disabled" : ""} title="${noPool ? "All 36 agents are assigned – take one from another queue first" : "Add an agent"}">+</button>
+      </span><span class="chg num" style="display:inline-block;min-width:28px">${delta ? (delta > 0 ? "+" : "−") + Math.abs(delta) : ""}</span></td>
+      <td><span class="st">${ICON[cp.k]}${cp.t}<span class="num" style="color:var(--ink-2)">${Math.round(plan[i] / need(q) * 100)}%</span></span></td>
+    </tr>`;
+  }).join("");
+  const free = AVAIL - sum(plan);
+  const stillShort = Q.map((q, i) => ({ q, g: need(q) - plan[i] })).filter(x => x.g > 0.5).sort((a, b) => b.g - a.g);
+  const mv = moves(NOW, plan);
+  return `<section class="card" aria-labelledby="q-h">
+    <div class="card-head">
+      <div><h2 id="q-h">Queues – workload vs. staffing</h2>
+      <div class="hint">“Needed” = (inbound for rest of day + tickets that will breach SLA today) × avg handle time ÷ ${PROD_MIN} productive min per agent. Sorted by urgency.</div></div>
+      <div style="display:flex;gap:8px"><button class="btn sm" id="reset" ${same(plan, NOW) ? "disabled" : ""}>Reset to current</button><button class="btn sm" id="copy" ${same(plan, NOW) ? "disabled" : ""} title="${same(plan, NOW) ? "Change the plan first" : "Copy the moves as text for Slack"}">Copy plan</button></div>
+    </div>
+    <div class="tw"><table>
+      <thead><tr>
+        <th>Queue</th><th class="r">Open</th><th class="r">At risk<br>today</th><th>Oldest unanswered<br>vs first-response SLA</th><th class="r">Inbound,<br>rest of day</th><th class="r">Agents<br>needed</th><th class="r">Staffed<br>now</th><th>Status now</th><th class="r">Plan for today</th><th>Status with plan</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td>Total</td><td class="r num">${sum(Q.map(q => q.backlog))}</td><td class="r num">${sum(Q.map(q => q.atRisk))}</td><td></td><td class="r num">${sum(Q.map(q => q.fc))}</td><td class="r num">${f1(totalNeed)}</td><td class="r num">${sum(NOW)}</td><td></td><td class="r num">${sum(plan)} of ${AVAIL}</td><td></td></tr></tfoot>
+    </table></div>
+    <div class="sumline">
+      <span><b class="num">${free}</b> unassigned</span>
+      <span>${stillShort.length ? "Still short: " + stillShort.map(x => `${esc(x.q.name)} (−${f1(x.g)})`).join(", ") : "No queue is short with this plan"}</span>
+      <span class="spacer"></span>
+      <span>${mv.length ? `<span class="pill">${sum(mv.map(m => m.n))} agents moved vs. current</span>` : ""}</span>
+    </div>
+  </section>`;
+}
+
+function chartsHTML() {
+  return `<div class="row" style="margin-top:16px">
+    <section class="card" aria-labelledby="c1"><div class="card-head"><div><h2 id="c1">Inbound tickets per hour</h2><div class="hint">Today is actual until 8:00, then forecast (dashed). Hours are PT.</div></div>
+      <div class="seg" data-view="c1v"><button aria-pressed="true" data-v="chart">Chart</button><button aria-pressed="false" data-v="table">Table</button></div></div>
+      <div class="legend"><span><i style="background:var(--s1)"></i>Today</span><span><i style="background:var(--s2)"></i>Last Wednesday</span></div>
+      <div class="chart" id="c1v"></div></section>
+    <section class="card" aria-labelledby="c2"><div class="card-head"><div><h2 id="c2">Open backlog, last 14 days</h2><div class="hint">Weekends dip, Mondays jump. Today is the highest since Oct 15.</div></div>
+      <div class="seg" data-view="c2v"><button aria-pressed="true" data-v="chart">Chart</button><button aria-pressed="false" data-v="table">Table</button></div></div>
+      <div class="legend"><span><i style="background:var(--s1)"></i>Open tickets, end of day</span></div>
+      <div class="chart" id="c2v"></div></section>
+  </div>`;
+}
+
+function escHTML() {
+  const rows = ESC.map(e => {
+    const br = e.left < 0, near = !br && e.left <= 60;
+    const st = br ? { k: "crit", t: `Breached ${dur(e.left)} ago` } : near ? { k: "warn", t: `${dur(e.left)} left` } : { k: "good", t: `${dur(e.left)} left` };
+    return `<tr>
+      <td><b>${esc(e.acct)}</b></td>
+      <td class="r num">$${e.arr}k</td>
+      <td class="r num" title="Days to renewal">${e.renew} d</td>
+      <td><span class="trunc" title="${esc(e.subj)}">${esc(e.subj)}</span></td>
+      <td>${esc(e.q)}</td>
+      <td><span class="st">${ICON[st.k]}<span class="num">${st.t}</span></span></td>
+      <td>${e.owner === "Unassigned" ? '<span class="st">' + ICON.crit + 'Unassigned</span>' : esc(e.owner)}</td>
+    </tr>`;
+  }).join("");
+  return `<section class="card" style="margin-top:16px" aria-labelledby="e-h">
+    <div class="card-head"><div><h2 id="e-h">Named accounts closest to an SLA breach</h2><div class="hint">$${sum(ESC.map(e => e.arr))}k ARR across ${ESC.length} tickets. Two have no owner.</div></div></div>
+    <div class="tw"><table><thead><tr><th>Account</th><th class="r">ARR</th><th class="r">Renews in</th><th>Issue</th><th>Queue</th><th>First-response SLA</th><th>Owner</th></tr></thead><tbody>${rows}</tbody></table></div>
+  </section>`;
+}
+
+function bannerHTML() {
+  return `<div class="banner" role="alert">${ICON.crit}<div class="grow"><b>Active incident INC-4471 – webhook delivery delayed</b> since 06:10 PT. 23 tickets linked; Integrations &amp; API inbound is 3.1× normal. Engineering ETA for fix: 10:30 PT.</div></div>`;
+}
+
+/* ---------- charts ---------- */
+function lineChart(host, cfg) {
+  const W = Math.max(280, host.clientWidth), H = 250, m = { l: 34, r: 14, t: 14, b: 26 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b, n = cfg.x.length;
+  const X = i => m.l + iw * i / (n - 1), Y = v => m.t + ih * (1 - (v - cfg.min) / (cfg.max - cfg.min));
+  let g = "";
+  for (let v = cfg.min; v <= cfg.max; v += cfg.step) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${m.l - 6}" y="${Y(v) + 4}" text-anchor="end">${v}</text>`;
+  g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(cfg.min)}" y2="${Y(cfg.min)}" stroke="var(--axis)"/>`;
+  cfg.x.forEach((l, i) => { if (i % cfg.every === (cfg.last ? (n - 1) % cfg.every : 0) || i === n - 1) g += `<text x="${X(i)}" y="${H - 6}" text-anchor="${i === n - 1 && n > 8 ? "end" : "middle"}">${l}</text>`; });
+  if (cfg.nowAt != null) g += `<line x1="${X(cfg.nowAt + .5)}" x2="${X(cfg.nowAt + .5)}" y1="${m.t}" y2="${Y(cfg.min)}" stroke="var(--axis)" stroke-dasharray="3 3"/><text x="${X(cfg.nowAt + .5) + 4}" y="${m.t + 8}">Now</text>`;
+  cfg.series.forEach(s => {
+    const pts = s.v.map((v, i) => [X(i), Y(v)]);
+    const path = a => a.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join("");
+    if (s.actual != null) {
+      g += `<path d="${path(pts.slice(0, s.actual))}" fill="none" style="stroke:${s.c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      g += `<path d="${path(pts.slice(s.actual - 1))}" fill="none" style="stroke:${s.c}" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>`;
+    } else g += `<path d="${path(pts)}" fill="none" style="stroke:${s.c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    if (s.label) { const p = pts[s.label.i]; g += `<text class="lbl" x="${p[0]}" y="${p[1] + s.label.dy}" text-anchor="middle">${s.label.t}</text>`; }
+    if (s.endDot) { const p = pts[n - 1]; g += `<circle cx="${p[0]}" cy="${p[1]}" r="4.5" style="fill:${s.c};stroke:var(--surface)" stroke-width="2"/><text class="lbl" x="${p[0] - 8}" y="${p[1] - 9}" text-anchor="end">${s.v[n - 1]}</text>`; }
+  });
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(cfg.aria)}">${g}<g class="hv"></g><rect x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent" class="hit"/></svg><div class="tip" hidden></div>`;
+  const svg = $("svg", host), hv = $(".hv", host), tp = $(".tip", host);
+  const show = ev => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width;
+    const i = Math.max(0, Math.min(n - 1, Math.round((px - m.l) / iw * (n - 1))));
+    hv.innerHTML = `<line x1="${X(i)}" x2="${X(i)}" y1="${m.t}" y2="${Y(cfg.min)}" stroke="var(--axis)"/>` + cfg.series.map(s => `<circle cx="${X(i)}" cy="${Y(s.v[i])}" r="4.5" style="fill:${s.c};stroke:var(--surface)" stroke-width="2"/>`).join("");
+    tp.hidden = false;
+    tp.innerHTML = `<div class="h">${cfg.tipHead(i)}</div>` + cfg.series.map(s => `<div class="r"><span><i style="background:${s.c}"></i>${s.name}</span><b class="num">${s.v[i]}</b></div>`).join("");
+    const tx = X(i) * r.width / W, left = tx > r.width / 2 ? tx - tp.offsetWidth - 12 : tx + 12;
+    tp.style.left = Math.max(0, left) + "px"; tp.style.top = "8px";
+  };
+  const hide = () => { hv.innerHTML = ""; tp.hidden = true; };
+  $(".hit", host).addEventListener("pointermove", show);
+  $(".hit", host).addEventListener("pointerleave", hide);
+}
+function tableView(host, head, rows) {
+  host.innerHTML = `<table class="vt"><thead><tr>${head.map((h, i) => `<th class="${i ? "r" : ""}">${h}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td class="${i ? "r num" : ""}">${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
+const views = { c1v: "chart", c2v: "chart" };
+function drawCharts() {
+  const a = $("#c1v"), b = $("#c2v");
+  if (!a || !b) return;
+  if (views.c1v === "chart") lineChart(a, {
+    x: HOURS, min: 0, max: 100, step: 25, every: 1, nowAt: ACTUAL_N - 1,
+    aria: `Tickets per hour. Today peaks at ${Math.max(...TODAY)} at 10am versus ${Math.max(...LASTWED)} last Wednesday.`,
+    series: [
+      { name: "Today" + "", c: "var(--s1)", v: TODAY, actual: ACTUAL_N, label: { i: 4, t: "Today", dy: -10 } },
+      { name: "Last Wednesday", c: "var(--s2)", v: LASTWED, label: { i: 8, t: "Last Wed", dy: 18 } },
+    ],
+    tipHead: i => `${HOURS[i]} PT · ${i < ACTUAL_N ? "actual" : "forecast"}`,
+  });
+  else tableView(a, ["Hour (PT)", "Today", "Last Wed"], HOURS.map((h, i) => [h, TODAY[i] + (i < ACTUAL_N ? "" : " (fcst)"), LASTWED[i]]));
+  if (views.c2v === "chart") lineChart(b, {
+    x: BACKLOG_DAYS, min: 150, max: 350, step: 50, every: 3, last: true,
+    aria: `Open backlog over 14 days, rising from 262 on Oct 15 to 312 today.`,
+    series: [{ name: "Open tickets", c: "var(--s1)", v: BACKLOG, endDot: true }],
+    tipHead: i => BACKLOG_DAYS[i],
+  });
+  else tableView(b, ["Date", "Open tickets"], BACKLOG_DAYS.map((d, i) => [d, BACKLOG[i]]));
+}
+
+/* ---------- render + events ---------- */
+function toast(t) { const el = $("#toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("on"), 2200); }
+
+function renderTable(focusSel) {
+  const holder = $("#tbl"); if (!holder) return;
+  holder.innerHTML = tableHTML();
+  $("#rec").innerHTML = recHTML();
+  if (focusSel) { const el = $(focusSel); if (el && !el.disabled) el.focus(); else $("#reset")?.focus(); }
+  writeHash();
+}
+function render(state) {
+  const app = $("#app");
+  if (state === "loading") {
+    app.innerHTML = `<div class="kpis">${'<div class="kpi sk" style="height:96px"></div>'.repeat(6)}</div><div class="sk" style="height:150px;margin-bottom:16px"></div><div class="sk" style="height:420px"></div>`;
+    return;
+  }
+  if (state === "error") {
+    app.innerHTML = `<section class="card err"><h2>Couldn't load today's queue data</h2><p>The ticketing sync failed at 08:05 PT, so staffing numbers would be wrong. Nothing is shown rather than stale figures.</p><button class="btn primary" id="retry">Try again</button><p style="font-size:12px;margin-top:16px">Reference: req_8f31c2a7 · If this persists, post it in #support-ops.</p></section>`;
+    $("#retry").onclick = () => load("ready");
+    return;
+  }
+  app.innerHTML = bannerHTML() + kpiHTML() + `<div id="rec" style="margin-bottom:16px"></div><div id="tbl"></div>` + chartsHTML() + escHTML();
+  renderTable();
+  drawCharts();
+}
+function load(state) { render("loading"); setTimeout(() => render(state), 450); }
+
+document.addEventListener("click", e => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.q != null) {
+    const i = +t.dataset.q, d = +t.dataset.d;
+    if (d > 0 && AVAIL - sum(plan) <= 0) return;
+    plan[i] = Math.max(0, plan[i] + d);
+    renderTable(`button[data-q="${i}"][data-d="${d}"]`);
+  } else if (t.id === "apply") { plan = SUGGESTED.slice(); renderTable("#reset"); toast("Recommended plan applied – not sent anywhere yet. Use Copy plan to share it."); }
+  else if (t.id === "reset") { plan = NOW.slice(); renderTable(); toast("Plan reset to current staffing"); }
+  else if (t.id === "copy") {
+    const txt = "Staffing plan for Wed Oct 28:\n" + moves(NOW, plan).map(m => `• Move ${m.n} from ${Q[m.from].name} to ${Q[m.to].name}`).join("\n") + `\nUnassigned: ${AVAIL - sum(plan)}`;
+    (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast("Plan copied"), () => { toast("Copy failed – select the text manually"); });
+  } else if (t.closest(".seg")) {
+    const id = t.closest(".seg").dataset.view; views[id] = t.dataset.v;
+    t.closest(".seg").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b === t));
+    drawCharts();
+  }
+});
+$("#refresh").onclick = () => { load("ready"); setTimeout(() => toast("Already up to date – snapshot 08:05 PT"), 600); };
+$("#theme").onclick = () => {
+  const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  document.documentElement.dataset.theme = dark ? "light" : "dark";
+  try { localStorage.setItem("theme", document.documentElement.dataset.theme); } catch (e) {}
+};
+try { const th = localStorage.getItem("theme"); if (th) document.documentElement.dataset.theme = th; } catch (e) {}
+let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(drawCharts, 120); });
+addEventListener("hashchange", () => { readHash(); renderTable(); });
+
+readHash();
+const forced = new URLSearchParams(location.search).get("state");
+if (forced === "error") render("error"); else if (forced === "loading") render("loading"); else load("ready");
+</script>
+</body>
+</html>

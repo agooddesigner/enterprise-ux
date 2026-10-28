@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Customer Success Dashboard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: bento grid. Hero (ARR at risk, ink) top-left, KPI tiles beside it, renewals + health mix, then triage table and today's tasks. */
+:root{
+  --canvas:#eef0f6; --card:#fff; --ink:#14162b; --ink-fg:#f4f5fb; --ink-sub:#a9adc9;
+  --text:#14162b; --muted:#5d6280; --line:#e3e6f0; --track:#eceef6;
+  --accent:#4b3df2; --accent-soft:#e9e7ff; --hl:#d7f36b; --hl-fg:#1d2600;
+  --good:#12805c; --good-bg:#dcf4ea; --warn:#9a5b00; --warn-bg:#fdecc8; --crit:#b3261e; --crit-bg:#fde0dd;
+  --font-d:"Bricolage Grotesque",system-ui,sans-serif; --font-b:"Figtree",system-ui,sans-serif;
+  --r:24px; color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --canvas:#0d0f1c; --card:#171a2e; --ink:#262a4a; --ink-fg:#f4f5fb; --ink-sub:#a9adc9;
+  --text:#eceefa; --muted:#a3a8c6; --line:#262a44; --track:#232743;
+  --accent:#8f86ff; --accent-soft:#2a2750; --hl:#d7f36b; --hl-fg:#1d2600;
+  --good:#5fd6a6; --good-bg:#12372b; --warn:#f2c35c; --warn-bg:#3d2f10; --crit:#ff8d84; --crit-bg:#451a18; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --canvas:#0d0f1c; --card:#171a2e; --ink:#262a4a; --ink-fg:#f4f5fb; --ink-sub:#a9adc9;
+  --text:#eceefa; --muted:#a3a8c6; --line:#262a44; --track:#232743;
+  --accent:#8f86ff; --accent-soft:#2a2750; --hl:#d7f36b; --hl-fg:#1d2600;
+  --good:#5fd6a6; --good-bg:#12372b; --warn:#f2c35c; --warn-bg:#3d2f10; --crit:#ff8d84; --crit-bg:#451a18; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--canvas);color:var(--text);font:14px/1.45 var(--font-b);
+  padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.num{font-variant-numeric:tabular-nums;font-family:var(--font-d)}
+button,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+header{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between}
+h1{font:700 clamp(30px,4vw,44px)/1.05 var(--font-d);margin:0;letter-spacing:-.02em}
+.fresh{color:var(--muted);margin:6px 0 0;font-size:13px}
+.fresh b{color:var(--text);font-weight:600}
+.sample{display:inline-block;background:var(--warn-bg);color:var(--warn);border-radius:99px;padding:2px 10px;font-size:12px;font-weight:600;margin-left:6px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pill-select{background:var(--card);border:1px solid var(--line);border-radius:99px;padding:8px 14px;cursor:pointer;min-height:40px}
+.seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:3px}
+.seg button{border:0;background:none;border-radius:99px;padding:6px 14px;cursor:pointer;color:var(--muted);min-height:34px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--ink-fg)}
+.icon-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--card);cursor:pointer}
+
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:20px}
+.card{background:var(--card);border-radius:var(--r);padding:24px;min-width:0}
+.card h2{font:600 13px/1.2 var(--font-b);color:var(--muted);margin:0 0 14px;letter-spacing:.04em;text-transform:uppercase}
+.card h2 a{float:right;text-transform:none;letter-spacing:0;color:var(--accent);font-weight:600;text-decoration:none}
+.hero{grid-column:span 5;background:var(--ink);color:var(--ink-fg);display:flex;flex-direction:column;justify-content:space-between;gap:20px}
+.hero h2{color:var(--ink-sub)}
+.big{font-size:clamp(56px,7vw,76px);line-height:1;font-weight:700;letter-spacing:-.03em}
+.big small{font-size:.5em;color:var(--ink-sub);font-weight:500;margin-right:2px}
+.hero p{margin:10px 0 0;color:var(--ink-sub);max-width:42ch}
+.hero .bar{height:14px;border-radius:99px;background:rgba(255,255,255,.14);display:flex;gap:3px;overflow:hidden}
+.hero .bar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--ink-sub);margin-top:10px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--c);margin-right:6px}
+.kpis{grid-column:span 7;display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.kpi{display:flex;flex-direction:column;gap:6px}
+.kpi .v{font-size:clamp(34px,4vw,46px);line-height:1;font-weight:700;letter-spacing:-.02em}
+.kpi .v small{font-size:.5em;color:var(--muted);font-weight:500}
+.kpi.hl{background:var(--hl);color:var(--hl-fg)}
+.kpi.hl h2,.kpi.hl .v small{color:#44530a}
+.delta{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;font-weight:600;border-radius:99px;padding:3px 10px;width:fit-content}
+.delta.up{background:var(--good-bg);color:var(--good)} .delta.down{background:var(--crit-bg);color:var(--crit)}
+.kpi.hl .delta{background:rgba(29,38,0,.12);color:var(--hl-fg)}
+.spark{margin-top:auto;height:34px;width:100%}
+.c7{grid-column:span 7}.c5{grid-column:span 5}.c8{grid-column:span 8}.c4{grid-column:span 4}
+
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font:12px var(--font-b)}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--ink-fg);border-radius:12px;padding:8px 12px;font-size:12.5px;opacity:0;transition:opacity .1s;z-index:5;white-space:nowrap}
+.rel{position:relative}
+
+.tablewrap{overflow-x:auto;margin:0 -8px}
+table{border-collapse:collapse;width:100%;min-width:720px}
+th{text-align:left;font-weight:600;color:var(--muted);font-size:12px;padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th button{background:none;border:0;padding:0;cursor:pointer;font-weight:600;color:inherit}
+td{padding:12px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--canvas)}
+td.r,th.r{text-align:right}
+.acct{font-weight:600;color:var(--text);text-decoration:none}
+.acct:hover{text-decoration:underline}
+.sub{color:var(--muted);font-size:12.5px}
+.badge{display:inline-flex;gap:6px;align-items:center;border-radius:99px;padding:3px 10px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.badge.crit{background:var(--crit-bg);color:var(--crit)} .badge.warn{background:var(--warn-bg);color:var(--warn)} .badge.good{background:var(--good-bg);color:var(--good)}
+.avatar{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:11.5px;font-weight:700;margin-right:8px;vertical-align:middle}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 14px;cursor:pointer;font-weight:600;min-height:32px}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.tasks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.tasks li{display:flex;gap:12px;align-items:flex-start;padding:10px 8px;border-radius:16px}
+.tasks li:hover{background:var(--canvas)}
+.tasks input{width:20px;height:20px;margin-top:2px;accent-color:var(--accent)}
+.tasks label{flex:1;cursor:pointer}
+.tasks input:checked + label{text-decoration:line-through;color:var(--muted)}
+.strip{display:flex;gap:12px;align-items:center;background:var(--crit-bg);color:var(--crit);border-radius:16px;padding:12px 16px;font-weight:500}
+.strip span{color:var(--text)}
+.state{display:grid;place-items:center;text-align:center;padding:40px 16px;color:var(--muted);gap:8px}
+.skel{height:14px;border-radius:8px;background:linear-gradient(90deg,var(--track),var(--line),var(--track));background-size:200% 100%;animation:sh 1.2s infinite;margin:10px 0}
+@keyframes sh{to{background-position:-200% 0}}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--ink-fg);border-radius:99px;padding:10px 12px 10px 20px;display:flex;gap:14px;align-items:center;z-index:20}
+.toast button{background:var(--hl);color:var(--hl-fg);border:0;border-radius:99px;padding:6px 14px;font-weight:600;cursor:pointer}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+@media (max-width:1000px){.hero,.kpis,.c7,.c5,.c8,.c4{grid-column:span 12}}
+@media (max-width:520px){.kpis{grid-template-columns:1fr}.card{padding:20px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Customer health</h1>
+      <p class="fresh">Updated <b>08:10 PT</b> · CRM and product usage synced hourly <span class="sample">Sample data</span></p>
+    </div>
+    <div class="filters" role="group" aria-label="Filters">
+      <div class="seg" id="scope" role="group" aria-label="Book of business">
+        <button data-v="mine" aria-pressed="true">My accounts</button>
+        <button data-v="team" aria-pressed="false">Whole team</button>
+      </div>
+      <label class="sr" for="segment">Segment</label>
+      <select class="pill-select" id="segment"><option value="all">All segments</option><option>Enterprise</option><option>Mid-market</option><option>SMB</option></select>
+      <label class="sr" for="window">Renewal window</label>
+      <select class="pill-select" id="window"><option value="90">Renewing in 90 days</option><option value="180">Renewing in 180 days</option></select>
+      <button class="icon-btn" id="theme" aria-label="Toggle light and dark theme">◐</button>
+    </div>
+  </header>
+
+  <div class="strip" role="status" id="incident"><b>Incident</b> <span>Billing sync delayed since 06:40. Invoice status on 3 accounts may be out of date.</span></div>
+
+  <main class="grid" id="main">
+    <section class="card hero" aria-labelledby="h-risk">
+      <div>
+        <h2 id="h-risk">ARR at risk, next <span id="win-label">90</span> days</h2>
+        <div class="big num" id="risk"></div>
+        <p id="risk-note"></p>
+      </div>
+      <div>
+        <div class="bar" id="riskbar" role="img" aria-label=""></div>
+        <div class="legend" id="risklegend"></div>
+      </div>
+    </section>
+
+    <div class="kpis" id="kpis"></div>
+
+    <section class="card c7 rel" aria-labelledby="h-ren">
+      <h2 id="h-ren">Renewals by month <a href="#renewals">Open renewal board</a></h2>
+      <div id="renewals"></div>
+      <div class="tip" id="tip"></div>
+    </section>
+
+    <section class="card c5" aria-labelledby="h-mix">
+      <h2 id="h-mix">Health mix by segment</h2>
+      <div id="mix"></div>
+    </section>
+
+    <section class="card c8" aria-labelledby="h-triage">
+      <h2 id="h-triage">Needs attention <a href="#all">View all accounts</a></h2>
+      <div class="tablewrap">
+        <table>
+          <caption class="sr">Accounts ranked by ARR at risk. Select a column header to sort.</caption>
+          <thead><tr>
+            <th scope="col"><button data-k="name">Account</button></th>
+            <th scope="col"><button data-k="health">Health</button></th>
+            <th scope="col" class="r"><button data-k="arr">ARR</button></th>
+            <th scope="col"><button data-k="days">Renews</button></th>
+            <th scope="col">Main signal</th>
+            <th scope="col">Owner</th>
+            <th scope="col"><span class="sr">Action</span></th>
+          </tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div id="empty" class="state" hidden><b>No accounts match these filters</b><span>Try a wider renewal window or switch to the whole team.</span><button class="btn" id="reset">Clear filters</button></div>
+    </section>
+
+    <section class="card c4" aria-labelledby="h-today">
+      <h2 id="h-today">Today</h2>
+      <ul class="tasks" id="tasks"></ul>
+    </section>
+  </main>
+</div>
+<div class="tip" id="t2" hidden></div>
+<div class="toast" id="toast" hidden role="status"><span id="toast-msg"></span><button id="undo">Undo</button></div>
+
+<script>
+// Sample data. Replace with CRM / product-usage queries. Health: 0-100 composite of usage, support load, sentiment, exec engagement.
+const ACCOUNTS=[
+ {name:"Northwind Logistics",seg:"Enterprise",owner:"Priya N.",mine:true,health:34,arr:482000,days:23,signal:"Weekly active users down 41% in 30 days",tier:"crit"},
+ {name:"Halcyon Bio",seg:"Enterprise",owner:"Priya N.",mine:true,health:41,arr:356000,days:38,signal:"Champion left; no exec sponsor",tier:"crit"},
+ {name:"Brightline Retail",seg:"Mid-market",owner:"Marcus T.",mine:false,health:48,arr:218000,days:44,signal:"3 escalated tickets this month",tier:"crit"},
+ {name:"Corvid Systems",seg:"Mid-market",owner:"Priya N.",mine:true,health:57,arr:174000,days:61,signal:"Seat usage at 52% of contract",tier:"warn"},
+ {name:"Tidewater Credit Union",seg:"Enterprise",owner:"Lena O.",mine:false,health:62,arr:410000,days:72,signal:"NPS dropped from 42 to 18",tier:"warn"},
+ {name:"Paperbird",seg:"SMB",owner:"Marcus T.",mine:false,health:52,arr:38000,days:29,signal:"Invoice 45 days overdue",tier:"warn"},
+ {name:"Orchard & Vine",seg:"SMB",owner:"Priya N.",mine:true,health:66,arr:52000,days:84,signal:"Onboarding incomplete after 60 days",tier:"warn"},
+ {name:"Meridian Health",seg:"Enterprise",owner:"Lena O.",mine:false,health:71,arr:295000,days:118,signal:"Pricing questions on renewal thread",tier:"warn"},
+ {name:"Stackhouse Labs",seg:"Mid-market",owner:"Priya N.",mine:true,health:76,arr:121000,days:152,signal:"Feature request unresolved 90+ days",tier:"warn"}
+];
+const MONTHS=[["Nov",5,1.9,.9],["Dec",4,1.4,.4],["Jan",7,3.1,1.6],["Feb",3,1.2,.3],["Mar",6,2.6,.8],["Apr",4,1.8,.2]]; // month, accounts, ARR $M, at risk $M
+const MIX={Enterprise:[18,9,3],"Mid-market":[27,14,6],SMB:[64,22,15]}; // healthy, watch, at risk (accounts)
+const TASKS=[["Call Halcyon Bio's new VP Ops","10:30"],["Send QBR deck to Northwind","12:00"],["Review Corvid seat usage with CS lead","14:00"],["Reply to Paperbird billing question","16:00"]];
+const $=s=>document.querySelector(s), fmt=n=>n>=1e6?"$"+(n/1e6).toFixed(1)+"M":"$"+Math.round(n/1e3)+"k";
+const st={scope:"mine",segment:"all",window:"90",sort:"arr",dir:-1};
+
+// State lives in the URL hash so views can be shared.
+function readHash(){const p=new URLSearchParams(location.hash.slice(1));for(const k of["scope","segment","window"])if(p.get(k))st[k]=p.get(k)}
+function writeHash(){history.replaceState(null,"","#"+new URLSearchParams({scope:st.scope,segment:st.segment,window:st.window}))}
+function filtered(){return ACCOUNTS.filter(a=>(st.scope==="team"||a.mine)&&(st.segment==="all"||a.seg===st.segment)&&a.days<=+st.window)}
+const color=t=>({crit:"var(--crit)",warn:"var(--warn)",good:"var(--good)"}[t]);
+
+function render(){
+  writeHash();
+  const f=filtered(), risk=f.filter(a=>a.health<60), tot=risk.reduce((s,a)=>s+a.arr,0);
+  $("#win-label").textContent=st.window;
+  $("#risk").innerHTML=`<small>$</small>${(tot/1e6).toFixed(2)}<small>M</small>`;
+  $("#risk-note").textContent=f.length?`${risk.length} of ${f.length} renewing accounts score below 60. The largest, ${(risk.sort((a,b)=>b.arr-a.arr)[0]||{name:"none"}).name}, renews soon.`:"No renewals fall in this window.";
+  const crit=f.filter(a=>a.health<50).reduce((s,a)=>s+a.arr,0), watch=f.filter(a=>a.health>=50&&a.health<70).reduce((s,a)=>s+a.arr,0), ok=f.filter(a=>a.health>=70).reduce((s,a)=>s+a.arr,0), T=crit+watch+ok||1;
+  $("#riskbar").innerHTML=[[crit,"#ff8d84"],[watch,"#f2c35c"],[ok,"#5fd6a6"]].map(([v,c])=>`<i style="width:${v/T*100}%;background:${c}"></i>`).join("");
+  $("#riskbar").setAttribute("aria-label",`Renewing ARR by health: ${fmt(crit)} critical, ${fmt(watch)} watch, ${fmt(ok)} healthy`);
+  $("#risklegend").innerHTML=[["Critical <50",crit,"#ff8d84"],["Watch 50–69",watch,"#f2c35c"],["Healthy 70+",ok,"#5fd6a6"]].map(([l,v,c])=>`<span style="--c:${c}">${l} · <b class="num">${fmt(v)}</b></span>`).join("");
+
+  const spark=(pts,c)=>{const mx=Math.max(...pts),mn=Math.min(...pts),w=200,h=34,d=pts.map((p,i)=>`${i*w/(pts.length-1)},${h-4-(p-mn)/(mx-mn||1)*(h-10)}`);return `<svg class="spark" viewBox="0 0 200 34" preserveAspectRatio="none" aria-hidden="true"><polyline points="${d.join(" ")}" fill="none" stroke="${c}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="200" cy="${d[d.length-1].split(",")[1]}" r="3.5" fill="${c}"/></svg>`};
+  const K=[
+   ["Net revenue retention","108","%","up","+2.1 pts vs last quarter",[101,103,104,106,105,108],"var(--accent)",""],
+   ["Gross retention","92.4","%","down","−0.8 pts vs last quarter",[94,93.6,93.2,93,92.8,92.4],"var(--crit)","hl"],
+   ["Average health score","68","/100","up","+3 vs 30 days ago",[61,62,64,65,66,68],"var(--accent)",""],
+   ["Open escalations","7","","down","+2 vs last week",[3,4,4,5,5,7],"var(--crit)",""]];
+  $("#kpis").innerHTML=K.map(k=>`<section class="card kpi ${k[7]}"><h2>${k[0]}</h2><div class="v num">${k[1]}<small>${k[2]}</small></div><span class="delta ${k[3]==="up"&&k[0]!=="Open escalations"?"up":k[3]}">${k[3]==="up"?"▲":"▼"} ${k[4]}</span>${spark(k[5],k[6]==="var(--crit)"&&k[7]?"#44530a":k[6])}</section>`).join("");
+
+  // renewals chart: pale track = total ARR, solid = at risk portion
+  const W=640,H=250,pl=34,pb=28,bw=52,max=4,x=i=>pl+20+i*((W-pl-20)/MONTHS.length),y=v=>H-pb-(v/max)*(H-pb-14);
+  let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Renewing ARR by month, with at-risk portion. ${MONTHS.map(m=>`${m[0]}: $${m[2]}M, $${m[3]}M at risk`).join("; ")}.">`;
+  for(const t of[0,1,2,3,4])s+=`<line x1="${pl}" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)"/><text x="${pl-8}" y="${y(t)+4}" text-anchor="end">$${t}M</text>`;
+  MONTHS.forEach((m,i)=>{const X=x(i),hi=i===2;
+    s+=`<g class="bar" data-i="${i}" tabindex="0" aria-label="${m[0]}: ${m[1]} renewals, $${m[2]}M, $${m[3]}M at risk"><rect x="${X}" y="${y(m[2])}" width="${bw}" height="${y(0)-y(m[2])}" rx="14" fill="var(--track)"/><rect x="${X}" y="${y(m[3])}" width="${bw}" height="${y(0)-y(m[3])}" rx="14" fill="${hi?"var(--crit)":"var(--accent)"}"/><text x="${X+bw/2}" y="${H-8}" text-anchor="middle">${m[0]}</text>${hi?`<text x="${X+bw/2}" y="${y(m[2])-8}" text-anchor="middle" style="fill:var(--text);font-weight:600">$${m[3]}M at risk</text>`:""}</g>`});
+  $("#renewals").innerHTML=s+"</svg>"+`<div class="legend" style="color:var(--muted);margin-top:6px"><span style="--c:var(--track)">Total renewing ARR</span><span style="--c:var(--accent)">At risk (health &lt; 60)</span></div>`;
+  const tip=$("#tip");
+  document.querySelectorAll(".bar").forEach(g=>{const show=e=>{const m=MONTHS[g.dataset.i],r=g.getBoundingClientRect(),p=$("#renewals").getBoundingClientRect();tip.innerHTML=`<b>${m[0]}</b> · ${m[1]} renewals<br>$${m[2]}M ARR, $${m[3]}M at risk`;tip.style.left=(r.left-p.left+r.width/2-60)+"px";tip.style.top="70px";tip.style.opacity=1};g.onmouseenter=show;g.onfocus=show;g.onmouseleave=g.onblur=()=>tip.style.opacity=0});
+
+  // health mix: horizontal 100% bars, one per segment
+  $("#mix").innerHTML=Object.entries(MIX).map(([k,[a,b,c]])=>{const t=a+b+c;return `<div style="margin-bottom:18px"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><b>${k}</b><span class="sub num">${t} accounts</span></div><div style="display:flex;gap:3px;height:18px" role="img" aria-label="${k}: ${a} healthy, ${b} watch, ${c} at risk"><i style="width:${a/t*100}%;background:var(--good);border-radius:99px 0 0 99px"></i><i style="width:${b/t*100}%;background:var(--warn)"></i><i style="width:${c/t*100}%;background:var(--crit);border-radius:0 99px 99px 0"></i></div><div class="sub num" style="margin-top:4px">${Math.round(a/t*100)}% healthy · ${Math.round(b/t*100)}% watch · ${Math.round(c/t*100)}% at risk</div></div>`}).join("")+`<div class="legend" style="color:var(--muted)"><span style="--c:var(--good)">Healthy 70+</span><span style="--c:var(--warn)">Watch 50–69</span><span style="--c:var(--crit)">At risk &lt;50</span></div>`;
+
+  // table
+  const rows=f.slice().sort((a,b)=>(a[st.sort]>b[st.sort]?1:-1)*st.dir);
+  $("#rows").innerHTML=rows.map(a=>{const t=a.health<50?"crit":a.health<70?"warn":"good",lab={crit:"Critical",warn:"Watch",good:"Healthy"}[t],ic={crit:"▲",warn:"●",good:"✓"}[t];
+    return `<tr><td><a class="acct" href="#acct-${a.name.replace(/\W+/g,"-").toLowerCase()}">${a.name}</a><div class="sub">${a.seg}</div></td>
+    <td><span class="badge ${t}"><span aria-hidden="true">${ic}</span>${lab} <span class="num">${a.health}</span></span></td>
+    <td class="r num">${fmt(a.arr)}</td><td class="num" style="white-space:nowrap">${a.days} days</td><td style="max-width:240px">${a.signal}</td>
+    <td style="white-space:nowrap"><span class="avatar" aria-hidden="true">${a.owner.split(" ").map(x=>x[0]).join("")}</span>${a.owner}</td>
+    <td><button class="btn" data-plan="${a.name}">Create plan</button></td></tr>`}).join("");
+  $("#empty").hidden=rows.length>0; document.querySelector("table").hidden=rows.length===0;
+  $("#tasks").innerHTML=TASKS.map((t,i)=>`<li><input type="checkbox" id="t${i}"><label for="t${i}">${t[0]}<div class="sub num">${t[1]}</div></label></li>`).join("");
+  $("#scope").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st.scope));
+  $("#segment").value=st.segment;$("#window").value=st.window;
+}
+
+let undoTimer;
+document.addEventListener("click",e=>{
+  const sc=e.target.closest("#scope button");if(sc){st.scope=sc.dataset.v;render()}
+  const so=e.target.closest("th button");if(so){st.dir=st.sort===so.dataset.k?-st.dir:-1;st.sort=so.dataset.k;render()}
+  const pl=e.target.closest("[data-plan]");if(pl){$("#toast-msg").textContent=`Success plan created for ${pl.dataset.plan}`;$("#toast").hidden=false;clearTimeout(undoTimer);undoTimer=setTimeout(()=>$("#toast").hidden=true,6000)}
+  if(e.target.id==="undo")$("#toast").hidden=true;
+  if(e.target.id==="reset"){st.scope="team";st.segment="all";st.window="180";render()}
+  if(e.target.id==="theme"){const d=document.documentElement,dark=d.dataset.theme?d.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;d.dataset.theme=dark?"light":"dark"}
+});
+$("#segment").onchange=e=>{st.segment=e.target.value;render()};
+$("#window").onchange=e=>{st.window=e.target.value;render()};
+readHash();render();
+</script>
+</body>
+</html>

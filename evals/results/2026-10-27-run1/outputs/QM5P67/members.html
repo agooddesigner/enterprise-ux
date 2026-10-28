@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Members · Acme Workspace Admin</title>
+<style>
+:root{
+  --bg:#f6f7f9; --surface:#fff; --surface-2:#f1f3f6; --border:#dfe3e8; --border-strong:#c5cbd3;
+  --text:#1a1f27; --text-2:#4b5563; --text-3:#6b7280;
+  --accent:#4338ca; --accent-hover:#3730a3; --accent-soft:#eef0ff; --on-accent:#fff;
+  --danger:#b42318; --danger-hover:#912018; --danger-soft:#fef0ee;
+  --ok:#157347; --ok-soft:#e8f5ee; --warn:#8a5a00; --warn-soft:#fff4dc; --info-soft:#eef4ff;
+  --focus:#2563eb; --shadow:0 8px 28px rgba(16,24,40,.18);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --bg:#0f1218; --surface:#171b23; --surface-2:#1e232d; --border:#2a303c; --border-strong:#3a4252;
+  --text:#e8ebf0; --text-2:#b4bcc8; --text-3:#98a2b0;
+  --accent:#8b93ff; --accent-hover:#a5abff; --accent-soft:#232844; --on-accent:#0f1218;
+  --danger:#ff8a7d; --danger-hover:#ffa89e; --danger-soft:#3a1d1a;
+  --ok:#5fcf93; --ok-soft:#14291e; --warn:#f2bf5e; --warn-soft:#33270d; --info-soft:#1a2438;
+  --focus:#7aa5ff; --shadow:0 8px 28px rgba(0,0,0,.6);
+}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.layout{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+nav.side{background:var(--surface);border-right:1px solid var(--border);padding:16px 12px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:8px;font-weight:650;padding:4px 8px 16px}
+.brand i{width:24px;height:24px;border-radius:6px;background:var(--accent);display:block}
+.side h2{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin:12px 8px 4px;font-weight:600}
+.side a{display:block;padding:7px 8px;border-radius:6px;color:var(--text-2);text-decoration:none}
+.side a:hover{background:var(--surface-2)}
+.side a[aria-current=page]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+main{padding:24px 32px 96px;min-width:0;max-width:1280px}
+.crumbs{color:var(--text-3);font-size:12px;margin-bottom:4px}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+h1{font-size:20px;margin:0;font-weight:650}
+.sub{color:var(--text-2);margin:2px 0 0}
+.btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:6px;border:1px solid var(--border-strong);background:var(--surface);cursor:pointer;white-space:nowrap}
+.btn:hover:not(:disabled){background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.btn.primary:hover:not(:disabled){background:var(--accent-hover)}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:#fff;font-weight:600}
+.btn.danger:hover:not(:disabled){background:var(--danger-hover)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn:disabled,.btn[aria-disabled=true]{opacity:.5;cursor:not-allowed}
+kbd{font:11px ui-monospace,monospace;border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:4px;padding:0 4px;background:var(--surface-2);color:var(--text-2)}
+.btn.primary kbd{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.4);color:inherit}
+/* tooltip for focusable wrappers */
+[data-tip]{position:relative}
+[data-tip]:hover::after,[data-tip]:focus-within::after,[data-tip]:focus::after{content:attr(data-tip);position:absolute;z-index:30;left:0;top:calc(100% + 6px);width:max-content;max-width:280px;background:#111827;color:#fff;font-size:12px;line-height:1.4;padding:6px 9px;border-radius:6px;box-shadow:var(--shadow);white-space:normal;font-weight:400;text-align:left}
+.head [data-tip]::after{left:auto!important;right:0}
+/* banners */
+.banner{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:10px 14px;margin-top:16px}
+.banner.info{background:var(--info-soft)} .banner.warn{background:var(--warn-soft);border-color:transparent}
+.banner .grow{flex:1;min-width:0}
+.banner strong{font-weight:600}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;border-radius:99px;padding:1px 8px;background:var(--ok-soft);color:var(--ok);font-weight:600}
+.link{color:var(--accent);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.stats{display:flex;gap:24px;margin-top:16px;color:var(--text-2);flex-wrap:wrap}
+.stats b{color:var(--text);font-variant-numeric:tabular-nums}
+.meter{display:inline-block;width:90px;height:6px;border-radius:3px;background:var(--surface-2);border:1px solid var(--border);vertical-align:middle;margin-left:6px;overflow:hidden}
+.meter span{display:block;height:100%;background:var(--accent)}
+/* toolbar */
+.toolbar{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;align-items:center}
+.field{height:32px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);padding:0 10px}
+.search{flex:1 1 260px;max-width:380px;display:flex;align-items:center;gap:6px;padding:0 8px;height:32px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface)}
+.search:focus-within{outline:2px solid var(--focus);outline-offset:1px}
+.search input{border:0;background:transparent;outline:0;flex:1;min-width:0;height:30px}
+.search svg{flex:none;color:var(--text-3)}
+.toolbar .spacer{flex:1}
+/* table */
+.card{margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:separate;border-spacing:0;min-width:900px}
+th{position:sticky;top:0;background:var(--surface-2);text-align:left;font-size:12px;font-weight:600;color:var(--text-2);padding:0 12px;height:36px;border-bottom:1px solid var(--border);white-space:nowrap}
+th button{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center;height:36px}
+th button:focus-visible{outline:2px solid var(--focus);outline-offset:0}
+td{height:52px;padding:0 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--surface-2)}
+tbody tr.sel{background:var(--accent-soft)}
+tbody tr.flash{animation:flash 1.6s}
+@keyframes flash{from{background:var(--warn-soft)}}
+.c-chk{width:40px;padding-right:0}
+.c-act{width:48px;text-align:right}
+.person{display:flex;align-items:center;gap:10px;min-width:0}
+.av{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:650;color:#fff}
+.who{min-width:0}
+.who .n{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px;display:block}
+.who .e{color:var(--text-3);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px;display:block}
+.you{font-size:11px;font-weight:600;background:var(--surface-2);border:1px solid var(--border-strong);border-radius:4px;padding:0 5px;margin-left:6px;color:var(--text-2);vertical-align:1px}
+select.role{height:30px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);padding:0 6px;min-width:104px}
+.lock{display:inline-flex;align-items:center;gap:5px;color:var(--text-2);cursor:help;height:30px}
+.st{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.st i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.st.active i{background:var(--ok)} .st.invited i{background:transparent;border:2px solid var(--warn)}
+.sub2{display:block;color:var(--text-3);font-size:12px}
+.num{font-variant-numeric:tabular-nums}
+.iconbtn{all:unset;cursor:pointer;width:32px;height:32px;display:inline-grid;place-items:center;border-radius:6px;color:var(--text-2)}
+.iconbtn:hover{background:var(--border)} .iconbtn:focus-visible{outline:2px solid var(--focus)}
+.foot{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--border);color:var(--text-2);background:var(--surface);gap:8px;flex-wrap:wrap}
+.foot .pg{display:flex;gap:6px;align-items:center}
+input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+/* selection bar */
+.selbar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--accent-soft);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.selbar .msg{font-weight:600;margin-right:8px}
+.selnote{padding:6px 12px;background:var(--surface-2);border-bottom:1px solid var(--border);color:var(--text-2);font-size:13px}
+/* states */
+.state{padding:56px 24px;text-align:center;color:var(--text-2)}
+.state h3{margin:8px 0 4px;color:var(--text);font-size:16px}
+.state p{margin:0 auto 16px;max-width:420px}
+.state .ic{width:44px;height:44px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;margin:0 auto;color:var(--text-3)}
+.state.err .ic{background:var(--danger-soft);color:var(--danger)}
+.ref{font:12px ui-monospace,monospace;color:var(--text-3)}
+.sk{display:block;height:12px;border-radius:4px;background:linear-gradient(90deg,var(--surface-2),var(--border),var(--surface-2));background-size:200% 100%;animation:sh 1.2s infinite linear}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}tbody tr.flash{animation:none}}
+/* menu */
+.menu{position:fixed;z-index:50;min-width:210px;background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;box-shadow:var(--shadow);padding:4px}
+.menu button{all:unset;box-sizing:border-box;display:flex;width:100%;padding:7px 10px;border-radius:5px;cursor:pointer;gap:8px;align-items:center}
+.menu button:hover,.menu button:focus-visible{background:var(--surface-2)}
+.menu button[aria-disabled=true]{opacity:.5;cursor:not-allowed}
+.menu button.dng{color:var(--danger)}
+.menu hr{border:0;border-top:1px solid var(--border);margin:4px 0}
+.menu .why{font-size:12px;color:var(--text-3);padding:0 10px 6px}
+/* dialog */
+.scrim{position:fixed;inset:0;background:rgba(10,14,22,.55);z-index:60;display:grid;place-items:center;padding:16px}
+.dlg{background:var(--surface);border-radius:12px;box-shadow:var(--shadow);width:min(520px,100%);max-height:calc(100vh - 32px);overflow:auto;border:1px solid var(--border)}
+.dlg header{padding:18px 20px 0}
+.dlg h2{margin:0;font-size:17px}
+.dlg .body{padding:12px 20px 4px;color:var(--text-2)}
+.dlg .body p{margin:0 0 10px}
+.dlg footer{display:flex;justify-content:flex-end;gap:8px;padding:16px 20px 18px}
+.dlg label.l{display:block;font-weight:600;color:var(--text);margin:12px 0 4px}
+.hint{font-size:12px;color:var(--text-3);margin-top:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;border:1px solid var(--border-strong);border-radius:6px;padding:6px;background:var(--surface);min-height:72px;align-content:flex-start;cursor:text}
+.chips:focus-within{outline:2px solid var(--focus);outline-offset:1px}
+.chips input{border:0;outline:0;background:transparent;flex:1;min-width:160px;height:26px}
+.chip{display:inline-flex;gap:4px;align-items:center;height:26px;padding:0 4px 0 9px;border-radius:13px;background:var(--surface-2);border:1px solid var(--border-strong);font-size:13px;max-width:100%}
+.chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}
+.chip.bad{background:var(--danger-soft);border-color:var(--danger);color:var(--danger)}
+.chip button{all:unset;cursor:pointer;width:18px;height:18px;display:grid;place-items:center;border-radius:50%}
+.chip button:hover{background:rgba(0,0,0,.12)}
+.errs{margin:8px 0 0;padding:0;list-style:none;color:var(--danger);font-size:13px}
+.errs li{display:flex;gap:6px;margin-top:2px}
+.roleopt{display:flex;gap:10px;border:1px solid var(--border-strong);border-radius:8px;padding:8px 10px;margin-top:6px;cursor:pointer}
+.roleopt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.roleopt b{display:block}.roleopt small{color:var(--text-2)}
+.roleopt input{margin-top:3px}
+/* toast */
+#toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;z-index:80;display:flex;flex-direction:column;gap:8px;align-items:center}
+.toast{background:#111827;color:#fff;padding:9px 12px 9px 14px;border-radius:8px;display:flex;gap:14px;align-items:center;box-shadow:var(--shadow);max-width:min(560px,92vw)}
+.toast button{all:unset;cursor:pointer;color:#a5b4fc;font-weight:650}
+.toast button:hover{text-decoration:underline}
+/* dev panel */
+.dev{position:fixed;left:12px;bottom:12px;z-index:40;background:var(--surface);border:1px dashed var(--border-strong);border-radius:8px;padding:8px 10px;font-size:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;max-width:calc(100vw - 24px)}
+.dev b{color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;font-size:10px}
+.dev select{height:24px;font-size:12px;border:1px solid var(--border-strong);border-radius:4px;background:var(--surface)}
+@media (max-width:860px){.layout{grid-template-columns:1fr}nav.side{display:none}main{padding:16px 12px 120px}}
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="side" aria-label="Admin sections">
+    <div class="brand"><i></i> Acme Admin</div>
+    <h2>Workspace</h2>
+    <a href="#">Overview</a>
+    <a href="#" aria-current="page">Members</a>
+    <a href="#">Billing &amp; seats</a>
+    <h2>Security</h2>
+    <a href="#">Single sign-on</a>
+    <a href="#">Audit log</a>
+  </nav>
+
+  <main id="main">
+    <div class="crumbs">Workspace settings</div>
+    <div class="head">
+      <div>
+        <h1>Members</h1>
+        <p class="sub">Invite people, set what they can do, and remove access.</p>
+      </div>
+      <span id="inviteWrap"><button class="btn primary" id="inviteBtn">Invite members <kbd>I</kbd></button></span>
+    </div>
+
+    <div id="viewOnly"></div>
+
+    <div class="banner info" role="note">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="margin-top:2px;flex:none"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      <div class="grow">
+        <strong>Sign-in is managed by Okta SSO</strong> <span class="pill">● Connected</span><br>
+        <span style="color:var(--text-2)">People sign in with their <b>acme.com</b> or <b>acme.io</b> account, so invitations only work for those domains and no password is created. Members synced from Okta (SCIM) get their role from their Okta group and are removed here when Okta deactivates them.</span>
+        <a class="link" href="#">SSO settings</a>
+      </div>
+    </div>
+
+    <div class="stats" id="stats" aria-live="polite"></div>
+
+    <div class="toolbar" role="search">
+      <label class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <span class="sr">Search members by name or email</span>
+        <input id="q" type="search" placeholder="Search name or email" autocomplete="off"><kbd aria-hidden="true">/</kbd></label>
+      <label class="sr" for="fRole">Filter by role</label>
+      <select class="field" id="fRole"><option value="">All roles</option><option>Owner</option><option>Admin</option><option>Editor</option><option>Viewer</option></select>
+      <label class="sr" for="fStatus">Filter by status</label>
+      <select class="field" id="fStatus"><option value="">All statuses</option><option value="active">Active</option><option value="invited">Invitation pending</option></select>
+      <label class="sr" for="fSrc">Filter by sign-in source</label>
+      <select class="field" id="fSrc"><option value="">All sources</option><option value="scim">Okta (SCIM)</option><option value="jit">SSO first sign-in</option><option value="invite">Invited</option></select>
+      <button class="btn ghost" id="clearF" hidden>Clear filters</button>
+    </div>
+
+    <div class="card" id="card"></div>
+  </main>
+</div>
+
+<div class="dev" aria-label="Prototype controls">
+  <b>Prototype</b>
+  <label>Viewing as <select id="devAs"><option value="admin">Admin (Priya)</option><option value="editor">Editor (no access to manage)</option></select></label>
+  <label>Data <select id="devState"><option value="ok">Loaded</option><option value="loading">Loading</option><option value="error">Server error</option><option value="empty">First use (only owner)</option></select></label>
+</div>
+<div id="toasts" role="status" aria-live="polite"></div>
+<div id="overlay"></div>
+
+<script>
+(() => {
+'use strict';
+const NOW = Date.now();
+const DOMAINS = ['acme.com','acme.io'];
+const SEATS = 75;
+const ROLES = {
+  Owner:{d:'Full control, including billing and deleting the workspace.'},
+  Admin:{d:'Manage members, SSO, security settings and all content.'},
+  Editor:{d:'Create and edit content. Cannot manage members or settings.'},
+  Viewer:{d:'Read-only access to content.'}
+};
+const GROUP = {Admin:'Acme-Admins',Editor:'Acme-Editors',Viewer:'Acme-Viewers'};
+const PAGE = 25;
+const COLORS = ['#4f46e5','#0f766e','#b45309','#be185d','#1d4ed8','#6d28d9','#047857','#b91c1c'];
+
+/* ---------- seed data ---------- */
+const first = ['Amara','Tomás','Yuki','Lena','Omar','Sofia','Dmitri','Ngozi','Hannah','Mateo','Ingrid','Ravi','Chloe','Kwame','Elif','Jonas','Mei','Callum','Farah','Lucas','Aiko','Bruno','Zainab','Henrik'];
+const last = ['Okafor','Silva','Tanaka','Fischer','Haddad','Rossi','Volkov','Eze','Lindqvist','Fernández','Bergström','Nair','Dubois','Mensah','Yıldız','Kowalski','Zhang','MacLeod','Rahimi','Moreau'];
+const members = [];
+let uid = 1;
+const add = (name,email,role,status,src,mins,extra={}) => members.push({id:uid++,name,email,role,status,src,last:mins,invitedAt:null,...extra});
+add('Priya Raman','priya.raman@acme.com','Admin','active','jit',2,{self:true});
+add('Dana Whitfield','dana.whitfield@acme.com','Owner','active','jit',35);
+add('Maximilian Alexander von Hohenzollern-Schwarzenberg','maximilian.alexander.von.hohenzollern-schwarzenberg@acme.com','Editor','active','scim',60*30,{});
+add('李明华','li.minghua@acme.io','Editor','active','scim',60*5);
+add('Søren Ødegård','soren.odegard@acme.com','Viewer','active','scim',60*24*9);
+add('Contractor – Billing Audit','audit-contractor@acme.io','Viewer','active','jit',null);
+for (let i=0;i<46;i++){
+  const n = first[i%first.length]+' '+last[(i*7+3)%last.length];
+  const e = (first[i%first.length]+'.'+last[(i*7+3)%last.length]).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z.]/g,'')+'@'+(i%9===0?'acme.io':'acme.com');
+  const role = ['Editor','Editor','Viewer','Editor','Admin','Viewer'][i%6];
+  const src = i%3===2?'jit':'scim';
+  add(n,e,role,'active',src,[3,18,95,60*7,60*26,60*24*3,60*24*12,60*24*40,60*24*95,null][i%10]);
+}
+const inv = [['nadia.petrov@acme.com','Editor',3],['b.okonkwo@acme.com','Viewer',1],['haruto.ito@acme.io','Editor',6],['finance-review@acme.com','Viewer',12]];
+inv.forEach(([e,r,d])=>add(null,e,r,'invited','invite',null,{invitedAt:NOW-d*864e5}));
+
+/* ---------- state ---------- */
+const P = new URLSearchParams(location.search);
+const S = {
+  q:P.get('q')||'', role:P.get('role')||'', status:P.get('status')||'', src:P.get('src')||'',
+  sort:P.get('sort')||'name', dir:P.get('dir')||'asc', page:+(P.get('page')||1),
+  as:P.get('as')||'admin', state:P.get('state')||'ok'
+};
+const sel = new Set();
+let flashIds = new Set();
+const $ = s => document.querySelector(s);
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const isAdmin = () => S.as==='admin';
+const me = () => members.find(m=>m.self);
+const label = m => m.name || m.email;
+const owners = () => members.filter(m=>m.role==='Owner' && m.status==='active').length;
+
+function syncURL(){
+  const p = new URLSearchParams();
+  [['q',S.q],['role',S.role],['status',S.status],['src',S.src]].forEach(([k,v])=>v&&p.set(k,v));
+  if(S.sort!=='name'||S.dir!=='asc'){p.set('sort',S.sort);p.set('dir',S.dir)}
+  if(S.page>1)p.set('page',S.page);
+  if(S.as!=='admin')p.set('as',S.as);
+  if(S.state!=='ok')p.set('state',S.state);
+  history.replaceState(null,'',p.toString()?'?'+p:location.pathname);
+}
+
+/* ---------- helpers ---------- */
+function rel(mins){
+  if(mins==null) return null;
+  if(mins<1) return 'Just now';
+  if(mins<60) return mins+' min ago';
+  if(mins<1440) return Math.floor(mins/60)+' h ago';
+  if(mins<60*24*60) return Math.floor(mins/1440)+' d ago';
+  return Math.floor(mins/1440/30)+' mo ago';
+}
+const abs = t => new Intl.DateTimeFormat('en-GB',{dateStyle:'medium',timeStyle:'short',timeZoneName:'short'}).format(t);
+const initials = m => (m.name? m.name.split(/\s+/).filter(w=>/\p{L}/u.test(w)).slice(0,2).map(w=>Array.from(w)[0]).join('') : m.email[0]).toUpperCase();
+const color = m => COLORS[m.id%COLORS.length];
+function lockReason(m){
+  if(m.role==='Owner') return owners()<2 ? 'Owner role can’t be changed while this is the only Owner. Transfer ownership in Billing & seats first.' : '';
+  if(m.src==='scim') return `Role comes from the Okta group “${GROUP[m.role]}”. Change their group in Okta (SCIM syncs within ~40 min), or ask your Okta admin.`;
+  return '';
+}
+function filtered(){
+  const q = S.q.trim().toLowerCase();
+  let r = members.filter(m=>
+    (!q || (m.name||'').toLowerCase().includes(q) || m.email.toLowerCase().includes(q)) &&
+    (!S.role || m.role===S.role) && (!S.status || m.status===S.status) && (!S.src || m.src===S.src));
+  const k = S.sort, d = S.dir==='asc'?1:-1;
+  const ord = {Owner:0,Admin:1,Editor:2,Viewer:3};
+  r.sort((a,b)=>{
+    let x,y;
+    if(k==='last'){ x=a.last??Infinity; y=b.last??Infinity; if(x===y) return 0; return (x<y?-1:1)*d; }
+    if(k==='role'){ x=ord[a.role]; y=ord[b.role]; if(x!==y) return (x-y)*d; }
+    return label(a).localeCompare(label(b),undefined,{sensitivity:'base'})*d;
+  });
+  return r;
+}
+
+/* ---------- render ---------- */
+const ico = {
+  lock:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+  dots:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
+  x:'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>',
+  warn:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="flex:none;margin-top:2px"><path d="M12 3 2 21h20L12 3z"/><path d="M12 10v5M12 18h.01"/></svg>',
+  users:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 4a4 4 0 0 1 0 8M22 21c0-3-2-5-4-5.5"/></svg>',
+  search:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>'
+};
+
+function renderChrome(){
+  $('#q').value=S.q; $('#fRole').value=S.role; $('#fStatus').value=S.status; $('#fSrc').value=S.src;
+  $('#devAs').value=S.as; $('#devState').value=S.state;
+  $('#clearF').hidden = !(S.q||S.role||S.status||S.src);
+  const w = $('#inviteWrap');
+  if(isAdmin()){ w.removeAttribute('data-tip'); w.removeAttribute('tabindex'); $('#inviteBtn').removeAttribute('aria-disabled'); }
+  else { w.dataset.tip='Only Admins and Owners can invite people. Ask Priya Raman or Dana Whitfield.'; w.tabIndex=0; $('#inviteBtn').setAttribute('aria-disabled','true'); }
+  $('#viewOnly').innerHTML = isAdmin()?'':`<div class="banner warn" role="note">${ico.warn}<div class="grow"><strong>You have view-only access to this page.</strong> Roles and invitations can be changed by Admins and Owners: Priya Raman, Dana Whitfield.</div></div>`;
+  const active=members.filter(m=>m.status==='active').length, pend=members.filter(m=>m.status==='invited').length, used=active+pend;
+  $('#stats').innerHTML = S.state==='ok'||S.state==='empty' ? `<span><b>${active}</b> active</span><span><b>${pend}</b> invitations pending</span><span>Seats <b>${used}</b> of <b>${SEATS}</b> used<span class="meter" role="img" aria-label="${used} of ${SEATS} seats used"><span style="width:${used/SEATS*100}%"></span></span></span>` : '';
+}
+
+function render(){
+  renderChrome(); syncURL();
+  const card = $('#card');
+  if(S.state==='loading'){
+    card.innerHTML = tableShell(Array.from({length:8},()=>`<tr aria-hidden="true"><td class="c-chk"></td><td><span class="sk" style="width:${140+Math.random()*80|0}px"></span></td><td><span class="sk" style="width:80px"></span></td><td><span class="sk" style="width:70px"></span></td><td><span class="sk" style="width:100px"></span></td><td><span class="sk" style="width:70px"></span></td><td></td></tr>`).join(''),'')+`<div class="foot" aria-live="polite">Loading members…</div>`;
+    return;
+  }
+  if(S.state==='error'){
+    card.innerHTML = `<div class="state err" role="alert"><div class="ic">${ico.warn}</div><h3>Couldn’t load members</h3><p>The directory service didn’t respond in time, so we can’t show the member list. Nothing has been changed. Try again in a moment.</p><button class="btn primary" data-act="retry">Try again</button><p class="ref" style="margin:12px auto 0">Reference: req_8f3a21c9 · 27 Oct 2026, 09:41 UTC — quote this to support</p></div>`;
+    return;
+  }
+  const all = filtered();
+  const pages = Math.max(1,Math.ceil(all.length/PAGE));
+  if(S.page>pages) S.page=pages;
+  const rows = all.slice((S.page-1)*PAGE, S.page*PAGE);
+  if(members.length<=1 && !(S.q||S.role||S.status||S.src)){
+    card.innerHTML = `<div class="state"><div class="ic">${ico.users}</div><h3>It’s just you here so far</h3><p>Invite teammates with their acme.com or acme.io address. They’ll sign in through Okta — no password to set up.</p>${isAdmin()?'<button class="btn primary" data-act="invite">Invite members</button>':'<p>Ask an Admin to invite people.</p>'}</div>`;
+    return;
+  }
+  if(!all.length){
+    card.innerHTML = `<div class="state"><div class="ic">${ico.search}</div><h3>No members match these filters</h3><p>${S.q?`Nobody matches “${esc(S.q)}”${S.role||S.status||S.src?' with the selected filters':''}. Check the spelling, or search by email.`:'Try removing a filter.'}</p><button class="btn" data-act="clear">Clear filters</button></div>`;
+    return;
+  }
+  const canAct = isAdmin();
+  const pageSel = rows.filter(r=>sel.has(r.id)).length;
+  const allPage = rows.length && pageSel===rows.length;
+  let top='';
+  if(canAct && sel.size){
+    const sk = skipInfo([...sel].map(id=>members.find(m=>m.id===id)).filter(Boolean));
+    top = `<div class="selbar" role="region" aria-label="Bulk actions"><span class="msg">${sel.size} selected</span>
+      <label class="sr" for="bulkRole">Change role of selected</label>
+      <select class="field" id="bulkRole" style="height:30px"><option value="">Change role…</option><option>Admin</option><option>Editor</option><option>Viewer</option></select>
+      <button class="btn" data-act="bulkRemove" style="color:var(--danger)">Remove ${sel.size} ${sel.size===1?'person':'people'}…</button>
+      <button class="btn ghost" data-act="clearSel">Clear selection</button></div>`;
+    if(allPage && all.length>rows.length && sel.size<all.length) top += `<div class="selnote">All ${rows.length} on this page are selected. <button class="link" data-act="selAll">Select all ${all.length} matching members</button></div>`;
+    else if(sel.size===all.length && all.length>rows.length) top += `<div class="selnote">All ${all.length} matching members are selected. <button class="link" data-act="clearSel">Clear selection</button></div>`;
+  }
+  const th = (k,t)=>`<th aria-sort="${S.sort===k?(S.dir==='asc'?'ascending':'descending'):'none'}"><button data-sort="${k}">${t} ${S.sort===k?(S.dir==='asc'?'↑':'↓'):''}</button></th>`;
+  const head = `<tr>${canAct?`<th class="c-chk"><input type="checkbox" id="selPage" aria-label="Select all ${rows.length} members on this page" ${allPage?'checked':''}></th>`:'<th class="c-chk"></th>'}${th('name','Member')}${th('role','Role')}<th>Status</th><th>Sign-in</th>${th('last','Last active')}<th class="c-act"><span class="sr">Actions</span></th></tr>`;
+  card.innerHTML = top + tableShell(rows.map(row).join(''), head) +
+   `<div class="foot"><span class="num">Showing ${(S.page-1)*PAGE+1}–${(S.page-1)*PAGE+rows.length} of ${all.length}</span><span class="pg"><button class="btn" data-pg="-1" ${S.page<=1?'disabled':''}>Previous</button><span class="num">Page ${S.page} of ${pages}</span><button class="btn" data-pg="1" ${S.page>=pages?'disabled':''}>Next</button></span></div>`;
+  const sp=$('#selPage'); if(sp) sp.indeterminate = pageSel>0 && !allPage;
+  flashIds=new Set();
+}
+function tableShell(body,head){
+  head = head || `<tr><th class="c-chk"></th><th>Member</th><th>Role</th><th>Status</th><th>Sign-in</th><th>Last active</th><th class="c-act"></th></tr>`;
+  return `<div class="scroll"><table><caption class="sr">Workspace members</caption><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+}
+const SRC = {scim:['Okta (SCIM)','Role set by Okta group'],jit:['SSO first sign-in','Role managed here'],invite:['Invitation','Not signed in yet']};
+function row(m){
+  const admin = isAdmin(), lock = lockReason(m);
+  let roleCell;
+  if(!admin) roleCell = `<span>${m.role}</span>`;
+  else if(lock) roleCell = `<span class="lock" tabindex="0" data-tip="${esc(lock)}" aria-label="${m.role}. ${esc(lock)}">${ico.lock} ${m.role}</span>`;
+  else roleCell = `<select class="role" data-role="${m.id}" aria-label="Role for ${esc(label(m))}">${['Admin','Editor','Viewer'].map(r=>`<option ${r===m.role?'selected':''}>${r}</option>`).join('')}</select>`;
+  const lastCell = m.status==='invited' ? '<span style="color:var(--text-3)">—</span>' :
+     m.last==null ? '<span style="color:var(--text-3)" title="This person has never opened the workspace">Never signed in</span>' :
+     `<span title="${abs(NOW-m.last*60000)}">${rel(m.last)}</span>`;
+  const st = m.status==='invited'
+    ? `<span class="st invited"><i></i>Invitation pending</span><span class="sub2" title="${abs(m.invitedAt)}">Sent ${rel(Math.round((NOW-m.invitedAt)/60000))} · expires in ${Math.max(1,14-Math.round((NOW-m.invitedAt)/864e5))} d</span>`
+    : `<span class="st active"><i></i>Active</span>`;
+  const s=SRC[m.src];
+  return `<tr class="${sel.has(m.id)?'sel':''} ${flashIds.has(m.id)?'flash':''}" data-id="${m.id}">
+    <td class="c-chk">${admin?`<input type="checkbox" data-sel="${m.id}" ${sel.has(m.id)?'checked':''} aria-label="Select ${esc(label(m))}">`:''}</td>
+    <td><div class="person"><span class="av" style="background:${color(m)}" aria-hidden="true">${esc(initials(m))}</span>
+      <span class="who"><span class="n" title="${esc(label(m))}">${esc(m.name||m.email)}${m.self?'<span class="you">You</span>':''}</span>${m.name?`<span class="e" title="${esc(m.email)}">${esc(m.email)}</span>`:'<span class="e">Name appears after first sign-in</span>'}</span></div></td>
+    <td>${roleCell}</td><td>${st}</td>
+    <td>${s[0]}<span class="sub2">${s[1]}</span></td>
+    <td class="num">${lastCell}</td>
+    <td class="c-act">${admin?`<button class="iconbtn" data-menu="${m.id}" aria-haspopup="menu" aria-label="Actions for ${esc(label(m))}">${ico.dots}</button>`:''}</td></tr>`;
+}
+function skipInfo(list){ // rows a bulk action can't apply to
+  return list.filter(m=>m.self || m.role==='Owner');
+}
+
+/* ---------- toasts ---------- */
+function toast(msg,actLabel,fn,ms=9000){
+  const t=document.createElement('div'); t.className='toast';
+  t.innerHTML=`<span>${msg}</span>`;
+  if(actLabel){const b=document.createElement('button');b.textContent=actLabel;b.onclick=()=>{fn();t.remove()};t.append(b)}
+  $('#toasts').append(t); setTimeout(()=>t.remove(),ms);
+}
+
+/* ---------- dialogs ---------- */
+let lastFocus=null;
+function openDlg(html,onKey){
+  lastFocus=document.activeElement;
+  const o=$('#overlay'); o.innerHTML=`<div class="scrim"><div class="dlg" role="dialog" aria-modal="true">${html}</div></div>`;
+  const d=o.querySelector('.dlg');
+  const labelEl=d.querySelector('h2'); if(labelEl){labelEl.id='dlgT'; d.setAttribute('aria-labelledby','dlgT')}
+  o.firstChild.addEventListener('mousedown',e=>{if(e.target===o.firstChild)closeDlg()});
+  d.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){e.stopPropagation();closeDlg()}
+    if(e.key==='Tab'){const f=[...d.querySelectorAll('button:not(:disabled),input,select,textarea,[tabindex="0"]')].filter(x=>x.offsetParent);const a=f[0],z=f[f.length-1];
+      if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus()}else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}}
+  });
+  return d;
+}
+function closeDlg(){ $('#overlay').innerHTML=''; if(lastFocus&&document.contains(lastFocus)) lastFocus.focus(); }
+function confirmDlg({title,body,confirm,danger,onOk}){
+  const d=openDlg(`<header><h2>${title}</h2></header><div class="body">${body}</div><footer><button class="btn" data-x="cancel">Cancel</button><button class="btn ${danger?'danger':'primary'}" data-x="ok">${confirm}</button></footer>`);
+  d.querySelector('[data-x=cancel]').onclick=closeDlg;
+  d.querySelector('[data-x=ok]').onclick=()=>{closeDlg();onOk()};
+  d.querySelector('[data-x=cancel]').focus(); // safe default
+}
+
+/* ---------- actions ---------- */
+function setRole(list,newRole,quiet){
+  const prev = list.map(m=>[m,m.role]);
+  list.forEach(m=>m.role=newRole);
+  flashIds=new Set(list.map(m=>m.id)); render();
+  if(!quiet) toast(list.length===1?`${esc(label(list[0]))} is now ${newRole}`:`${list.length} people changed to ${newRole}`,'Undo',()=>{prev.forEach(([m,r])=>m.role=r);flashIds=new Set(list.map(m=>m.id));render()});
+}
+function changeRole(id,newRole){
+  const m=members.find(x=>x.id===id);
+  if(m.self && newRole!=='Admin'){
+    render();
+    return confirmDlg({title:`Change your own role to ${newRole}?`,body:`<p>You’ll lose access to Members, SSO and billing settings as soon as you confirm. Only another Admin or Owner can restore it.</p>`,confirm:`Change my role to ${newRole}`,danger:true,onOk:()=>setRole([m],newRole)});
+  }
+  setRole([m],newRole);
+}
+function removeOne(id){
+  const m=members.find(x=>x.id===id);
+  const pending=m.status==='invited';
+  if(pending){ // revoking an unaccepted invite is low-risk: undoable
+    return doRemove([m],`Invitation to ${esc(m.email)} revoked`);
+  }
+  const scim = m.src==='scim';
+  confirmDlg({
+    title:`Remove ${esc(label(m))} from Acme?`,
+    body:`<p><b>${esc(m.email)}</b> will lose access to the workspace immediately and be signed out of all sessions.</p><p>Their content stays and is reassigned to you. Their Okta account isn’t affected.${scim?' <b>They’re synced from Okta, so they’ll be added back on the next sync unless you also unassign them from the Acme app in Okta.</b>':''}</p>`,
+    confirm:`Remove ${esc(m.name?m.name.split(' ')[0]:m.email)}`,danger:true,
+    onOk:()=>doRemove([m],`${esc(label(m))} removed from the workspace`)});
+}
+function doRemove(list,msg){
+  const snap=list.map(m=>[members.indexOf(m),m]).sort((a,b)=>a[0]-b[0]);
+  list.forEach(m=>{members.splice(members.indexOf(m),1);sel.delete(m.id)});
+  render();
+  toast(msg,'Undo',()=>{snap.forEach(([i,m])=>members.splice(i,0,m));flashIds=new Set(list.map(m=>m.id));render()},12000);
+}
+function bulkRemove(){
+  const list=[...sel].map(id=>members.find(m=>m.id===id)).filter(Boolean);
+  const skip=skipInfo(list), go=list.filter(m=>!skip.includes(m));
+  if(!go.length) return toast('Nothing to remove: your own account and Owners can’t be removed here.');
+  const act=go.filter(m=>m.status==='active').length, pen=go.length-act;
+  const scim=go.filter(m=>m.src==='scim').length;
+  confirmDlg({
+    title:`Remove ${go.length} ${go.length===1?'person':'people'} from Acme?`,
+    body:`<p>${act?`<b>${act} active ${act===1?'member':'members'}</b> will lose access immediately and be signed out.`:''}${pen?` ${pen} pending ${pen===1?'invitation':'invitations'} will be revoked.`:''}</p>${scim?`<p>${scim} synced from Okta will be added back on the next sync unless you unassign them from the Acme app in Okta.</p>`:''}${skip.length?`<p><b>${skip.length} will be skipped:</b> ${skip.map(m=>esc(label(m))).slice(0,3).join(', ')}${skip.length>3?'…':''} (your own account and Owners can’t be removed here).</p>`:''}`,
+    confirm:`Remove ${go.length} ${go.length===1?'person':'people'}`,danger:true,
+    onOk:()=>doRemove(go,`${go.length} removed${skip.length?` · ${skip.length} skipped`:''}`)});
+}
+function bulkRole(role){
+  const list=[...sel].map(id=>members.find(m=>m.id===id)).filter(Boolean);
+  const go=list.filter(m=>!m.self&&m.role!=='Owner'&&m.src!=='scim'&&m.role!==role);
+  const locked=list.filter(m=>m.src==='scim'&&m.role!=='Owner').length, other=list.length-go.length;
+  if(!go.length) return toast(`No change: ${locked?`${locked} get their role from Okta groups. `:''}Others already have this role or can’t be changed here.`);
+  const apply=()=>{ setRole(go,role,true); toast(`${go.length} changed to ${role}${other?` · ${other} skipped${locked?` (${locked} managed by Okta)`:''}`:''}`,'Undo',()=>{prevRoles.forEach(([m,r])=>m.role=r);render()}); };
+  const prevRoles=go.map(m=>[m,m.role]);
+  if(role==='Admin') confirmDlg({title:`Make ${go.length} ${go.length===1?'person':'people'} Admin?`,body:`<p>Admins can invite and remove members and change SSO and security settings.${other?` ${other} selected will be skipped (managed by Okta, already ${role}, or can’t be changed here).`:''}</p>`,confirm:`Make ${go.length} Admin`,onOk:apply});
+  else apply();
+}
+
+/* ---------- row menu ---------- */
+let menuEl=null,menuOpener=null;
+function closeMenu(){ if(menuEl){menuEl.remove();menuEl=null; if(menuOpener&&document.contains(menuOpener))menuOpener.focus(); menuOpener=null} }
+function openMenu(btn,id){
+  closeMenu(); menuOpener=btn;
+  const m=members.find(x=>x.id===id);
+  const items=[];
+  if(m.status==='invited'){
+    items.push(['Resend invitation',()=>toast(`Invitation resent to ${esc(m.email)}`)]);
+    items.push(['Copy invitation link',()=>{navigator.clipboard?.writeText(`https://app.acme.com/join/${btoa(m.email).slice(0,12)}`);toast('Invitation link copied. It works only for '+esc(m.email)+'.')}]);
+    items.push('hr',['Revoke invitation',()=>removeOne(id),'dng']);
+  } else {
+    items.push(['Copy email',()=>{navigator.clipboard?.writeText(m.email);toast('Email copied')}]);
+    items.push(['View activity in audit log',()=>toast('Opens the audit log filtered to this person (not part of this prototype).')]);
+    items.push('hr');
+    if(m.self) items.push(['Remove from workspace',null,'dng','You can’t remove yourself here. Ask another Admin.']);
+    else if(m.role==='Owner') items.push(['Remove from workspace',null,'dng','Owners can’t be removed. Transfer ownership first.']);
+    else items.push(['Remove from workspace',()=>removeOne(id),'dng']);
+  }
+  menuEl=document.createElement('div'); menuEl.className='menu'; menuEl.setAttribute('role','menu');
+  items.forEach(it=>{
+    if(it==='hr') return menuEl.append(document.createElement('hr'));
+    const b=document.createElement('button'); b.setAttribute('role','menuitem'); b.textContent=it[0]; if(it[2])b.className=it[2];
+    if(!it[1]){b.setAttribute('aria-disabled','true');}
+    b.onclick=()=>{ if(!it[1])return; const f=it[1]; menuOpener=null; menuEl.remove(); menuEl=null; f(); };
+    menuEl.append(b);
+    if(it[3]){const w=document.createElement('div');w.className='why';w.textContent=it[3];menuEl.append(w)}
+  });
+  document.body.append(menuEl);
+  const r=btn.getBoundingClientRect();
+  menuEl.style.top=Math.min(r.bottom+4,innerHeight-menuEl.offsetHeight-8)+'px';
+  menuEl.style.left=Math.max(8,r.right-menuEl.offsetWidth)+'px';
+  menuEl.querySelector('button').focus();
+  menuEl.addEventListener('keydown',e=>{
+    const bs=[...menuEl.querySelectorAll('button')],i=bs.indexOf(document.activeElement);
+    if(e.key==='ArrowDown'){e.preventDefault();bs[(i+1)%bs.length].focus()}
+    if(e.key==='ArrowUp'){e.preventDefault();bs[(i-1+bs.length)%bs.length].focus()}
+    if(e.key==='Escape'||e.key==='Tab'){e.preventDefault();closeMenu()}
+  });
+}
+
+/* ---------- invite dialog ---------- */
+function openInvite(){
+  if(!isAdmin()) return;
+  let chips=[], role='Editor', busy=false;
+  const used=()=>members.length;
+  const d=openDlg(`<header><h2>Invite members</h2></header>
+   <div class="body">
+    <p style="margin-bottom:0">They’ll get an email and sign in through Okta. Only <b>acme.com</b> and <b>acme.io</b> addresses work.</p>
+    <label class="l" for="invIn">Email addresses</label>
+    <div class="chips" id="chips"><input id="invIn" placeholder="name@acme.com — paste several, separated by commas or lines" aria-describedby="invHint invErr"></div>
+    <div class="hint" id="invHint"></div>
+    <ul class="errs" id="invErr" role="alert"></ul>
+    <fieldset style="border:0;padding:0;margin:0"><legend class="l" style="padding:0">Role</legend>
+      ${['Admin','Editor','Viewer'].map(r=>`<label class="roleopt"><input type="radio" name="irole" value="${r}" ${r===role?'checked':''}><span><b>${r}</b><small>${ROLES[r].d}</small></span></label>`).join('')}
+    </fieldset>
+   </div>
+   <footer><button class="btn" data-x="cancel">Cancel</button><button class="btn primary" data-x="send" disabled>Send invitations</button></footer>`);
+  const inp=d.querySelector('#invIn'),box=d.querySelector('#chips'),errs=d.querySelector('#invErr'),send=d.querySelector('[data-x=send]'),hint=d.querySelector('#invHint');
+  const validate=e=>{
+    if(!/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(e)) return 'isn’t a valid email address.';
+    if(!DOMAINS.includes(e.split('@')[1].toLowerCase())) return `isn’t on a verified SSO domain (${DOMAINS.join(', ')}), so they couldn’t sign in. Add the domain under Single sign-on.`;
+    const ex=members.find(m=>m.email.toLowerCase()===e.toLowerCase());
+    if(ex) return ex.status==='invited'?'already has a pending invitation.':'is already a member.';
+    return '';
+  };
+  const draw=()=>{
+    box.querySelectorAll('.chip').forEach(c=>c.remove());
+    chips.forEach((c,i)=>{const s=document.createElement('span');s.className='chip'+(c.err?' bad':'');s.innerHTML=`<span title="${esc(c.e)}">${esc(c.e)}</span><button type="button" aria-label="Remove ${esc(c.e)} from this invitation">${ico.x}</button>`;s.querySelector('button').onclick=()=>{chips.splice(i,1);draw();inp.focus()};box.insertBefore(s,inp)});
+    const bad=chips.filter(c=>c.err), ok=chips.length-bad.length;
+    errs.innerHTML=bad.map(c=>`<li>${ico.warn}<span><b>${esc(c.e)}</b> ${c.err}</span></li>`).join('');
+    const left=SEATS-used();
+    const over=ok>left;
+    if(over) errs.innerHTML+=`<li>${ico.warn}<span>Only ${left} ${left===1?'seat is':'seats are'} free. Remove ${ok-left} address${ok-left>1?'es':''} or add seats in Billing &amp; seats.</span></li>`;
+    hint.textContent = chips.length? `${ok} valid · ${left} seats free` : `${left} seats free. Press Enter after each address.`;
+    send.disabled = busy || !ok || bad.length>0 || over;
+    send.textContent = ok? `Send ${ok} ${ok===1?'invitation':'invitations'}` : 'Send invitations';
+  };
+  const take=()=>{
+    inp.value.split(/[\s,;]+/).map(s=>s.trim()).filter(Boolean).forEach(e=>{
+      const dup=chips.some(c=>c.e.toLowerCase()===e.toLowerCase());
+      if(!dup) chips.push({e,err:validate(e)});
+    });
+    inp.value=''; draw();
+  };
+  inp.addEventListener('keydown',e=>{
+    if(['Enter',',',' '].includes(e.key) && inp.value.trim()){e.preventDefault();take()}
+    else if(e.key==='Enter' && !inp.value.trim() && !send.disabled){e.preventDefault();send.click()}
+    else if(e.key==='Backspace' && !inp.value && chips.length){chips.pop();draw()}
+  });
+  inp.addEventListener('paste',()=>setTimeout(take));
+  inp.addEventListener('blur',()=>{ if(inp.value.trim()) take() });
+  box.addEventListener('click',()=>inp.focus());
+  d.querySelectorAll('[name=irole]').forEach(r=>r.onchange=()=>role=r.value);
+  d.querySelector('[data-x=cancel]').onclick=closeDlg;
+  send.onclick=()=>{
+    if(inp.value.trim()) take();
+    if(send.disabled) return;
+    busy=true; send.disabled=true; send.textContent='Sending…';
+    setTimeout(()=>{
+      const ids=[]; chips.forEach(c=>{const before=uid; add(null,c.e.toLowerCase(),role,'invited','invite',null,{invitedAt:Date.now()}); ids.push(before)});
+      closeDlg(); S.q='';S.role='';S.status='invited';S.src='';S.page=1;S.sort='name';sel.clear(); flashIds=new Set(ids); render();
+      toast(`${ids.length} ${ids.length===1?'invitation':'invitations'} sent as ${role}`,'Undo',()=>{ids.forEach(id=>{const i=members.findIndex(m=>m.id===id);if(i>-1)members.splice(i,1)});render()});
+    },500);
+  };
+  draw(); inp.focus();
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{
+  const t=e.target;
+  if(menuEl && !t.closest('.menu')) closeMenu();
+  const a=t.closest('[data-act]')?.dataset.act;
+  if(a==='retry'){S.state='loading';render();setTimeout(()=>{S.state='ok';render()},900)}
+  if(a==='clear') clearFilters();
+  if(a==='invite') openInvite();
+  if(a==='clearSel'){sel.clear();render()}
+  if(a==='selAll'){filtered().forEach(m=>sel.add(m.id));render()}
+  if(a==='bulkRemove') bulkRemove();
+  const mb=t.closest('[data-menu]'); if(mb){e.stopPropagation(); openMenu(mb,+mb.dataset.menu)}
+  const so=t.closest('[data-sort]'); if(so){const k=so.dataset.sort; if(S.sort===k)S.dir=S.dir==='asc'?'desc':'asc'; else{S.sort=k;S.dir=k==='last'?'asc':'asc'} S.page=1; render()}
+  const pg=t.closest('[data-pg]'); if(pg){S.page+=+pg.dataset.pg; render(); $('#card').scrollIntoView({block:'nearest'})}
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset.role) changeRole(+t.dataset.role,t.value);
+  if(t.dataset.sel){t.checked?sel.add(+t.dataset.sel):sel.delete(+t.dataset.sel);render()}
+  if(t.id==='selPage'){const rows=filtered().slice((S.page-1)*PAGE,S.page*PAGE);rows.forEach(m=>t.checked?sel.add(m.id):sel.delete(m.id));render()}
+  if(t.id==='bulkRole'&&t.value){const v=t.value;t.value='';bulkRole(v)}
+});
+$('#inviteBtn').addEventListener('click',e=>{ if(isAdmin()) openInvite(); });
+let qt; $('#q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(()=>{S.q=e.target.value;S.page=1;render()},150)});
+[['#fRole','role'],['#fStatus','status'],['#fSrc','src']].forEach(([s,k])=>$(s).addEventListener('change',e=>{S[k]=e.target.value;S.page=1;render()}));
+function clearFilters(){S.q=S.role=S.status=S.src='';S.page=1;render()}
+$('#clearF').onclick=clearFilters;
+$('#devAs').onchange=e=>{S.as=e.target.value;sel.clear();render()};
+$('#devState').onchange=e=>{
+  const v=e.target.value;
+  if(S.state==='empty'||v==='empty') location.href=location.pathname+(v==='ok'?'':'?state='+v); // reseed data
+  else {S.state=v;render(); if(v==='loading') setTimeout(()=>{ if(S.state==='loading'){S.state='ok';render()} },2500)}
+};
+document.addEventListener('keydown',e=>{
+  if(e.target.closest('input,textarea,select,[role=dialog]')||e.metaKey||e.ctrlKey||e.altKey||$('#overlay').firstChild) return;
+  if(e.key==='/'){e.preventDefault();$('#q').focus()}
+  if(e.key.toLowerCase()==='i'&&isAdmin()){e.preventDefault();openInvite()}
+});
+window.addEventListener('beforeunload',()=>{});
+window.addEventListener('scroll',closeMenu,{passive:true});
+
+if(S.state==='empty'){ members.length=0; members.push({id:999,name:'Priya Raman',email:'priya.raman@acme.com',role:'Owner',status:'active',src:'jit',last:2,invitedAt:null,self:true}); }
+render();
+})();
+</script>
+</body>
+</html>

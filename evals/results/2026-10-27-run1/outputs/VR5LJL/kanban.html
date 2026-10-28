@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support ticket board</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f4f5f7; --surface: #ffffff; --col: #e8eaef;
+    --text: #1a1d23; --muted: #4a5160; --border: #7d8596;
+    --primary: #0b5fd6; --on-primary: #ffffff; --focus: #0b5fd6;
+    --danger: #b3261e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171c; --surface: #1f242c; --col: #1a1e25;
+      --text: #eef0f4; --muted: #b4bbc8; --border: #7d8596;
+      --primary: #8ab4ff; --on-primary: #0a0f1a; --focus: #8ab4ff;
+      --danger: #ffb4ab;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 1rem/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 90rem; margin: 0 auto; padding: 1rem; }
+  h1 { font-size: 1.5rem; margin: 0 0 .5rem; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden;
+        clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+
+  details { margin: 0 0 1rem; color: var(--muted); }
+  summary { cursor: pointer; color: var(--text); min-height: 2rem; }
+  details ul { margin: .5rem 0; padding-left: 1.25rem; }
+
+  .add { display: flex; flex-wrap: wrap; gap: .75rem; align-items: flex-end; margin-bottom: 1.25rem; }
+  .field { display: flex; flex-direction: column; gap: .25rem; }
+  .field label { font-weight: 600; }
+  input[type=text], select { min-height: 2.75rem; padding: .25rem .625rem; background: var(--surface);
+        border: 2px solid var(--border); border-radius: .375rem; }
+  input[type=text] { min-width: min(20rem, 100%); }
+  input[aria-invalid=true] { border-color: var(--danger); }
+  .error { color: var(--danger); font-weight: 600; margin: 0; }
+  .btn { min-height: 2.75rem; padding: .25rem 1rem; border-radius: .375rem; font-weight: 600;
+         background: var(--primary); color: var(--on-primary); border: 2px solid var(--primary); }
+  .btn.secondary { background: transparent; color: var(--text); border-color: var(--border); }
+
+  .board { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); align-items: start; }
+  .column { background: var(--col); border: 2px solid var(--border); border-radius: .5rem; padding: .75rem; min-height: 8rem; }
+  .column h2 { font-size: 1.125rem; margin: 0 0 .75rem; display: flex; justify-content: space-between; gap: .5rem; }
+  .count { font-weight: 400; color: var(--muted); }
+  .cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .625rem; min-height: 3rem; }
+  .empty { margin: 0; color: var(--muted); font-style: italic; }
+
+  .card { background: var(--surface); border: 2px solid var(--border); border-radius: .5rem; padding: .5rem; }
+  .card.is-grabbed { border-style: dashed; border-width: 3px; box-shadow: 0 0 0 2px var(--focus); }
+  .card.dragging { opacity: .45; }
+  .grab { display: flex; gap: .5rem; align-items: flex-start; width: 100%; min-height: 2.75rem; text-align: left;
+          background: none; border: 0; padding: .25rem; border-radius: .25rem; touch-action: none; cursor: grab; }
+  .grip { font-size: 1.25rem; line-height: 1.2; color: var(--muted); }
+  .tid { font-weight: 700; white-space: nowrap; }
+  .ttl { overflow-wrap: anywhere; }
+  .meta { margin: .25rem .25rem .5rem 2rem; color: var(--muted); font-size: .9375rem; display: flex; gap: .75rem; flex-wrap: wrap; }
+  .prio { font-weight: 600; color: var(--text); }
+  .hint { display: none; margin: 0 .25rem .5rem 2rem; font-weight: 600; }
+  .is-grabbed .hint { display: block; }
+  .move { margin-left: 2rem; min-height: 2.75rem; min-width: 2.75rem; padding: .25rem .75rem; background: transparent;
+          border: 2px solid var(--border); border-radius: .375rem; }
+  .move:hover, .btn:hover { filter: brightness(1.1); }
+
+  .marker { height: 3rem; border: 3px dashed var(--focus); border-radius: .5rem; }
+  .ghost { position: fixed; z-index: 1000; pointer-events: none; margin: 0; box-shadow: 0 8px 24px rgb(0 0 0 / .35); transform: rotate(1.5deg); }
+  body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select: none; }
+
+  dialog { background: var(--surface); color: var(--text); border: 2px solid var(--border); border-radius: .5rem; padding: 1.25rem; max-width: min(24rem, calc(100vw - 2rem)); }
+  dialog::backdrop { background: rgb(0 0 0 / .6); }
+  dialog h2 { margin: 0 0 .75rem; font-size: 1.125rem; overflow-wrap: anywhere; }
+  fieldset { border: 0; margin: 0 0 1rem; padding: 0; }
+  legend { font-weight: 600; margin-bottom: .25rem; }
+  .radio { display: flex; align-items: center; gap: .625rem; min-height: 2.75rem; }
+  .radio input { width: 1.375rem; height: 1.375rem; margin: 0; accent-color: var(--primary); }
+  .actions { display: flex; gap: .75rem; justify-content: flex-end; }
+
+  @media (forced-colors: active) {
+    .card.is-grabbed, .marker { outline: 3px solid Highlight; }
+    .btn { border-color: ButtonText; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Support ticket board</h1>
+    <details>
+      <summary>How to move tickets</summary>
+      <ul>
+        <li><strong>Mouse or touch:</strong> drag a ticket by its title row and drop it in any column.</li>
+        <li><strong>Keyboard or screen reader:</strong> focus a ticket's title button and press Space or Enter to pick it up. Left and Right arrows change column, Up and Down reorder, Home and End jump to top or bottom. Press Space or Enter to drop, or Escape to cancel.</li>
+        <li><strong>No dragging:</strong> every ticket has a Move button that opens a dialog to choose a column.</li>
+      </ul>
+    </details>
+  </header>
+
+  <main>
+    <form class="add" id="add-form" novalidate aria-label="Add a ticket">
+      <div class="field">
+        <label for="new-title">New ticket title</label>
+        <input type="text" id="new-title" autocomplete="off" aria-describedby="new-error">
+      </div>
+      <div class="field">
+        <label for="new-prio">Priority</label>
+        <select id="new-prio">
+          <option value="Low">Low</option>
+          <option value="Medium" selected>Medium</option>
+          <option value="High">High</option>
+        </select>
+      </div>
+      <button class="btn" type="submit">Add ticket</button>
+      <p class="error" id="new-error" hidden>Enter a title for the ticket.</p>
+    </form>
+
+    <div class="board" id="board"></div>
+  </main>
+</div>
+
+<p class="sr" id="kb-short">Press Space to pick up, then use arrow keys to move.</p>
+<div class="sr" id="live" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<dialog id="move-dialog" aria-labelledby="move-title">
+  <form method="dialog" id="move-form">
+    <h2 id="move-title">Move ticket</h2>
+    <fieldset>
+      <legend>Move to column</legend>
+      <div id="move-options"></div>
+    </fieldset>
+    <div class="actions">
+      <button class="btn secondary" type="button" id="move-cancel">Cancel</button>
+      <button class="btn" type="submit">Move</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  const COLS = [['new', 'New'], ['progress', 'In progress'], ['waiting', 'Waiting'], ['done', 'Done']]
+    .map(([id, name]) => ({ id, name }));
+  const PRIO = { High: '▲', Medium: '■', Low: '▼' };   // shape + text, never colour alone
+  const tickets = new Map();
+  const order = { new: [], progress: [], waiting: [], done: [] };
+  let seq = 100;
+
+  const $ = (s, r = document) => r.querySelector(s);
+  const board = $('#board'), live = $('#live'), dialog = $('#move-dialog');
+
+  function h(tag, attrs = {}, ...kids) {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    el.append(...kids);
+    return el;
+  }
+  function addTicket(title, priority, assignee, col) {
+    const id = 'TCK-' + (++seq);
+    tickets.set(id, { id, title, priority, assignee });
+    order[col].push(id);
+    return id;
+  }
+  const locate = id => {
+    for (const c of COLS) { const i = order[c.id].indexOf(id); if (i > -1) return { col: c.id, idx: i }; }
+  };
+  const colName = id => COLS.find(c => c.id === id).name;
+  function place(id, col, idx) {
+    const at = locate(id);
+    order[at.col].splice(at.idx, 1);
+    order[col].splice(idx, 0, id);
+  }
+  const where = id => { const { col, idx } = locate(id);
+    return `${colName(col)}, position ${idx + 1} of ${order[col].length}`; };
+  function announce(msg) {
+    live.textContent = '';
+    setTimeout(() => { live.textContent = msg; }, 40);
+  }
+
+  // ---------- rendering ----------
+  function cardEl(id, grabbedId) {
+    const t = tickets.get(id), isG = grabbedId === id;
+    const li = h('li', { class: 'card' + (isG ? ' is-grabbed' : ''), 'data-id': id });
+    const grab = h('button', {
+      class: 'grab', type: 'button', 'aria-pressed': String(isG),
+      'aria-roledescription': 'draggable ticket', 'aria-describedby': 'kb-short'
+    },
+      h('span', { class: 'grip', 'aria-hidden': 'true' }, '⠿'),
+      h('span', {}, h('span', { class: 'tid' }, id), h('span', { class: 'sr' }, ': '), ' ',
+        h('span', { class: 'ttl' }, t.title)));
+    const meta = h('p', { class: 'meta' },
+      h('span', { class: 'prio' }, h('span', { 'aria-hidden': 'true' }, PRIO[t.priority] + ' '),
+        h('span', { class: 'sr' }, 'Priority: '), t.priority),
+      h('span', {}, t.assignee));
+    const hint = h('p', { class: 'hint' }, 'Grabbed. Arrow keys move, Space drops, Escape cancels.');
+    const move = h('button', { class: 'move', type: 'button' }, 'Move…');
+    move.append(h('span', { class: 'sr' }, ` ${id} to another column`));
+    li.append(grab, meta, hint, move);
+    return li;
+  }
+  function render(focus) {
+    const gid = grabbed && grabbed.id;
+    board.replaceChildren(...COLS.map(c => {
+      const n = order[c.id].length;
+      const sec = h('section', { class: 'column', 'data-col': c.id, 'aria-labelledby': 'h-' + c.id });
+      sec.append(h('h2', { id: 'h-' + c.id }, c.name,
+        h('span', { class: 'count' }, String(n), h('span', { class: 'sr' }, n === 1 ? ' ticket' : ' tickets'))));
+      const ul = h('ul', { class: 'cards', 'aria-labelledby': 'h-' + c.id });
+      ul.append(...order[c.id].map(id => cardEl(id, gid)));
+      sec.append(ul);
+      const empty = h('p', { class: 'empty' }, 'No tickets');
+      empty.hidden = n > 0;
+      sec.append(empty);
+      return sec;
+    }));
+    if (focus) $(`[data-id="${focus.id}"] .${focus.what}`, board)?.focus();
+  }
+
+  // ---------- keyboard grab / move ----------
+  let grabbed = null;   // { id, from: {col, idx}, snapshot }
+  function drop(silent) {
+    if (!grabbed) return;
+    const id = grabbed.id; grabbed = null;
+    render();
+    if (!silent) announce(`Dropped ${id} in ${where(id)}.`);
+  }
+  function cancelGrab() {
+    const { id, from } = grabbed; grabbed = null;
+    place(id, from.col, from.idx);
+    render({ id, what: 'grab' });
+    announce(`Move cancelled. ${id} returned to ${where(id)}.`);
+  }
+  function kbMove(key) {
+    const id = grabbed.id, { col, idx } = locate(id);
+    const ci = COLS.findIndex(c => c.id === col), len = order[col].length;
+    let nc = ci, ni = idx;
+    if (key === 'ArrowLeft') nc = Math.max(0, ci - 1);
+    if (key === 'ArrowRight') nc = Math.min(COLS.length - 1, ci + 1);
+    if (nc !== ci) ni = Math.min(idx, order[COLS[nc].id].length);
+    if (key === 'ArrowUp') ni = Math.max(0, idx - 1);
+    if (key === 'ArrowDown') ni = Math.min(len - 1, idx + 1);
+    if (key === 'Home') ni = 0;
+    if (key === 'End') ni = len - 1;
+    if (nc === ci && ni === idx) {
+      announce(key === 'ArrowLeft' ? 'Already in the first column.' : key === 'ArrowRight' ? 'Already in the last column.'
+        : key === 'ArrowUp' || key === 'Home' ? 'Already at the top.' : 'Already at the bottom.');
+      return;
+    }
+    place(id, COLS[nc].id, ni);
+    render({ id, what: 'grab' });
+    announce(`${id} now in ${where(id)}.`);
+  }
+
+  board.addEventListener('click', e => {
+    if (suppressClick) return;
+    const grab = e.target.closest('.grab'), mv = e.target.closest('.move');
+    if (grab) {
+      const id = grab.closest('.card').dataset.id;
+      if (grabbed && grabbed.id === id) return drop();
+      if (grabbed) drop(true);
+      grabbed = { id, from: locate(id) };
+      render({ id, what: 'grab' });
+      announce(`Picked up ${id}, ${tickets.get(id).title}. Currently in ${where(id)}. Use arrow keys to move, Space to drop, Escape to cancel.`);
+    } else if (mv) openMove(mv.closest('.card').dataset.id);
+  });
+  board.addEventListener('keydown', e => {
+    const grab = e.target.closest('.grab');
+    if (!grab || !grabbed || grabbed.id !== grab.closest('.card').dataset.id) return;
+    if (e.key === 'Escape') { e.preventDefault(); cancelGrab(); }
+    else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) {
+      e.preventDefault(); kbMove(e.key);
+    }
+  });
+  // Tabbing or clicking away while holding a ticket drops it where it is.
+  board.addEventListener('focusout', () => {
+    if (!grabbed) return;
+    setTimeout(() => {
+      const el = document.activeElement;
+      if (grabbed && !(el && el.matches('.grab') && el.closest('.card').dataset.id === grabbed.id)) drop();
+    }, 0);
+  });
+
+  // ---------- pointer drag ----------
+  let suppressClick = false;
+  board.addEventListener('pointerdown', e => {
+    const grab = e.target.closest('.grab');
+    if (!grab || e.button !== 0 || grabbed) return;
+    const card = grab.closest('.card'), id = card.dataset.id;
+    const sx = e.clientX, sy = e.clientY, rect = card.getBoundingClientRect();
+    let ghost = null, marker = null;
+
+    function begin() {
+      ghost = card.cloneNode(true);
+      ghost.classList.add('ghost'); ghost.setAttribute('aria-hidden', 'true');
+      ghost.style.width = rect.width + 'px';
+      document.body.append(ghost);
+      marker = h('li', { class: 'marker', 'aria-hidden': 'true' });
+      card.classList.add('dragging');
+      card.after(marker);
+      document.body.classList.add('is-dragging');
+    }
+    function onMove(ev) {
+      if (!ghost) { if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 6) return; begin(); }
+      ghost.style.left = (ev.clientX - (sx - rect.left)) + 'px';
+      ghost.style.top = (ev.clientY - (sy - rect.top)) + 'px';
+      const col = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('.column');
+      if (!col) return;
+      const ul = $('.cards', col);
+      const next = [...ul.querySelectorAll('.card:not(.dragging)')].find(c => {
+        const r = c.getBoundingClientRect(); return ev.clientY < r.top + r.height / 2;
+      });
+      next ? ul.insertBefore(marker, next) : ul.append(marker);
+    }
+    function cleanup() {
+      grab.removeEventListener('pointermove', onMove);
+      grab.removeEventListener('pointerup', onUp);
+      grab.removeEventListener('pointercancel', onCancel);
+      document.removeEventListener('keydown', onKey, true);
+      document.body.classList.remove('is-dragging');
+      ghost?.remove(); marker?.remove(); card.classList.remove('dragging');
+      try { grab.releasePointerCapture(e.pointerId); } catch {}
+    }
+    function onUp() {
+      if (!ghost) return cleanup();
+      const ul = marker.parentElement, col = ul.closest('.column').dataset.col;
+      const idx = [...ul.children].slice(0, [...ul.children].indexOf(marker))
+        .filter(c => c.classList.contains('card') && !c.classList.contains('dragging')).length;
+      cleanup();
+      suppressClick = true; setTimeout(() => { suppressClick = false; }, 0);
+      place(id, col, idx);
+      render({ id, what: 'grab' });
+      announce(`Dropped ${id} in ${where(id)}.`);
+    }
+    function onCancel() { cleanup(); if (ghost) announce('Drag cancelled.'); }
+    function onKey(ev) { if (ev.key === 'Escape') { ev.preventDefault(); suppressClick = true;
+      setTimeout(() => { suppressClick = false; }, 0); cleanup(); announce('Drag cancelled.'); } }
+
+    grab.setPointerCapture(e.pointerId);
+    grab.addEventListener('pointermove', onMove);
+    grab.addEventListener('pointerup', onUp);
+    grab.addEventListener('pointercancel', onCancel);
+    document.addEventListener('keydown', onKey, true);
+  });
+
+  // ---------- Move dialog (non-dragging alternative) ----------
+  let moving = null;
+  function openMove(id) {
+    moving = id;
+    const cur = locate(id).col;
+    $('#move-title').textContent = `Move ${id}: ${tickets.get(id).title}`;
+    $('#move-options').replaceChildren(...COLS.map(c => {
+      const input = h('input', { type: 'radio', name: 'dest', value: c.id, id: 'dest-' + c.id });
+      input.checked = c.id === cur;
+      return h('div', { class: 'radio' }, input,
+        h('label', { for: 'dest-' + c.id }, c.name + (c.id === cur ? ' (current)' : '')));
+    }));
+    dialog.showModal();
+  }
+  $('#move-cancel').addEventListener('click', () => dialog.close('cancel'));
+  $('#move-form').addEventListener('submit', () => {
+    const dest = $('input[name=dest]:checked', dialog)?.value;
+    if (dest && dest !== locate(moving).col) {
+      place(moving, dest, order[dest].length);
+      render({ id: moving, what: 'move' });
+      announce(`Moved ${moving} to ${where(moving)}.`);
+    }
+  });
+
+  // ---------- Add ticket ----------
+  $('#add-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const input = $('#new-title'), err = $('#new-error'), title = input.value.trim();
+    if (!title) {
+      err.hidden = false; input.setAttribute('aria-invalid', 'true'); input.focus();
+      return;
+    }
+    err.hidden = true; input.removeAttribute('aria-invalid');
+    const id = addTicket(title, $('#new-prio').value, 'Unassigned', 'new');
+    input.value = '';
+    render();
+    announce(`Added ${id} to ${where(id)}.`);
+    input.focus();
+  });
+
+  // ---------- seed data ----------
+  [['Login fails on mobile Safari', 'High', 'Priya N.', 'new'],
+   ['Invoice PDF missing company logo', 'Low', 'Unassigned', 'new'],
+   ['Refund not received after 10 days', 'High', 'Marcus L.', 'progress'],
+   ['Cannot change account email', 'Medium', 'Ana R.', 'progress'],
+   ['Export to CSV times out', 'Medium', 'Priya N.', 'waiting'],
+   ['Request: dark mode for dashboard', 'Low', 'Unassigned', 'waiting'],
+   ['Password reset email delayed', 'Medium', 'Marcus L.', 'done']]
+    .forEach(([t, p, a, c]) => addTicket(t, p, a, c));
+  render();
+})();
+</script>
+</body>
+</html>

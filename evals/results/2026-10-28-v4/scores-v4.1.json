@@ -1,0 +1,44 @@
+[
+  {
+    "code": "BDMHUE",
+    "case": "E11",
+    "condition": "v4.1",
+    "score": 11,
+    "max": 12
+  },
+  {
+    "code": "35CBN0",
+    "case": "E10",
+    "condition": "v4.1",
+    "score": 9,
+    "max": 9
+  },
+  {
+    "code": "H903KZ",
+    "case": "E10",
+    "condition": "v4.1",
+    "score": 9,
+    "max": 9
+  },
+  {
+    "code": "UY05RB",
+    "case": "E11",
+    "condition": "v4.1",
+    "score": 12,
+    "max": 12
+  },
+  {
+    "code": "ANTON1",
+    "case": "E13",
+    "condition": "v4.1",
+    "score": 5,
+    "max": 10
+  },
+  {
+    "code": "9RV05P",
+    "case": "E13",
+    "condition": "v4.1",
+    "score": 6,
+    "max": 10
+  }
+]

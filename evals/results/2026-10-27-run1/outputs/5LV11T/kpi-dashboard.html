@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manager KPI Dashboard</title>
+<style>
+/* Layout: global bar > app tabs > filter bar > KPI row > trend + attention list. Lightning-style conventions, original branding. */
+:root{
+  --brand:#0b62c4; --brand-dark:#084e9c; --brand-tint:#e8f1fb;
+  --bg:#f3f4f6; --surface:#fff; --line:#dcdfe4; --line-soft:#eceef1;
+  --ink:#1b2430; --ink-2:#4b5666; --ink-3:#6b7585;
+  --good:#1d7a46; --good-bg:#e4f4ea; --warn:#9a5b00; --warn-bg:#fdf1d9; --crit:#b3261e; --crit-bg:#fbe7e5;
+  --font:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 var(--font)}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.gbar{background:var(--brand);color:#fff;display:flex;align-items:center;gap:16px;padding:0 16px;height:44px}
+.gbar .logo{font-weight:700;letter-spacing:.2px}
+.gbar input{flex:1;max-width:420px;height:28px;border:0;border-radius:4px;padding:0 10px;background:rgba(255,255,255,.18);color:#fff}
+.gbar input::placeholder{color:#d6e6f8}
+.gbar .me{margin-left:auto;font-size:12px}
+.tabs{background:var(--surface);border-bottom:1px solid var(--line);display:flex;gap:4px;padding:0 16px;overflow-x:auto}
+.tabs a{padding:11px 12px;color:var(--ink-2);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+.tabs a[aria-current]{color:var(--ink);font-weight:600;border-color:var(--brand)}
+main{max-width:1280px;margin:0 auto;padding:16px}
+.head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+h1{font-size:20px;margin:0}
+.sub{color:var(--ink-3);font-size:12px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+select,.btn{height:30px;border:1px solid var(--line);background:var(--surface);border-radius:4px;padding:0 10px;cursor:pointer}
+.btn:hover,select:hover{background:var(--bg)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}.btn.primary:hover{background:var(--brand-dark)}
+.btn.danger{background:var(--crit);border-color:var(--crit);color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:4px}
+.card>header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line-soft)}
+.card h2{font-size:14px;margin:0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:12px}
+.kpi{padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi .label{color:var(--ink-2);font-size:12px}
+.kpi .val{font-size:26px;font-weight:600;line-height:1.2}
+.kpi .meta{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;font-size:12px}
+.delta{font-weight:600}.delta.good{color:var(--good)}.delta.bad{color:var(--crit)}
+.kpi .ctx{color:var(--ink-3)}
+.skel{background:linear-gradient(90deg,var(--line-soft),#f7f8f9,var(--line-soft));background-size:200% 100%;animation:sh 1.2s infinite;border-radius:3px;height:14px}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skel{animation:none}}
+.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:12px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.chartbox{padding:12px 14px}
+.legend{display:flex;gap:14px;color:var(--ink-2);font-size:12px;margin-bottom:6px}
+.legend i{display:inline-block;width:14px;height:0;border-top:2px solid;vertical-align:middle;margin-right:5px}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th,td{height:40px;padding:0 12px;border-bottom:1px solid var(--line-soft);text-align:left;white-space:nowrap}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-2);background:#fafbfc;font-weight:600}
+td.r,th.r{text-align:right}
+td .trunc{display:block;max-width:220px;overflow:hidden;text-overflow:ellipsis}
+tr:hover td{background:#fafcff}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.pill.crit{background:var(--crit-bg);color:var(--crit)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.good{background:var(--good-bg);color:var(--good)}
+.state{padding:36px 16px;text-align:center;color:var(--ink-2)}
+.state h3{margin:0 0 4px;color:var(--ink);font-size:14px}
+.state .btn{margin-top:10px}
+.rowact{display:flex;gap:6px;justify-content:flex-end}
+.rowact .btn{height:26px;padding:0 8px}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#1b2430;color:#fff;border-radius:4px;padding:10px 14px;display:flex;gap:14px;align-items:center;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:30}
+.toast button{background:none;border:0;color:#9cc7f5;font-weight:600;cursor:pointer}
+.scrim{position:fixed;inset:0;background:rgba(20,28,40,.5);display:flex;align-items:center;justify-content:center;z-index:40;padding:16px}
+.modal{background:var(--surface);border-radius:6px;max-width:440px;width:100%;padding:18px}
+.modal h3{margin:0 0 8px;font-size:16px}.modal p{margin:0 0 16px;color:var(--ink-2)}
+.modal .row{display:flex;justify-content:flex-end;gap:8px}
+.devbar{margin-top:16px;color:var(--ink-3);font-size:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="gbar"><span class="logo">Northfield</span><input type="search" placeholder="Search deals, accounts, people" aria-label="Search"><span class="me">Dana Okafor · Sales Manager</span></div>
+<nav class="tabs" aria-label="App"><a href="#" aria-current="page">Team dashboard</a><a href="#">Deals</a><a href="#">Accounts</a><a href="#">Forecast</a><a href="#">Reports</a></nav>
+
+<main>
+  <div class="head">
+    <div><h1>Team dashboard</h1><div class="sub" id="asof">Data as of Oct 27, 2026, 9:42 AM PT · Sample data</div></div>
+    <div class="filters" role="group" aria-label="Filters">
+      <select id="team" aria-label="Team"><option value="all">All my teams</option><option value="emea">EMEA Enterprise</option><option value="na">North America Mid-Market</option></select>
+      <select id="range" aria-label="Date range"><option value="7d">Last 7 days</option><option value="30d">Last 30 days</option><option value="q">This quarter</option></select>
+      <button class="btn" id="export">Export CSV</button>
+    </div>
+  </div>
+
+  <section class="kpis" id="kpis" aria-label="Key metrics"></section>
+
+  <div class="grid">
+    <section class="card" aria-labelledby="t1"><header><h2 id="t1">Closed-won revenue vs. quota</h2><span class="sub">Cumulative, quarter to date</span></header><div class="chartbox" id="chart"></div></section>
+    <section class="card" aria-labelledby="t2"><header><h2 id="t2">Needs your attention</h2><span class="sub" id="cnt"></span></header><div id="attn"></div></section>
+  </div>
+
+  <div class="devbar">Prototype state:
+    <select id="st" aria-label="Prototype state"><option value="ok">Loaded</option><option value="loading">Loading</option><option value="empty">Empty (new team)</option><option value="error">Error</option><option value="noaccess">No access to team</option></select>
+  </div>
+</main>
+<div id="layer"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const usd=n=>n>=1e6?'$'+(n/1e6).toFixed(2)+'M':'$'+Math.round(n/1e3)+'K';
+const KPIS=[
+ {l:'Closed-won revenue',v:'$1.84M',d:'+12.4%',g:1,c:'74% of $2.50M quota',s:[3,4,4,6,7,9,10,12,13,15,17,18]},
+ {l:'Open pipeline',v:'$6.31M',d:'+3.1%',g:1,c:'2.5× remaining quota',s:[10,11,10,12,13,12,14,13,14,15,14,15]},
+ {l:'Win rate',v:'27.8%',d:'−2.3 pts',g:0,c:'vs. 30.1% prior period',s:[30,31,30,29,30,28,29,28,28,27,28,28]},
+ {l:'Avg. sales cycle',v:'48 days',d:'+4 days',g:0,c:'Slower is worse',s:[41,42,42,44,43,45,46,45,47,47,48,48]},
+ {l:'Deals at risk',v:'14',d:'+5',g:0,c:'$1.12M total value',s:[6,7,7,8,8,9,9,10,11,12,13,14]},
+ {l:'Activities logged',v:'1,286',d:'+8.9%',g:1,c:'per rep: 107',s:[80,85,83,90,95,92,98,101,99,104,106,107]}];
+const ATT=[
+ {id:1,deal:'Halvorsen Logistics – Fleet telematics renewal (3-year)',owner:'Priya Raman',amt:412000,why:'No activity 21 days',sev:'crit'},
+ {id:2,deal:'Mercier & Fils – Platform expansion',owner:'Tomás Aguirre',amt:268500,why:'Close date passed',sev:'crit'},
+ {id:3,deal:'Brightwater Health',owner:'Priya Raman',amt:154000,why:'Stuck in Negotiation 34 days',sev:'warn'},
+ {id:4,deal:'Kestrel Aerospace – Pilot to production',owner:'Jonas Lindqvist',amt:98250,why:'Champion left company',sev:'warn'},
+ {id:5,deal:'Ōtaki Foods',owner:'Mei Tanaka',amt:41000,why:'Discount over 25% pending',sev:'warn'}];
+let items=ATT.slice(), state='ok', undo=null;
+
+function renderKpis(){
+  const el=$('#kpis');
+  if(state==='loading'){el.innerHTML=KPIS.map(()=>'<div class="card kpi"><div class="skel" style="width:60%"></div><div class="skel" style="height:28px;width:45%;margin:6px 0"></div><div class="skel" style="width:80%"></div></div>').join('');return}
+  if(state==='error'||state==='noaccess'||state==='empty'){el.innerHTML=state==='empty'?KPIS.map(k=>`<div class="card kpi"><div class="label">${k.l}</div><div class="val num" style="color:var(--ink-3)">—</div><div class="ctx">No data yet</div></div>`).join(''):'';return}
+  el.innerHTML=KPIS.map(k=>`<div class="card kpi"><div class="label">${k.l}</div><div class="val num">${k.v}</div>
+   <div class="meta"><div><span class="delta num ${k.g?'good':'bad'}">${k.g?'▲':'▼'} ${k.d}</span><div class="ctx">${k.c}</div></div>${spark(k.s,k.g)}</div></div>`).join('');
+}
+function spark(a,g){const w=72,h=26,mn=Math.min(...a),mx=Math.max(...a),p=a.map((v,i)=>[i*(w-4)/(a.length-1)+2,h-3-(v-mn)/(mx-mn||1)*(h-6)]);
+ const c=g?'var(--good)':'var(--crit)',l=p[p.length-1];
+ return `<svg width="${w}" height="${h}" role="img" aria-label="Trend, ${g?'improving':'worsening'}"><polyline fill="none" stroke="${c}" stroke-width="1.5" points="${p.map(x=>x.join(',')).join(' ')}"/><circle cx="${l[0]}" cy="${l[1]}" r="2.5" fill="${c}"/></svg>`}
+
+function renderChart(){
+  const el=$('#chart');
+  if(state!=='ok'){el.innerHTML=msg();return}
+  const W=560,H=240,L=46,B=26,T=10,R=44,mx=2.5,days=92,today=87;
+  const x=d=>L+d/days*(W-L-R), y=v=>H-B-v/mx*(H-B-T);
+  const act=[];for(let d=0;d<=today;d+=2)act.push([d,1.84*Math.pow(d/today,1.15)*(1+Math.sin(d/5)*.02)]);
+  let grid='';[0,.5,1,1.5,2,2.5].forEach(v=>grid+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line-soft)"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--ink-3)">$${v.toFixed(1)}M</text>`);
+  ['Aug 1','Sep 1','Oct 1','Oct 31'].forEach((t,i)=>{const d=[0,31,61,92][i];grid+=`<text x="${x(d)}" y="${H-8}" text-anchor="${i==3?'end':i==0?'start':'middle'}" font-size="11" fill="var(--ink-3)">${t}</text>`});
+  const A=act.map(p=>x(p[0])+','+y(p[1])).join(' ');
+  el.innerHTML=`<div class="legend"><span><i style="color:var(--brand)"></i>Closed-won</span><span><i style="color:var(--ink-3);border-top-style:dashed"></i>Quota pace</span></div>
+  <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Closed-won revenue is $1.84M, 74% of the $2.5M quota, with 87 days elapsed of 92">
+  ${grid}<line x1="${x(0)}" y1="${y(0)}" x2="${x(days)}" y2="${y(mx)}" stroke="var(--ink-3)" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <polygon points="${x(0)},${y(0)} ${A} ${x(today)},${y(0)}" fill="var(--brand)" opacity=".1"/>
+  <polyline points="${A}" fill="none" stroke="var(--brand)" stroke-width="2"/>
+  <circle cx="${x(today)}" cy="${y(1.84)}" r="4" fill="var(--brand)" stroke="#fff" stroke-width="2"/>
+  <text x="${x(today)+8}" y="${y(1.84)-8}" font-size="12" font-weight="600" fill="var(--ink)">$1.84M</text></svg>
+  <div class="sub">Quota pace today is $2.36M. You are $0.52M behind with 5 days left in the fiscal quarter.</div>`;
+}
+function msg(){
+  if(state==='loading')return '<div style="display:grid;gap:10px;padding:8px 0">'+Array(6).fill('<div class="skel" style="height:18px"></div>').join('')+'</div>';
+  if(state==='error')return '<div class="state"><h3>Couldn’t load team metrics</h3>The reporting service didn’t respond. Your data is safe.<br><button class="btn primary" onclick="setState(\'ok\')">Retry</button><div class="sub" style="margin-top:8px">Reference: ERR-7F3A-91C2</div></div>';
+  if(state==='noaccess')return '<div class="state"><h3>You don’t have access to this team’s metrics</h3>Ask a workspace admin to add you as a manager of EMEA Enterprise.<br><button class="btn" onclick="setState(\'ok\')">Back to my teams</button></div>';
+  return '<div class="state"><h3>No data for this team yet</h3>Metrics appear after the first deal is logged or your CRM sync completes.<br><button class="btn primary">Connect CRM</button></div>';
+}
+function renderAttn(){
+  const el=$('#attn'); $('#cnt').textContent=state==='ok'?items.length+' deals · '+usd(items.reduce((a,b)=>a+b.amt,0)):'';
+  if(state!=='ok'){el.innerHTML=msg();return}
+  if(!items.length){el.innerHTML='<div class="state"><h3>Nothing needs attention</h3>No at-risk deals for the selected period.</div>';return}
+  el.innerHTML=`<div class="tablewrap"><table><thead><tr><th>Deal</th><th>Owner</th><th class="r">Amount</th><th>Risk</th><th><span class="sr" style="position:absolute;left:-9999px">Actions</span></th></tr></thead><tbody>`+
+  items.map(i=>`<tr><td><span class="trunc" title="${i.deal}">${i.deal}</span></td><td>${i.owner}</td><td class="r num">$${i.amt.toLocaleString()}</td>
+  <td><span class="pill ${i.sev}">${i.sev==='crit'?'● Critical':'▲ Warning'}</span> <span class="sub">${i.why}</span></td>
+  <td><div class="rowact"><button class="btn" onclick="reassign(${i.id})">Reassign</button><button class="btn" onclick="closeLost(${i.id})">Close as lost…</button></div></td></tr>`).join('')+`</tbody></table></div>`;
+}
+function toast(t,fn){clearTimeout(undo&&undo.t);const el=document.createElement('div');el.className='toast';el.setAttribute('role','status');
+  el.innerHTML=`<span>${t}</span>`+(fn?'<button>Undo</button>':'');$('#layer').replaceChildren(el);
+  if(fn)el.querySelector('button').onclick=()=>{fn();$('#layer').replaceChildren()};
+  undo={t:setTimeout(()=>$('#layer').replaceChildren(),8000)}}
+/* Reversible actions: no popup, undo toast. Irreversible: named, specific confirm. */
+function reassign(id){const i=items.find(x=>x.id===id),o=i.owner;i.owner='Jonas Lindqvist';renderAttn();toast(`Reassigned “${i.deal.slice(0,28)}…” to Jonas Lindqvist`,()=>{i.owner=o;renderAttn()})}
+function closeLost(id){const i=items.find(x=>x.id===id);
+  const m=document.createElement('div');m.className='scrim';m.innerHTML=`<div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt"><h3 id="mt">Close ${i.deal.length>40?i.deal.slice(0,40)+'…':i.deal} as lost?</h3><p>$${i.amt.toLocaleString()} leaves ${i.owner}’s pipeline and is removed from the forecast. Reps are notified. You can reopen it from the deal page.</p><div class="row"><button class="btn" id="no">Keep open</button><button class="btn danger" id="yes">Close as lost</button></div></div>`;
+  $('#layer').replaceChildren(m);$('#no').focus();$('#no').onclick=()=>$('#layer').replaceChildren();
+  m.onkeydown=e=>{if(e.key==='Escape')$('#layer').replaceChildren()};
+  $('#yes').onclick=()=>{items=items.filter(x=>x.id!==id);renderAttn();toast('Deal closed as lost')}}
+function setState(s){state=s;$('#st').value=s;renderAll()}
+function renderAll(){renderKpis();renderChart();renderAttn()}
+/* State lives in the URL */
+function readHash(){const p=new URLSearchParams(location.hash.slice(1));$('#team').value=p.get('team')||'all';$('#range').value=p.get('range')||'30d'}
+['team','range'].forEach(id=>$('#'+id).onchange=()=>{location.hash=new URLSearchParams({team:$('#team').value,range:$('#range').value})});
+$('#st').onchange=e=>setState(e.target.value);
+$('#export').onclick=()=>toast('Export started. We’ll notify you when it’s ready.');
+addEventListener('hashchange',readHash);readHash();renderAll();
+</script>
+</body>
+</html>

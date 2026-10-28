@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usage &amp; billing · Ledgerly</title>
+<link rel="stylesheet" href="acme-ds.css">
+<style>
+/*
+  Direction: cool grey canvas (DS bg), white DS cards, teal brand as the one data accent, brand-subtle for the single highlight card.
+  Hero: "what will this cycle's invoice be" as a 44px number, with the one thing to act on (invoice allowance) right under it.
+  Only page-level layout lives here; colours, radii, spacing and type sizes come from acme-ds.css tokens.
+*/
+*{box-sizing:border-box}
+body{margin:0}
+a{color:var(--ds-color-brand-hover);text-underline-offset:2px}
+a:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--ds-color-focus);outline-offset:2px;border-radius:var(--ds-radius-sm)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.page{max-width:1120px;margin:0 auto;padding:var(--ds-space-6) var(--ds-space-4) var(--ds-space-8)}
+.crumbs{font-size:var(--ds-text-sm);color:var(--ds-color-text-muted);margin:0 0 var(--ds-space-2)}
+.head{display:flex;flex-wrap:wrap;gap:var(--ds-space-4);justify-content:space-between;align-items:flex-end;margin-bottom:var(--ds-space-6)}
+h1{font-size:var(--ds-text-2xl);line-height:1.2;margin:0 0 var(--ds-space-1);font-weight:600;letter-spacing:-.01em}
+.meta{margin:0;color:var(--ds-color-text-muted);font-size:var(--ds-text-sm)}
+.tools{display:flex;flex-wrap:wrap;gap:var(--ds-space-2);align-items:center}
+.tools label{font-size:var(--ds-text-sm);color:var(--ds-color-text-muted)}
+
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:var(--ds-space-4)}
+.s7{grid-column:span 7}.s5{grid-column:span 5}.s4{grid-column:span 4}.s12{grid-column:1/-1}
+@media(max-width:900px){.s7,.s5,.s4{grid-column:1/-1}.page{padding-top:var(--ds-space-4)}}
+.card{display:flex;flex-direction:column;gap:var(--ds-space-4);min-width:0}
+.card h2{font-size:var(--ds-text-lg);margin:0;font-weight:600}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--ds-space-3)}
+.label{font-size:var(--ds-text-sm);color:var(--ds-color-text-muted);margin:0}
+.hl{background:var(--ds-color-brand-subtle);border-color:#99F6E4}
+.hl .label,.hl .fine{color:#134E4A}
+.big{font-size:44px;line-height:1;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:var(--ds-space-1) 0 0}
+.big small{font-size:22px;font-weight:500;letter-spacing:0}
+.kpi{font-size:var(--ds-text-2xl);line-height:1.1;font-weight:600;font-variant-numeric:tabular-nums;margin:0}
+.kpi small{font-size:var(--ds-text-lg);font-weight:500;color:var(--ds-color-text-muted)}
+.fine{font-size:var(--ds-text-sm);color:var(--ds-color-text-muted);margin:0}
+.num{text-align:right!important;font-variant-numeric:tabular-nums}
+.linkrow{display:flex;flex-wrap:wrap;gap:var(--ds-space-3);align-items:center}
+.btn-link{display:inline-flex;align-items:center;text-decoration:none}
+
+.strip{display:flex;flex-wrap:wrap;gap:var(--ds-space-2) var(--ds-space-4);align-items:center;justify-content:space-between;background:var(--ds-color-warning-subtle);color:#78350F;border:1px solid #FDE68A;border-radius:var(--ds-radius-lg);padding:var(--ds-space-3) var(--ds-space-4);margin-bottom:var(--ds-space-4)}
+.strip p{margin:0}
+.strip a{color:#78350F;font-weight:500}
+
+.lines{width:100%;border-collapse:collapse;font-size:var(--ds-text-md)}
+.lines th{font-weight:400;text-align:left;padding:var(--ds-space-2) 0}
+.lines td{text-align:right;padding:var(--ds-space-2) 0;font-variant-numeric:tabular-nums}
+.lines tr+tr{border-top:1px solid #99F6E4}
+.lines .sub{display:block;font-size:var(--ds-text-sm);color:#134E4A}
+.warn-text{color:#92400E;font-weight:600}
+
+dl.kv{display:grid;grid-template-columns:auto 1fr;gap:var(--ds-space-3) var(--ds-space-4);margin:0}
+dl.kv dt{color:var(--ds-color-text-muted);font-size:var(--ds-text-sm)}
+dl.kv dd{margin:0;text-align:right}
+
+/* meter: fill = used so far, hatch = projected to cycle end, tick = included allowance */
+.meter-wrap{position:relative}
+.meter{position:relative;height:12px;background:var(--ds-color-surface-raised);border-radius:var(--ds-radius-md);overflow:hidden;border:1px solid var(--ds-color-border-strong)}
+.meter .fill{position:absolute;inset:0 auto 0 0;background:var(--ds-color-brand)}
+.meter .proj{position:absolute;inset:0 auto 0 0;background:repeating-linear-gradient(135deg,var(--ds-color-border-strong) 0 3px,transparent 3px 6px)}
+.meter .proj.over{background:repeating-linear-gradient(135deg,var(--ds-color-warning) 0 3px,var(--ds-color-warning-subtle) 3px 6px)}
+.tick{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ds-color-text)}
+.meter-legend{display:flex;flex-wrap:wrap;gap:var(--ds-space-1) var(--ds-space-4);font-size:var(--ds-text-xs);color:var(--ds-color-text-muted);margin:var(--ds-space-2) 0 0}
+.sw{display:inline-block;width:10px;height:10px;border-radius:var(--ds-radius-sm);margin-right:var(--ds-space-1);vertical-align:-1px;border:1px solid var(--ds-color-border-strong)}
+
+/* daily chart */
+.chart{display:grid;grid-template-columns:36px 1fr;gap:0 var(--ds-space-2)}
+.yax{display:flex;flex-direction:column;justify-content:space-between;height:140px;text-align:right;font-size:var(--ds-text-xs);color:var(--ds-color-text-muted);font-variant-numeric:tabular-nums}
+.bars{display:flex;align-items:flex-end;gap:3px;height:140px;border-bottom:1px solid var(--ds-color-border-strong)}
+.bar{flex:1;height:100%;display:flex;align-items:flex-end;background:var(--ds-color-surface-raised);border-radius:var(--ds-radius-sm) var(--ds-radius-sm) 0 0;min-width:0}
+.bar i{display:block;width:100%;background:var(--ds-color-brand);border-radius:var(--ds-radius-sm) var(--ds-radius-sm) 0 0;min-height:1px}
+.xax{grid-column:2;display:flex;justify-content:space-between;font-size:var(--ds-text-xs);color:var(--ds-color-text-muted);margin-top:var(--ds-space-1)}
+details summary{cursor:pointer;font-size:var(--ds-text-sm);color:var(--ds-color-brand-hover)}
+
+/* states */
+.skel{border-radius:var(--ds-radius-md);background:linear-gradient(90deg,var(--ds-color-surface-raised) 25%,var(--ds-color-border) 50%,var(--ds-color-surface-raised) 75%);background-size:200% 100%}
+@media(prefers-reduced-motion:no-preference){.skel{animation:sh 1.4s linear infinite}}
+@keyframes sh{to{background-position:-200% 0}}
+.notice{display:flex;flex-direction:column;align-items:flex-start;gap:var(--ds-space-2);padding:var(--ds-space-2) 0}
+.notice h3{margin:0;font-size:var(--ds-text-lg)}
+.notice p{margin:0;color:var(--ds-color-text-muted);max-width:60ch}
+.ro{background:var(--ds-color-surface-raised);border:1px solid var(--ds-color-border);border-radius:var(--ds-radius-md);padding:var(--ds-space-3);font-size:var(--ds-text-sm);margin:0}
+.foot{margin-top:var(--ds-space-8);padding-top:var(--ds-space-4);border-top:1px solid var(--ds-color-border);display:flex;flex-wrap:wrap;gap:var(--ds-space-3);align-items:center;font-size:var(--ds-text-sm);color:var(--ds-color-text-muted)}
+.table-wrap{overflow-x:auto;margin:0 calc(-1*var(--ds-space-3))}
+.ds-table td a{font-weight:500}
+</style>
+</head>
+<body>
+<main class="page" id="main">
+  <p class="crumbs">Workspace settings / Usage &amp; billing</p>
+  <header class="head">
+    <div>
+      <h1>Usage &amp; billing</h1>
+      <p class="meta" id="meta"></p>
+    </div>
+    <div class="tools">
+      <label for="period">Billing cycle</label>
+      <select id="period" class="ds-input">
+        <option value="current">15 Oct – 14 Nov 2026 (current)</option>
+        <option value="prev">15 Sep – 14 Oct 2026</option>
+      </select>
+      <button class="ds-btn" id="refresh" type="button">Refresh</button>
+    </div>
+  </header>
+
+  <div id="live" class="sr" role="status" aria-live="polite"></div>
+  <div id="alert"></div>
+
+  <div class="grid">
+    <section class="ds-card card hl s7" id="hero" aria-labelledby="hero-h"></section>
+    <section class="ds-card card s5" id="plan" aria-labelledby="plan-h"></section>
+    <section class="ds-card card s12" id="inv-usage" aria-labelledby="iu-h"></section>
+    <section class="ds-card card s4" id="seats" aria-labelledby="seats-h"></section>
+    <section class="ds-card card s4" id="banks" aria-labelledby="banks-h"></section>
+    <section class="ds-card card s4" id="storage" aria-labelledby="storage-h"></section>
+    <section class="ds-card card s12" id="invoices" aria-labelledby="invs-h"></section>
+  </div>
+
+  <footer class="foot">
+    <label for="state">Preview state</label>
+    <select id="state" class="ds-input">
+      <option value="ready">Ready</option>
+      <option value="loading">Loading</option>
+      <option value="error">Usage failed to load</option>
+      <option value="empty">New workspace (no usage yet)</option>
+      <option value="readonly">Admin without billing access</option>
+    </select>
+    <span>Design preview only. State and cycle are kept in the URL (<code>?state=…&amp;period=…</code>).</span>
+  </footer>
+</main>
+
+<script>
+(function(){
+  var PRICE={seat:24,invoiceOver:0.04,bankOver:15};
+  var INCL={invoices:10000,banks:25,storage:100};
+  var NOW='Wed 28 Oct 2026, 08:10 PT';
+  var usd=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'});
+  var n0=new Intl.NumberFormat('en-US');
+  var $=function(id){return document.getElementById(id)};
+  var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  function fd(d){return d.getDate()+' '+MON[d.getMonth()]}
+  function addDays(d,n){var x=new Date(d.getTime());x.setDate(x.getDate()+n);return x}
+
+  /* ---------- data ---------- */
+  var curDaily=[540,610,150,110,590,620,575,630,598,140,95,560,640,382];
+  function prevDaily(){
+    var days=30,w=[],tot=0,i,d,out=[],sum=0;
+    for(i=0;i<days;i++){d=new Date(2026,8,15+i);var x=d.getDay();w.push(x===0||x===6?.25:1+((i*7)%5)/20);tot+=w[i]}
+    for(i=0;i<days;i++){out.push(Math.round(9310*w[i]/tot));sum+=out[i]}
+    out[days-1]+=9310-sum;return out;
+  }
+  var DATA={
+    current:{start:new Date(2026,9,15),daily:curDaily,elapsed:14,days:31,final:false,invoices:6240,banks:22,storage:38.4,assigned:42,bought:50},
+    prev:{start:new Date(2026,8,15),daily:prevDaily(),elapsed:30,days:30,final:true,invoices:9310,banks:21,storage:71.8,assigned:48,bought:50}
+  };
+  var EMPTY={start:new Date(2026,9,15),daily:[],elapsed:14,days:31,final:false,invoices:0,banks:0,storage:0,assigned:1,bought:50,empty:true};
+  var INVOICES=[
+    ['LDG-2026-0391','15 Oct 2026','15 Sep – 14 Oct',1200.00],
+    ['LDG-2026-0344','15 Sep 2026','15 Aug – 14 Sep',1200.00],
+    ['LDG-2026-0298','15 Aug 2026','15 Jul – 14 Aug',1243.60],
+    ['LDG-2026-0251','15 Jul 2026','15 Jun – 14 Jul',1200.00],
+    ['LDG-2026-0207','15 Jun 2026','15 May – 14 Jun',1200.00],
+    ['LDG-2026-0166','15 May 2026','15 Apr – 14 May',1200.00]
+  ];
+
+  function calc(d){
+    var f=d.final?1:d.days/d.elapsed;
+    var pInv=d.final?d.invoices:Math.round(d.invoices*f);
+    var pStore=d.final?d.storage:Math.round(d.storage*f*10)/10;
+    var overInv=Math.max(0,pInv-INCL.invoices);
+    var overBank=Math.max(0,d.banks-INCL.banks);
+    var seatCost=d.bought*PRICE.seat;
+    var invCost=Math.round(overInv*PRICE.invoiceOver*100)/100;
+    var bankCost=overBank*PRICE.bankOver;
+    return {pInv:pInv,pStore:pStore,overInv:overInv,overBank:overBank,seatCost:seatCost,invCost:invCost,bankCost:bankCost,total:seatCost+invCost+bankCost};
+  }
+
+  /* ---------- state from URL ---------- */
+  var q=new URLSearchParams(location.search);
+  var S={state:q.get('state')||'ready',period:q.get('period')==='prev'?'prev':'current'};
+  if(['ready','loading','error','empty','readonly'].indexOf(S.state)<0)S.state='ready';
+  function sync(){
+    var p=new URLSearchParams();
+    if(S.state!=='ready')p.set('state',S.state);
+    if(S.period!=='current')p.set('period',S.period);
+    var s=p.toString();
+    try{history.replaceState(null,'',location.pathname+(s?'?'+s:''))}catch(e){}
+    $('period').value=S.period;$('state').value=S.state;
+  }
+
+  /* ---------- builders ---------- */
+  function sk(w,h){return '<div class="skel" style="width:'+w+';height:'+h+'px"></div>'}
+  function skelCard(t){return '<h2>'+t+'</h2><div aria-hidden="true" style="display:grid;gap:12px">'+sk('40%',14)+sk('60%',44)+sk('100%',12)+sk('80%',14)+'</div><span class="sr">Loading…</span>'}
+  function errCard(what){
+    return '<div class="notice" role="alert"><h3>Couldn’t load '+what+'</h3><p>Your usage and charges are not affected. Retry, and if it keeps failing, check <a href="#status">Ledgerly status</a>.</p><button class="ds-btn" type="button" data-retry>Retry</button></div>';
+  }
+  function meter(o){
+    var pc=function(v){return Math.min(100,v/o.scale*100).toFixed(2)+'%'};
+    var h='<div><div class="meter-wrap"><div class="meter" aria-hidden="true">';
+    if(!o.final)h+='<div class="proj'+(o.over?' over':'')+'" style="width:'+pc(o.proj)+'"></div>';
+    h+='<div class="fill" style="width:'+pc(o.used)+'"></div></div>';
+    if(o.incl!=null)h+='<div class="tick" style="left:'+pc(o.incl)+'" aria-hidden="true"></div>';
+    h+='</div><p class="meter-legend" aria-hidden="true"><span><span class="sw" style="background:var(--ds-color-brand)"></span>'+(o.final?'Used':'Used so far')+'</span>';
+    if(!o.final)h+='<span><span class="sw" style="background:'+(o.over?'var(--ds-color-warning)':'var(--ds-color-border-strong)')+'"></span>Projected to cycle end</span>';
+    if(o.incl!=null)h+='<span><span class="sw" style="background:var(--ds-color-text)"></span>'+o.inclLabel+'</span>';
+    return h+'</p></div>';
+  }
+  function pctBadge(p){
+    if(p>=100)return '<span class="ds-badge ds-badge--danger">At limit</span>';
+    if(p>=75)return '<span class="ds-badge ds-badge--warning">'+Math.round(p)+'% of limit</span>';
+    return '<span class="ds-badge ds-badge--success">'+Math.round(p)+'% used</span>';
+  }
+
+  /* ---------- render ---------- */
+  var titles={'hero':'Projected invoice','plan':'Plan & payment','inv-usage':'Invoices processed','seats':'Seats','banks':'Bank connections','storage':'Document storage'};
+  function render(){
+    sync();
+    var d=S.state==='empty'?EMPTY:DATA[S.period];
+    var c=calc(d), ro=S.state==='readonly', loading=S.state==='loading', err=S.state==='error';
+    var end=addDays(d.start,d.days-1);
+    $('meta').textContent='Harbor & Finch LLP · '+fd(d.start)+' – '+fd(end)+' '+end.getFullYear()+' · '+(d.final?'Final usage for a closed cycle':'Usage as of '+NOW);
+    $('refresh').hidden=d.final;
+    $('alert').innerHTML='';
+    var secs=['hero','plan','inv-usage','seats','banks','storage'];
+
+    if(loading){
+      secs.forEach(function(id){$(id).classList.remove('hl');$(id).innerHTML=skelCard(titles[id]);$(id).setAttribute('aria-busy','true')});
+      $('invoices').setAttribute('aria-busy','true');$('invoices').innerHTML=skelCard('Invoices');
+      $('live').textContent='Loading usage and billing…';
+      return;
+    }
+    secs.concat('invoices').forEach(function(id){$(id).removeAttribute('aria-busy')});
+
+    if(err){
+      ['hero','inv-usage','seats','banks','storage'].forEach(function(id){
+        $(id).classList.remove('hl');
+        $(id).innerHTML='<h2>'+titles[id]+'</h2>'+errCard(id==='hero'?'your projected charges':titles[id].toLowerCase());
+      });
+    }else{
+      $('hero').classList.add('hl');
+      hero(d,c,ro);invUsage(d,c);seats(d);banks(d);storage(d,c);
+      if(!d.final&&c.overInv>0){
+        var gone=addDays(new Date(2026,9,28),Math.ceil((INCL.invoices-d.invoices)/(d.invoices/d.elapsed)));
+        $('alert').innerHTML='<div class="strip"><p><strong>You’re on pace to pass your 10,000-invoice allowance around '+fd(gone)+'.</strong> Overage is '+usd.format(PRICE.invoiceOver)+' per invoice, about '+usd.format(c.invCost)+' extra this cycle.</p><a href="#plans">Compare plans</a></div>';
+      }
+    }
+    plan(ro);invoices();
+    $('live').textContent='Usage and billing loaded for the '+(S.period==='prev'?'previous':'current')+' cycle.';
+  }
+
+  function hero(d,c,ro){
+    var t=usd.format(c.total).split('.');
+    var lines='<tr><th scope="row">Seats<span class="sub">'+d.bought+' × '+usd.format(PRICE.seat)+' per month, billed annually</span></th><td>'+usd.format(c.seatCost)+'</td></tr>'
+      +'<tr><th scope="row">Invoice overage<span class="sub">'+(c.overInv?n0.format(c.overInv)+' over 10,000 × '+usd.format(PRICE.invoiceOver):'Within 10,000 included')+'</span></th><td>'+(c.overInv?'<span class="warn-text">'+usd.format(c.invCost)+'</span>':usd.format(0))+'</td></tr>'
+      +'<tr><th scope="row">Bank connection overage<span class="sub">'+(c.overBank?c.overBank+' over 25 × '+usd.format(PRICE.bankOver):'Within 25 included')+'</span></th><td>'+usd.format(c.bankCost)+'</td></tr>'
+      +'<tr><th scope="row">Document storage<span class="sub">Within 100 GB included</span></th><td>'+usd.format(0)+'</td></tr>';
+    var h='<div><h2 id="hero-h">'+(d.final?'Invoice total for this cycle':'Projected invoice for this cycle')+'</h2>'
+      +'<p class="label">'+(d.final?'Billed 15 Oct 2026 · excludes tax':'Billed 15 Nov 2026 · excludes tax')+'</p></div>'
+      +'<p class="big">'+t[0]+'<small>.'+t[1]+'</small></p>'
+      +'<table class="lines"><caption class="sr">Itemised '+(d.final?'charges':'projected charges')+'</caption><tbody>'+lines+'</tbody></table>';
+    if(!d.final){
+      h+='<p class="fine">Projection assumes the pace of the last '+d.elapsed+' days continues.'+(ro?'':' We email billing admins if it passes <strong>$1,500.00</strong>. <a href="#alerts">Edit spend alert</a>')+'</p>';
+    }
+    $('hero').innerHTML=h;
+  }
+
+  function invUsage(d,c){
+    if(d.empty){
+      $('inv-usage').innerHTML='<h2 id="iu-h">Invoices processed</h2><div class="notice"><h3>No usage yet this cycle</h3><p>Invoices show up here within an hour of the first one you import or create. Your 10,000-invoice allowance resets on 15 Nov 2026.</p><a class="ds-btn ds-btn--primary btn-link" href="#connect">Connect a bank account</a></div>';
+      ['seats','banks','storage'].forEach(function(){});
+      return;
+    }
+    var over=c.pInv>INCL.invoices, scale=Math.max(c.pInv,INCL.invoices)*1.05, max=700;
+    var bars=d.daily.map(function(v,i){
+      var dt=addDays(d.start,i);
+      return '<div class="bar" title="'+DOW[dt.getDay()]+' '+fd(dt)+': '+n0.format(v)+'"><i style="height:'+(v/max*100).toFixed(1)+'%"></i></div>';
+    }).join('');
+    var last=addDays(d.start,d.daily.length-1);
+    var rows=d.daily.map(function(v,i){var dt=addDays(d.start,i);return '<tr><th scope="row" style="text-align:left;font-weight:400">'+DOW[dt.getDay()]+' '+fd(dt)+'</th><td class="num">'+n0.format(v)+'</td></tr>'}).join('');
+    var sub=d.final?(d.invoices<=INCL.invoices?'Within the allowance.':''):'Projected '+n0.format(c.pInv)+' by '+fd(addDays(d.start,d.days-1));
+    $('inv-usage').innerHTML='<div class="card-head"><div><h2 id="iu-h">Invoices processed</h2><p class="label">Invoices created or imported across all entities in the workspace</p></div>'
+      +(over?'<span class="ds-badge ds-badge--warning">Projected over allowance</span>':'<span class="ds-badge ds-badge--success">Within allowance</span>')+'</div>'
+      +'<div><p class="kpi">'+n0.format(d.invoices)+' <small>of '+n0.format(INCL.invoices)+' included</small></p><p class="fine">'+sub+'</p></div>'
+      +meter({used:d.invoices,proj:c.pInv,scale:scale,incl:INCL.invoices,inclLabel:'10,000 included',over:over,final:d.final})
+      +'<div><h3 class="label" style="font-weight:500;color:var(--ds-color-text);margin:0 0 8px">Invoices per day</h3>'
+      +'<div class="chart" role="img" aria-label="Bar chart of invoices processed per day, '+fd(d.start)+' to '+fd(last)+'. Weekdays run 540 to 640 and weekends 95 to 150. Daily values are in the table below.">'
+      +'<div class="yax" aria-hidden="true"><span>700</span><span>350</span><span>0</span></div><div class="bars">'+bars+'</div>'
+      +'<div class="xax" aria-hidden="true"><span>'+fd(d.start)+'</span><span>'+fd(last)+(d.final?'':' (today, partial)')+'</span></div></div>'
+      +'<details style="margin-top:12px"><summary>View daily values as a table</summary><div class="table-wrap"><table class="ds-table"><thead><tr><th scope="col">Date</th><th scope="col" class="num">Invoices</th></tr></thead><tbody>'+rows+'</tbody></table></div></details></div>';
+  }
+
+  function seats(d){
+    $('seats').innerHTML='<div class="card-head"><h2 id="seats-h">Seats</h2><span class="ds-badge">'+(d.bought-d.assigned)+' unassigned</span></div>'
+      +'<p class="kpi">'+d.assigned+' <small>of '+d.bought+' assigned</small></p>'
+      +meter({used:d.assigned,proj:d.assigned,scale:d.bought,final:true})
+      +'<p class="fine">'+usd.format(PRICE.seat)+' per seat per month. Unassigned seats are billed until renewal on 15 Oct 2027.</p>'
+      +'<div class="linkrow"><a href="#members">Manage members</a></div>';
+  }
+  function banks(d){
+    $('banks').innerHTML='<div class="card-head"><h2 id="banks-h">Bank connections</h2>'+pctBadge(d.banks/INCL.banks*100)+'</div>'
+      +'<p class="kpi">'+d.banks+' <small>of '+INCL.banks+' included</small></p>'
+      +meter({used:d.banks,proj:d.banks,scale:INCL.banks,final:true})
+      +'<p class="fine">'+(INCL.banks-d.banks)+' left before '+usd.format(PRICE.bankOver)+' per extra connection per month.</p>'
+      +'<div class="linkrow"><a href="#connections">View connections</a></div>';
+  }
+  function storage(d,c){
+    $('storage').innerHTML='<div class="card-head"><h2 id="storage-h">Document storage</h2>'+(d.final?pctBadge(d.storage/INCL.storage*100):'<span class="ds-badge ds-badge--success">On track</span>')+'</div>'
+      +'<p class="kpi">'+d.storage.toFixed(1)+' <small>GB of '+INCL.storage+' GB</small></p>'
+      +meter({used:d.storage,proj:c.pStore,scale:INCL.storage,final:d.final})
+      +'<p class="fine">'+(d.final?'':'Projected '+c.pStore.toFixed(1)+' GB by cycle end. ')+'Receipts and attachments across all entities.</p>';
+  }
+
+  function plan(ro){
+    var h='<h2 id="plan-h">Plan &amp; payment</h2>'
+      +'<dl class="kv"><dt>Plan</dt><dd><strong>Business</strong> · annual</dd>'
+      +'<dt>Renews</dt><dd>15 Oct 2027</dd>'
+      +'<dt>Payment method</dt><dd>Visa ending 4242<br><span class="fine">Expires 08/2027</span></dd>'
+      +'<dt>Billing contact</dt><dd>Priya Raman<br><span class="fine">priya@harborfinch.example</span></dd></dl>';
+    if(ro){
+      h+='<p class="ro">Billing is managed by Priya Raman. Ask them to change the plan, payment method or spend alert.</p><div class="linkrow"><a href="#plans">Compare plans</a></div>';
+    }else{
+      h+='<div class="linkrow"><button class="ds-btn" type="button">Update payment method</button><button class="ds-btn" type="button">Change plan</button></div>'
+        +'<div class="linkrow"><a href="#billing-details">Billing details &amp; tax ID</a><a href="#cancel">Cancel subscription</a></div>';
+    }
+    $('plan').innerHTML=h;
+  }
+
+  function invoices(){
+    if(S.state==='empty'){
+      $('invoices').innerHTML='<h2 id="invs-h">Invoices</h2><div class="notice"><h3>No invoices yet</h3><p>Your first invoice is issued on 15 Nov 2026. It will appear here with a PDF to download.</p></div>';
+      return;
+    }
+    var rows=INVOICES.map(function(r){
+      return '<tr><th scope="row" style="text-align:left;font-weight:500">'+r[0]+'</th><td>'+r[1]+'</td><td>'+r[2]+'</td><td class="num">'+usd.format(r[3])+'</td><td><span class="ds-badge ds-badge--success">Paid</span></td><td><a href="#pdf-'+r[0]+'">Download PDF<span class="sr"> for '+r[0]+'</span></a></td></tr>';
+    }).join('');
+    $('invoices').innerHTML='<div class="card-head"><h2 id="invs-h">Invoices</h2><a href="#all-invoices">View all 18 invoices</a></div>'
+      +'<div class="table-wrap"><table class="ds-table"><thead><tr><th scope="col">Invoice</th><th scope="col">Issued</th><th scope="col">Period</th><th scope="col" class="num">Amount (USD)</th><th scope="col">Status</th><th scope="col"><span class="sr">Download</span></th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+      +'<p class="fine">Showing the 6 most recent. Amounts exclude tax. Dates are Pacific Time.</p>';
+  }
+
+  /* ---------- events ---------- */
+  $('period').addEventListener('change',function(e){S.period=e.target.value;render()});
+  $('state').addEventListener('change',function(e){S.state=e.target.value;render()});
+  $('refresh').addEventListener('click',function(){
+    var prev=S.state;S.state='loading';render();
+    setTimeout(function(){S.state=prev;render()},700);
+  });
+  document.addEventListener('click',function(e){
+    if(e.target.closest&&e.target.closest('[data-retry]')){S.state='ready';render()}
+  });
+  render();
+})();
+</script>
+</body>
+</html>

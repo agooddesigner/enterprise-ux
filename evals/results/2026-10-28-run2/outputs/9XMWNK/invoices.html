@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Invoices</title>
+<style>
+:root{
+  --bg:#f6f7f9; --surface:#fff; --line:#e3e6eb; --line-soft:#eef0f3;
+  --text:#171a21; --muted:#5f6877; --faint:#8a93a2;
+  --accent:#2457d6; --accent-bg:#e8eefc;
+  --ok:#136c3a; --ok-bg:#e0f4e7; --bad:#a3262a; --bad-bg:#fbe5e5;
+  --warn:#8a5a00; --warn-bg:#fff0cc; --pend:#4a5568; --pend-bg:#eceff3;
+  --focus:#2457d6; --row-hover:#f3f6fb; --row-sel:#e8eefc;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#101318; --surface:#171b22; --line:#2b313b; --line-soft:#222832;
+    --text:#e8ebf0; --muted:#a2abb9; --faint:#7b8494;
+    --accent:#7aa2ff; --accent-bg:#1d2a47;
+    --ok:#6fd49a; --ok-bg:#143322; --bad:#ff8f93; --bad-bg:#3a1b1d;
+    --warn:#f2c46b; --warn-bg:#3a2f12; --pend:#b4bdcb; --pend-bg:#242a34;
+    --focus:#7aa2ff; --row-hover:#1c222b; --row-sel:#1d2a47;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select{font:inherit;color:inherit}
+.page{max-width:1280px;margin:0 auto;padding:20px 16px 96px}
+header.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+h1{font-size:20px;margin:0;font-weight:650}
+.sub{color:var(--muted);font-size:13px}
+
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;cursor:pointer;color:var(--muted);font-weight:550;margin-bottom:-1px}
+.tab[aria-selected=true]{color:var(--text);border-bottom-color:var(--accent)}
+.tab .n{margin-left:6px;font-variant-numeric:tabular-nums;color:var(--faint);font-weight:500}
+.tab[aria-selected=true] .n{color:var(--muted)}
+
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 0}
+.search{position:relative;flex:1 1 260px;max-width:420px}
+.search input{width:100%;padding:7px 28px 7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.search kbd{position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none}
+select,.chip{padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.chip{cursor:pointer;color:var(--muted)}
+.chip[aria-pressed=true]{background:var(--accent-bg);border-color:var(--accent);color:var(--text)}
+.spacer{flex:1}
+.total{color:var(--muted);font-variant-numeric:tabular-nums}
+.total b{color:var(--text)}
+
+kbd{font:11px ui-monospace,monospace;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;color:var(--faint);background:var(--surface)}
+
+.tablewrap{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:calc(100vh - 230px);min-height:200px}
+table{width:100%;border-collapse:separate;border-spacing:0;min-width:900px}
+th{position:sticky;top:0;z-index:2;background:var(--surface);text-align:left;font-size:12px;font-weight:600;color:var(--muted);padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th button{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+th button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+th .arr{color:var(--faint);font-size:10px}
+td{padding:0 10px;height:42px;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--row-hover)}
+tbody tr.sel{background:var(--row-sel)}
+tbody tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--focus)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+th.num{text-align:right}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+.vendor{max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.vendor small{display:block;color:var(--faint);font-size:12px;line-height:1.1;margin-top:-1px;overflow:hidden;text-overflow:ellipsis}
+.due.over{color:var(--bad);font-weight:600}
+.due small{color:inherit;opacity:.8;margin-left:4px;font-weight:500}
+input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;margin:0;vertical-align:middle}
+td.cb,th.cb{width:40px;padding-right:0}
+td.cb label{display:flex;align-items:center;height:42px;cursor:pointer}
+
+.badge{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:600}
+.b-pending{background:var(--pend-bg);color:var(--pend)}
+.b-approved{background:var(--ok-bg);color:var(--ok)}
+.b-rejected{background:var(--bad-bg);color:var(--bad)}
+.flag{display:inline-block;padding:0 6px;border-radius:4px;font-size:11.5px;font-weight:600;background:var(--warn-bg);color:var(--warn);margin-right:4px}
+.reason{display:block;color:var(--faint);font-size:11.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+
+.acts{display:flex;gap:6px;justify-content:flex-end}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);cursor:pointer;font-weight:550;font-size:13px}
+.btn:hover{background:var(--row-hover)}
+.btn:focus-visible,.tab:focus-visible,.chip:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.btn.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,var(--line))}
+.btn.bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.btn.icon{padding:4px 7px;color:var(--faint);border-color:transparent;background:none}
+.btn.icon:hover{color:var(--bad);background:var(--bad-bg)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+@media (prefers-color-scheme:dark){.btn.primary{color:#0b1020}}
+
+.empty{padding:56px 16px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--text);font-size:16px;margin-bottom:4px}
+
+.bulk{position:fixed;left:50%;bottom:20px;transform:translate(-50%,0);display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;background:var(--text);color:var(--bg);padding:10px 14px;border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.28);z-index:10;max-width:calc(100vw - 24px)}
+.bulk[hidden]{display:none}
+.bulk .btn{background:transparent;border-color:color-mix(in srgb,var(--bg) 35%,transparent);color:var(--bg)}
+.bulk .btn:hover{background:color-mix(in srgb,var(--bg) 18%,transparent)}
+.bulk .btn.primary{background:var(--bg);color:var(--text);border-color:var(--bg)}
+.bulk b{font-variant-numeric:tabular-nums}
+.bulk .lnk{background:none;border:0;color:inherit;opacity:.7;cursor:pointer;text-decoration:underline}
+
+.toast{position:fixed;left:16px;bottom:20px;background:var(--surface);border:1px solid var(--line);box-shadow:0 6px 22px rgba(0,0,0,.2);border-radius:8px;padding:10px 12px;display:flex;gap:12px;align-items:center;z-index:20;max-width:calc(100vw - 32px)}
+.toast[hidden]{display:none}
+.toast button{background:none;border:0;color:var(--accent);font-weight:650;cursor:pointer}
+
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);padding:18px;width:min(420px,calc(100vw - 32px))}
+dialog::backdrop{background:rgba(10,12,16,.5)}
+dialog h2{margin:0 0 4px;font-size:16px}
+dialog p{margin:0 0 12px;color:var(--muted)}
+.reasons{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.reasons label{display:flex;gap:8px;align-items:center;padding:7px 10px;border:1px solid var(--line);border-radius:6px;cursor:pointer}
+.reasons label:has(input:checked){border-color:var(--accent);background:var(--accent-bg)}
+dialog textarea{width:100%;min-height:56px;border:1px solid var(--line);border-radius:6px;padding:7px 10px;background:var(--surface);resize:vertical;font:inherit;color:inherit}
+.dlg-act{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.foot{margin-top:10px;color:var(--faint);font-size:12px;display:flex;gap:14px;flex-wrap:wrap}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <h1>Vendor invoices</h1>
+    <div class="sub" id="today"></div>
+  </header>
+
+  <div class="tabs" role="tablist" id="tabs"></div>
+
+  <div class="tools">
+    <div class="search">
+      <label class="sr" for="q">Search invoices</label>
+      <input id="q" type="search" placeholder="Search vendor, invoice # or PO" autocomplete="off">
+      <kbd>/</kbd>
+    </div>
+    <select id="vendorSel" aria-label="Vendor"></select>
+    <button class="chip" id="fOver" aria-pressed="false">Overdue</button>
+    <button class="chip" id="fFlag" aria-pressed="false">Needs attention</button>
+    <span class="spacer"></span>
+    <span class="total" id="total"></span>
+  </div>
+
+  <div class="tablewrap" id="wrap">
+    <table>
+      <thead><tr id="thead"></tr></thead>
+      <tbody id="body"></tbody>
+    </table>
+    <div class="empty" id="empty" hidden></div>
+  </div>
+
+  <div class="foot" id="foot">
+    <span><kbd>J</kbd> <kbd>K</kbd> move</span>
+    <span><kbd>X</kbd> select</span>
+    <span><kbd>A</kbd> approve</span>
+    <span><kbd>R</kbd> reject</span>
+    <span><kbd>D</kbd> delete</span>
+    <span><kbd>Z</kbd> undo</span>
+    <span><kbd>Shift</kbd>+click range select</span>
+  </div>
+</div>
+
+<div class="bulk" id="bulk" hidden role="region" aria-label="Bulk actions">
+  <span><b id="bulkN">0</b> selected · <b id="bulkAmt"></b></span>
+  <button class="btn primary" data-bulk="approve">Approve</button>
+  <button class="btn" data-bulk="reject">Reject…</button>
+  <button class="btn" data-bulk="delete">Delete</button>
+  <button class="lnk" data-bulk="clear">Clear</button>
+</div>
+
+<div class="toast" id="toast" hidden role="status" aria-live="polite"><span id="toastMsg"></span><button id="undoBtn">Undo</button></div>
+
+<dialog id="rejDlg">
+  <form method="dialog" id="rejForm">
+    <h2 id="rejTitle">Reject invoice</h2>
+    <p id="rejSub"></p>
+    <div class="reasons" id="reasons"></div>
+    <textarea id="rejNote" placeholder="Add a note for the vendor (optional)"></textarea>
+    <div class="dlg-act">
+      <button type="button" class="btn" id="rejCancel">Cancel</button>
+      <button type="submit" class="btn primary" style="background:var(--bad);border-color:var(--bad);color:#fff">Reject</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  const TODAY = new Date('2026-10-28T00:00:00');
+  const DAY = 864e5;
+  const REASONS = ['Duplicate invoice','Amount doesn’t match PO','Missing or wrong PO number','Services not received','Other'];
+
+  // ---------- data (seeded so the list is stable between reloads) ----------
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const pick = a => a[Math.floor(rnd() * a.length)];
+  const vendors = ['Northwind Logistics','Acme Office Supply','Brightline Software','Cedar & Pine Legal','Delta Freight Co.','Evergreen Facilities','Fathom Analytics','Granite Print Works','Helix Staffing','Ironbridge Security','Juniper Catering','Keystone Telecom','Lumen Electric','Meridian Travel','Nimbus Cloud Hosting','Orchard Marketing','Pinnacle Insurance','Quarry Equipment Rental','Redwood Cleaning','Summit Consulting'];
+  const memos = ['Monthly retainer','Q4 licences','Freight, 14 pallets','Office supplies','Contract labour, wk 42','Cloud usage, Sept','Catering, all-hands','Maintenance visit','Print run, brochures','Legal fees, Oct','Insurance premium','Equipment rental','Travel booking','Telecom lines'];
+  const invoices = [];
+  for (let i = 0; i < 200; i++) {
+    const v = pick(vendors);
+    const big = rnd() < .08;
+    const amt = big ? 10000 + Math.round(rnd() * 70000) : 120 + Math.round(rnd() * 8800);
+    invoices.push({
+      id: i + 1, vendor: v,
+      no: 'INV-' + (20000 + Math.floor(rnd() * 79999)),
+      po: rnd() < .93 ? 'PO-' + (4000 + Math.floor(rnd() * 900)) : '',
+      memo: pick(memos),
+      amount: amt + (rnd() < .5 ? .5 : 0) * 0 + Math.round(rnd() * 99) / 100,
+      due: new Date(TODAY.getTime() + Math.round((rnd() * 40 - 10)) * DAY),
+      status: rnd() < .15 ? 'approved' : rnd() < .06 ? 'rejected' : 'pending',
+      reason: '', del: false
+    });
+  }
+  // plant a few duplicates (same vendor + amount)
+  [[30,12],[77,55],[140,101],[181,160]].forEach(([a,b]) => {
+    invoices[a].vendor = invoices[b].vendor;
+    invoices[a].amount = invoices[b].amount;
+    invoices[a].no = invoices[b].no.replace(/\d$/, d => (+d + 1) % 10);
+    invoices[a].status = 'pending'; invoices[b].status = 'pending';
+  });
+  invoices.forEach(r => { if (r.status === 'rejected') r.reason = pick(REASONS.slice(0, 4)); });
+
+  const live = () => invoices.filter(r => !r.del);
+  const dupKey = r => r.vendor + '|' + r.amount;
+  function computeFlags() {
+    const seen = {};
+    live().forEach(r => { const k = dupKey(r); seen[k] = (seen[k] || 0) + 1; });
+    live().forEach(r => {
+      r.days = Math.round((r.due - TODAY) / DAY);
+      r.flags = [];
+      if (seen[dupKey(r)] > 1) r.flags.push('Possible duplicate');
+      if (!r.po) r.flags.push('No PO');
+      if (r.amount >= 10000) r.flags.push('High value');
+    });
+  }
+
+  // ---------- state ----------
+  const S = { tab: 'pending', q: '', vendor: '', over: false, attn: false,
+              sortBy: 'due', dir: 1, sel: new Set(), cur: null, lastClick: null };
+  const undoStack = [];
+  let rows = [];
+
+  const $ = id => document.getElementById(id);
+  const money = n => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+  const money0 = n => n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  const fmtDate = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  const COLS = [
+    { k: 'cb' },
+    { k: 'no', label: 'Invoice' },
+    { k: 'vendor', label: 'Vendor' },
+    { k: 'due', label: 'Due' },
+    { k: 'amount', label: 'Amount', num: true },
+    { k: 'flags', label: 'Flags', nosort: true },
+    { k: 'status', label: 'Status' },
+    { k: 'acts', label: 'Actions', num: true, nosort: true }
+  ];
+
+  function buildChrome() {
+    $('today').textContent = 'Today, ' + TODAY.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const vs = [...new Set(invoices.map(r => r.vendor))].sort();
+    $('vendorSel').innerHTML = '<option value="">All vendors</option>' + vs.map(v => `<option>${esc(v)}</option>`).join('');
+    $('thead').innerHTML = COLS.map(c => {
+      if (c.k === 'cb') return '<th class="cb"><input type="checkbox" id="all" aria-label="Select all shown"></th>';
+      const cls = c.num ? ' class="num"' : '';
+      return c.nosort ? `<th${cls}>${c.label}</th>`
+        : `<th${cls} data-k="${c.k}" aria-sort="none"><button data-sort="${c.k}">${c.label}<span class="arr"></span></button></th>`;
+    }).join('');
+    $('reasons').innerHTML = REASONS.map((r, i) => `<label><input type="radio" name="rr" value="${esc(r)}" ${i ? '' : 'checked'}> ${esc(r)}</label>`).join('');
+  }
+
+  // ---------- derive + render ----------
+  function derive() {
+    computeFlags();
+    const q = S.q.trim().toLowerCase();
+    rows = live().filter(r =>
+      (S.tab === 'all' || r.status === S.tab) &&
+      (!S.vendor || r.vendor === S.vendor) &&
+      (!S.over || (r.days < 0 && r.status === 'pending')) &&
+      (!S.attn || r.flags.length) &&
+      (!q || (r.vendor + ' ' + r.no + ' ' + r.po + ' ' + r.memo).toLowerCase().includes(q)));
+    const k = S.sortBy, d = S.dir;
+    rows.sort((a, b) => {
+      let x = k === 'due' ? a.due - b.due : a[k], y = k === 'due' ? 0 : b[k];
+      if (k === 'due') return d * x || a.id - b.id;
+      return (x < y ? -1 : x > y ? 1 : 0) * d || a.id - b.id;
+    });
+    // drop selection of rows that are no longer visible
+    const vis = new Set(rows.map(r => r.id));
+    S.sel.forEach(id => vis.has(id) || S.sel.delete(id));
+    if (!vis.has(S.cur)) S.cur = rows.length ? rows[0].id : null;
+  }
+
+  function render() {
+    derive();
+    const counts = { pending: 0, approved: 0, rejected: 0, all: 0 };
+    live().forEach(r => { counts[r.status]++; counts.all++; });
+    $('tabs').innerHTML = [['pending','Needs review'],['approved','Approved'],['rejected','Rejected'],['all','All']].map(([k, l]) =>
+      `<button class="tab" role="tab" data-tab="${k}" aria-selected="${S.tab === k}">${l}<span class="n">${counts[k]}</span></button>`).join('');
+
+    $('body').innerHTML = rows.map(r => {
+      const over = r.days < 0 && r.status === 'pending';
+      const dueTxt = r.status !== 'pending' ? '' : r.days < 0 ? `${-r.days}d late` : r.days === 0 ? 'today' : `in ${r.days}d`;
+      const acts = r.status === 'pending'
+        ? `<button class="btn ok" data-act="approve" aria-label="Approve ${esc(r.no)}">Approve</button>
+           <button class="btn bad" data-act="reject" aria-label="Reject ${esc(r.no)}">Reject</button>`
+        : `<button class="btn" data-act="reopen" aria-label="Move ${esc(r.no)} back to review">Reopen</button>`;
+      return `<tr data-id="${r.id}" class="${S.sel.has(r.id) ? 'sel ' : ''}${S.cur === r.id ? 'cur' : ''}">
+        <td class="cb"><label><input type="checkbox" data-sel ${S.sel.has(r.id) ? 'checked' : ''} aria-label="Select ${esc(r.no)}"></label></td>
+        <td><span class="mono">${esc(r.no)}</span></td>
+        <td class="vendor">${esc(r.vendor)}<small>${esc(r.memo)}${r.po ? ' · ' + esc(r.po) : ''}</small></td>
+        <td class="due${over ? ' over' : ''}">${fmtDate(r.due)}<small>${dueTxt}</small></td>
+        <td class="num">${money(r.amount)}</td>
+        <td>${r.flags.map(f => `<span class="flag">${f}</span>`).join('')}</td>
+        <td><span class="badge b-${r.status}">${r.status[0].toUpperCase() + r.status.slice(1)}</span>${r.reason ? `<span class="reason" title="${esc(r.reason)}">${esc(r.reason)}</span>` : ''}</td>
+        <td><div class="acts">${acts}<button class="btn icon" data-act="delete" aria-label="Delete ${esc(r.no)}" title="Delete">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8h5.8l.6-8"/></svg></button></div></td>
+      </tr>`;
+    }).join('');
+
+    document.querySelectorAll('th[data-k]').forEach(th => {
+      const on = th.dataset.k === S.sortBy;
+      th.setAttribute('aria-sort', on ? (S.dir > 0 ? 'ascending' : 'descending') : 'none');
+      th.querySelector('.arr').textContent = on ? (S.dir > 0 ? '▲' : '▼') : '';
+    });
+
+    const empty = $('empty');
+    empty.hidden = rows.length > 0;
+    if (!rows.length) {
+      const filtered = S.q || S.vendor || S.over || S.attn;
+      empty.innerHTML = filtered
+        ? '<b>No invoices match these filters</b>Try clearing the search or filters.'
+        : S.tab === 'pending' ? '<b>Inbox zero</b>Every invoice has been reviewed.' : '<b>Nothing here yet</b>';
+    }
+
+    const sum = rows.reduce((s, r) => s + r.amount, 0);
+    $('total').innerHTML = `<b>${rows.length}</b> invoices · <b>${money0(sum)}</b>`;
+    const all = $('all');
+    all.checked = rows.length > 0 && rows.every(r => S.sel.has(r.id));
+    all.indeterminate = !all.checked && rows.some(r => S.sel.has(r.id));
+    $('fOver').setAttribute('aria-pressed', S.over);
+    $('fFlag').setAttribute('aria-pressed', S.attn);
+
+    const n = S.sel.size;
+    $('bulk').hidden = n === 0;
+    if (n) {
+      $('bulkN').textContent = n;
+      $('bulkAmt').textContent = money(rows.filter(r => S.sel.has(r.id)).reduce((s, r) => s + r.amount, 0));
+      const onlyPending = rows.filter(r => S.sel.has(r.id)).every(r => r.status === 'pending');
+      document.querySelector('[data-bulk=approve]').style.display = onlyPending ? '' : 'none';
+      document.querySelector('[data-bulk=reject]').style.display = onlyPending ? '' : 'none';
+    }
+  }
+
+  // ---------- actions (all undoable; no confirm dialogs except reject reason) ----------
+  function apply(ids, change, msg) {
+    const targets = invoices.filter(r => ids.includes(r.id));
+    if (!targets.length) return;
+    // keep keyboard position: remember the neighbour that will slide into place
+    const idx = rows.findIndex(r => r.id === S.cur);
+    const snap = targets.map(r => ({ r, status: r.status, reason: r.reason, del: r.del }));
+    targets.forEach(change);
+    undoStack.push(snap);
+    ids.forEach(id => S.sel.delete(id));
+    derive();
+    if (idx >= 0 && !rows.some(r => r.id === S.cur) && rows.length) S.cur = rows[Math.min(idx, rows.length - 1)].id;
+    render();
+    scrollCur();
+    showToast(msg);
+  }
+  const approve = ids => apply(ids, r => { r.status = 'approved'; r.reason = ''; }, `${ids.length === 1 ? 'Invoice' : ids.length + ' invoices'} approved`);
+  const reopen = ids => apply(ids, r => { r.status = 'pending'; r.reason = ''; }, `Moved back to review`);
+  const del = ids => apply(ids, r => { r.del = true; }, `${ids.length === 1 ? 'Invoice' : ids.length + ' invoices'} deleted`);
+  const reject = (ids, reason) => apply(ids, r => { r.status = 'rejected'; r.reason = reason; }, `${ids.length === 1 ? 'Invoice' : ids.length + ' invoices'} rejected`);
+
+  function undo() {
+    const snap = undoStack.pop();
+    if (!snap) return;
+    snap.forEach(s => { s.r.status = s.status; s.r.reason = s.reason; s.r.del = s.del; });
+    hideToast();
+    render();
+    showToast('Undone', true);
+  }
+
+  let toastT;
+  function showToast(msg, plain) {
+    $('toastMsg').textContent = msg;
+    $('undoBtn').style.display = plain ? 'none' : '';
+    $('toast').hidden = false;
+    clearTimeout(toastT);
+    toastT = setTimeout(hideToast, plain ? 2500 : 10000);
+  }
+  function hideToast() { $('toast').hidden = true; }
+
+  // reject dialog
+  let rejIds = [];
+  function askReject(ids) {
+    if (!ids.length) return;
+    rejIds = ids;
+    const t = invoices.filter(r => ids.includes(r.id));
+    $('rejTitle').textContent = ids.length === 1 ? 'Reject invoice' : `Reject ${ids.length} invoices`;
+    $('rejSub').textContent = ids.length === 1 ? `${t[0].no} · ${t[0].vendor} · ${money(t[0].amount)}` : `${money(t.reduce((s, r) => s + r.amount, 0))} total`;
+    $('rejNote').value = '';
+    $('rejForm').querySelector('input[value]').checked = true;
+    $('rejDlg').showModal();
+  }
+  $('rejForm').addEventListener('submit', () => {
+    const r = new FormData($('rejForm')).get('rr');
+    const note = $('rejNote').value.trim();
+    reject(rejIds, note ? `${r}: ${note}` : r);
+  });
+  $('rejCancel').onclick = () => $('rejDlg').close();
+
+  // ---------- events ----------
+  const idsFor = id => S.sel.has(id) && S.sel.size > 1 ? [...S.sel] : [id];
+
+  $('body').addEventListener('click', e => {
+    const tr = e.target.closest('tr'); if (!tr) return;
+    const id = +tr.dataset.id;
+    const btn = e.target.closest('[data-act]');
+    if (btn) {
+      S.cur = id;
+      const a = btn.dataset.act;
+      if (a === 'approve') approve([id]);
+      else if (a === 'reject') askReject([id]);
+      else if (a === 'delete') del([id]);
+      else if (a === 'reopen') reopen([id]);
+      return;
+    }
+    if (e.target.matches('[data-sel]')) {
+      if (e.shiftKey && S.lastClick != null) {
+        const a = rows.findIndex(r => r.id === S.lastClick), b = rows.findIndex(r => r.id === id);
+        if (a >= 0 && b >= 0) rows.slice(Math.min(a, b), Math.max(a, b) + 1).forEach(r => S.sel.add(r.id));
+      } else e.target.checked ? S.sel.add(id) : S.sel.delete(id);
+      S.lastClick = id; S.cur = id; render();
+      return;
+    }
+    if (S.cur !== id) { S.cur = id; document.querySelectorAll('tr.cur').forEach(x => x.classList.remove('cur')); tr.classList.add('cur'); }
+  });
+
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-tab]');
+    if (t) { S.tab = t.dataset.tab; S.sel.clear(); render(); return; }
+    const s = e.target.closest('[data-sort]');
+    if (s) { const k = s.dataset.sort; S.dir = S.sortBy === k ? -S.dir : 1; S.sortBy = k; render(); return; }
+    const b = e.target.closest('[data-bulk]');
+    if (b) {
+      const ids = [...S.sel];
+      ({ approve: () => approve(ids), reject: () => askReject(ids), delete: () => del(ids), clear: () => { S.sel.clear(); render(); } })[b.dataset.bulk]();
+    }
+  });
+  $('all').addEventListener('change', e => {
+    rows.forEach(r => e.target.checked ? S.sel.add(r.id) : S.sel.delete(r.id));
+    render();
+  });
+  $('q').addEventListener('input', e => { S.q = e.target.value; render(); });
+  $('vendorSel').addEventListener('change', e => { S.vendor = e.target.value; render(); });
+  $('fOver').onclick = () => { S.over = !S.over; render(); };
+  $('fFlag').onclick = () => { S.attn = !S.attn; render(); };
+  $('undoBtn').onclick = undo;
+
+  function scrollCur() {
+    const tr = document.querySelector('tr.cur');
+    if (!tr) return;
+    const w = $('wrap'), hh = 40;
+    const t = tr.offsetTop, b = t + tr.offsetHeight;
+    if (t - hh < w.scrollTop) w.scrollTop = t - hh;
+    else if (b > w.scrollTop + w.clientHeight) w.scrollTop = b - w.clientHeight;
+  }
+  function move(d) {
+    if (!rows.length) return;
+    const i = rows.findIndex(r => r.id === S.cur);
+    S.cur = rows[Math.max(0, Math.min(rows.length - 1, (i < 0 ? 0 : i + d)))].id;
+    document.querySelectorAll('tr.cur').forEach(x => x.classList.remove('cur'));
+    const tr = document.querySelector(`tr[data-id="${S.cur}"]`);
+    tr && tr.classList.add('cur');
+    scrollCur();
+  }
+
+  document.addEventListener('keydown', e => {
+    if ($('rejDlg').open) return;
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== 'checkbox';
+    if (e.key === 'Escape') {
+      if (typing) { e.target.blur(); return; }
+      if (S.sel.size) { S.sel.clear(); render(); }
+      return;
+    }
+    if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target.closest('button') && (e.key === 'Enter' || e.key === ' ')) return;
+    const cur = rows.find(r => r.id === S.cur);
+    const k = e.key.toLowerCase();
+    if (k === '/') { e.preventDefault(); $('q').focus(); }
+    else if (k === 'j' || e.key === 'ArrowDown') { e.preventDefault(); move(1); }
+    else if (k === 'k' || e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
+    else if (k === 'z') undo();
+    else if (!cur) return;
+    else if (k === 'x' || e.key === ' ') { e.preventDefault(); S.sel.has(cur.id) ? S.sel.delete(cur.id) : S.sel.add(cur.id); S.lastClick = cur.id; render(); }
+    else if (k === 'a' && cur.status === 'pending') approve(idsFor(cur.id));
+    else if (k === 'r' && cur.status === 'pending') { e.preventDefault(); askReject(idsFor(cur.id)); }
+    else if (k === 'd' || e.key === 'Delete') del(idsFor(cur.id));
+  });
+
+  buildChrome();
+  render();
+})();
+</script>
+</body>
+</html>

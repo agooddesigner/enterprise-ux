@@ -1,0 +1,344 @@
+<title>Customer Success Dashboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: slim side nav + soft bento grid. Anchor ink card (ARR at risk), one lime highlight (renewals), accounts table is the working surface. */
+:root{
+  --canvas:#eceff7; --card:#ffffff; --fg:#14152b; --muted:#5a5f78; --line:#e1e4ef;
+  --ink:#14152b; --ink-fg:#f6f6fb; --ink-muted:#b9bcd6;
+  --accent:#4f3fd6; --accent-soft:#e8e5fb;
+  --hi:#d7f36a; --hi-fg:#16200a;
+  --good:#17784f; --good-bg:#dff3e8; --warn:#8a5a00; --warn-bg:#fcefcf; --bad:#b42323; --bad-bg:#fbe0e0;
+  --track:#eceef6; --focus:#4f3fd6;
+  --font:'DM Sans',system-ui,sans-serif; --mono:'DM Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --canvas:#0d0e18; --card:#171926; --fg:#eef0fa; --muted:#a3a8c3; --line:#262941;
+  --ink:#2b2670; --ink-fg:#f6f6fb; --ink-muted:#c4c1ee; --accent:#9d92ff; --accent-soft:#2a2750;
+  --hi:#d7f36a; --hi-fg:#16200a; --good:#5fd29b; --good-bg:#12372a; --warn:#f0c15a; --warn-bg:#3a2d0b; --bad:#ff8c8c; --bad-bg:#431a1a;
+  --track:#232640; --focus:#b5acff; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --canvas:#0d0e18; --card:#171926; --fg:#eef0fa; --muted:#a3a8c3; --line:#262941;
+  --ink:#2b2670; --ink-fg:#f6f6fb; --ink-muted:#c4c1ee; --accent:#9d92ff; --accent-soft:#2a2750;
+  --hi:#d7f36a; --hi-fg:#16200a; --good:#5fd29b; --good-bg:#12372a; --warn:#f0c15a; --warn-bg:#3a2d0b; --bad:#ff8c8c; --bad-bg:#431a1a;
+  --track:#232640; --focus:#b5acff; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--canvas);color:var(--fg);font-family:var(--font);font-size:14px;line-height:1.45}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:8px}
+.num{font-variant-numeric:tabular-nums}
+.shell{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100vh}
+/* nav */
+.nav{padding:20px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;align-self:start;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 10px 18px;font-weight:700;font-size:16px}
+.brand i{width:28px;height:28px;border-radius:50%;background:var(--ink);display:grid;place-items:center}
+.brand i::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--hi)}
+.nav a{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:999px;color:var(--muted);text-decoration:none;font-weight:500}
+.nav a:hover{background:var(--card)}
+.nav a[aria-current="page"]{background:var(--ink);color:var(--ink-fg)}
+.nav svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.nav .sp{flex:1}
+.nav .ws{font-size:12px;color:var(--muted);padding:8px 12px;border-top:1px solid var(--line)}
+/* main */
+main{padding:20px max(20px,env(safe-area-inset-right,0px)) 40px 8px;min-width:0}
+.top{display:flex;gap:12px;align-items:center;margin-bottom:22px;flex-wrap:wrap}
+.search{flex:1;min-width:200px;max-width:420px;display:flex;align-items:center;gap:8px;background:var(--card);border-radius:999px;padding:0 16px;height:44px;border:1px solid var(--line)}
+.search input{border:0;background:none;flex:1;min-width:0;height:100%;outline:none}
+.search:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+kbd{font-family:var(--mono);font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+.ibtn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--card);cursor:pointer;display:grid;place-items:center;position:relative}
+.ibtn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round}
+.ibtn .dot{position:absolute;top:10px;right:11px;width:8px;height:8px;border-radius:50%;background:var(--bad);border:2px solid var(--card)}
+.avatar{width:44px;height:44px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:700;display:grid;place-items:center;border:0}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+h1{font-size:clamp(30px,4.2vw,46px);line-height:1.05;margin:0;letter-spacing:-.02em;text-wrap:balance}
+.fresh{color:var(--muted);font-size:13px;margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.fresh b{font-weight:600;color:var(--fg)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-weight:500;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+select.chip{padding-right:10px}
+.banner{background:var(--warn-bg);color:var(--warn);border-radius:14px;padding:10px 14px;margin-bottom:18px;font-size:13px}
+/* bento */
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px}
+.card{background:var(--card);border-radius:24px;padding:22px;min-width:0;display:flex;flex-direction:column;gap:14px;border:1px solid transparent}
+.card h2{margin:0;font-size:14px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;gap:8px;align-items:center}
+.card .more{font-size:13px;font-weight:600;color:var(--accent);text-decoration:none;background:none;border:0;cursor:pointer;padding:4px 0}
+.anchor{background:var(--ink);color:var(--ink-fg)}
+.anchor h2,.anchor .sub{color:var(--ink-muted)}
+.hi{background:var(--hi);color:var(--hi-fg)}
+.hi h2,.hi .sub{color:#3b4a14}
+.big{font-size:clamp(48px,6vw,72px);font-weight:700;letter-spacing:-.03em;line-height:1}
+.big small,.kpi small{font-size:.5em;font-weight:600;letter-spacing:0;margin-left:2px}
+.kpi{font-size:clamp(32px,3.4vw,44px);font-weight:700;letter-spacing:-.02em;line-height:1}
+.sub{font-size:13px;color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.good{background:var(--good-bg);color:var(--good)} .warn{background:var(--warn-bg);color:var(--warn)} .bad{background:var(--bad-bg);color:var(--bad)}
+.delta{font-size:12px;font-weight:600}
+.span-5{grid-column:span 5}.span-4{grid-column:span 4}.span-3{grid-column:span 3}.span-7{grid-column:span 7}.span-8{grid-column:span 8}.span-12{grid-column:span 12}.span-6{grid-column:span 6}
+.reasons{display:flex;flex-direction:column;gap:8px;margin-top:auto}
+.reason{display:grid;grid-template-columns:130px 1fr 52px;gap:10px;align-items:center;font-size:13px}
+.rtrack{height:10px;border-radius:999px;background:rgba(255,255,255,.16);overflow:hidden}
+.rtrack i{display:block;height:100%;border-radius:999px;background:var(--hi)}
+.spark{width:100%;height:36px;margin-top:auto}
+/* health bar */
+.hbar{display:flex;gap:3px;height:34px}
+.hbar i{display:block;border-radius:10px;min-width:8px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px}
+.legend span{display:flex;gap:6px;align-items:center}
+.legend em{width:10px;height:10px;border-radius:50%;display:inline-block}
+.sw-good{background:var(--good)}.sw-warn{background:#e0a21a}.sw-bad{background:var(--bad)}
+/* renewal bars */
+.bars{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:end;height:170px}
+.bcol{display:flex;flex-direction:column;align-items:stretch;gap:6px;height:100%;justify-content:flex-end;text-align:center}
+.btrack{flex:1;background:var(--track);border-radius:16px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+.bseg{width:100%}
+.bseg.ok{background:var(--accent)} .bseg.risk{background:var(--bad);margin-top:2px}
+.bval{font-weight:700} .blab{font-size:12px;color:var(--muted)}
+/* table */
+.tools{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
+.scroll{overflow-x:auto;margin:0 -8px}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th{font-size:12px;text-align:left;color:var(--muted);font-weight:600;padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th button{background:none;border:0;padding:0;font-weight:600;font-size:12px;color:inherit;cursor:pointer;display:inline-flex;gap:4px}
+th.r,td.r{text-align:right}
+td{padding:0 8px;height:52px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr.row{cursor:pointer}
+tr.row:hover td{background:var(--canvas)}
+td.name button{background:none;border:0;padding:0;font-weight:600;cursor:pointer;text-align:left}
+td.name button:hover{color:var(--accent);text-decoration:underline}
+td .seg{display:block;font-size:12px;color:var(--muted);font-weight:400}
+.score{display:inline-flex;align-items:center;gap:10px}
+.score b{width:28px;text-align:right}
+.mini{width:56px;height:8px;border-radius:99px;background:var(--track);overflow:hidden}.mini i{display:block;height:100%;border-radius:99px}
+.skel{height:14px;border-radius:8px;background:linear-gradient(90deg,var(--track),var(--line),var(--track));background-size:200% 100%;animation:sh 1.3s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.state{padding:36px 12px;text-align:center;color:var(--muted)}
+.state h3{margin:0 0 6px;color:var(--fg);font-size:16px}
+.btn{height:36px;padding:0 16px;border-radius:999px;border:0;background:var(--ink);color:var(--ink-fg);font-weight:600;cursor:pointer}
+.btn.sec{background:var(--accent-soft);color:var(--accent)}
+/* tasks */
+.tasks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.tasks label{display:flex;gap:12px;align-items:flex-start;padding:10px;border-radius:14px;cursor:pointer}
+.tasks label:hover{background:var(--canvas)}
+.tasks input{width:20px;height:20px;margin-top:1px;accent-color:var(--accent);flex:none}
+.tasks input:checked+span{text-decoration:line-through;color:var(--muted)}
+.tasks small{display:block;color:var(--muted)}
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(10,10,30,.45);z-index:20}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);background:var(--card);z-index:21;padding:24px max(20px,env(safe-area-inset-right,0px));padding-top:max(24px,env(safe-area-inset-top,0px));overflow:auto;display:flex;flex-direction:column;gap:16px;box-shadow:-12px 0 40px rgba(0,0,0,.2)}
+.drawer h2{margin:0;font-size:26px;letter-spacing:-.01em}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dgrid div{background:var(--canvas);border-radius:16px;padding:12px 14px}
+.dgrid span{display:block;font-size:12px;color:var(--muted)}
+.dgrid b{font-size:18px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:max(20px,env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--ink-fg);border-radius:999px;padding:10px 12px 10px 20px;display:flex;gap:14px;align-items:center;z-index:30}
+.toast button{background:var(--hi);color:var(--hi-fg);border:0;border-radius:999px;height:30px;padding:0 14px;font-weight:600;cursor:pointer}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:1100px){.span-5,.span-4,.span-3,.span-7,.span-8{grid-column:span 6}}
+@media (max-width:860px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .nav{position:static;height:auto;flex-direction:row;overflow-x:auto;padding:12px max(16px,env(safe-area-inset-left,0px));align-items:center}
+  .nav .brand{padding:0 8px 0 0}.nav .sp,.nav .ws{display:none}.nav a{white-space:nowrap}
+  main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .span-5,.span-4,.span-3,.span-7,.span-8,.span-6{grid-column:span 12}
+  .reason{grid-template-columns:100px 1fr 44px}
+}
+@media (prefers-reduced-motion:reduce){.skel{animation:none}}
+</style>
+
+<div class="shell">
+  <nav class="nav" aria-label="Primary">
+    <div class="brand"><i aria-hidden="true"></i>Northwind CS</div>
+    <a href="#overview" aria-current="page"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>Overview</a>
+    <a href="#accounts"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.900 1.900 6.500 5.500"/><path d="M16 4.500a3.500 3.500 0 010 7M18 15c2 .6 3.200 2.300 3.500 5"/></svg>Accounts</a>
+    <a href="#renewals"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 11-2.400-5.700M20 4v4.500h-4.500"/></svg>Renewals</a>
+    <a href="#tickets"><svg viewBox="0 0 24 24"><path d="M4 6h16v10H9l-5 4z"/></svg>Support tickets</a>
+    <a href="#playbooks"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM9 9h6M9 13h6"/></svg>Playbooks</a>
+    <a href="#reports"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Reports</a>
+    <div class="sp"></div>
+    <div class="ws">Workspace<br><b style="color:var(--fg)">EMEA + NA Mid-market</b></div>
+  </nav>
+
+  <main id="overview">
+    <div class="top">
+      <label class="search"><span class="sr">Search accounts, contacts, tickets</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.500-3.500"/></svg>
+        <input id="q" type="search" placeholder="Search accounts, contacts, tickets"><kbd>⌘K</kbd></label>
+      <span style="flex:1"></span>
+      <button class="ibtn" aria-label="Notifications, 3 unread"><svg viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 1112 0v6l1.500 2h-15zM10 21h4"/></svg><span class="dot"></span></button>
+      <button class="avatar" aria-label="Account menu for Priya Nair">PN</button>
+    </div>
+
+    <div class="head">
+      <div>
+        <h1>Customer health</h1>
+        <div class="fresh"><span>Updated <b>08:10 PT</b> · Refreshes hourly</span><span>·</span><span>Window: <b>next 90 days</b></span></div>
+      </div>
+      <div class="filters" role="group" aria-label="Filters">
+        <button class="chip" data-seg="All" aria-pressed="true">All segments</button>
+        <button class="chip" data-seg="Enterprise" aria-pressed="false">Enterprise</button>
+        <button class="chip" data-seg="Mid-market" aria-pressed="false">Mid-market</button>
+        <button class="chip" data-seg="SMB" aria-pressed="false">SMB</button>
+        <label class="sr" for="owner">Owner</label>
+        <select id="owner" class="chip"><option value="">My team</option><option>Priya Nair</option><option>Tomás Ruiz</option><option>Hana Berg</option><option>Sam Okafor</option></select>
+      </div>
+    </div>
+
+    <div class="banner" role="note">Example data. Connect your CRM and support desk to see your own accounts.</div>
+
+    <section class="grid" aria-label="Summary">
+      <article class="card anchor span-5">
+        <h2>ARR at risk</h2>
+        <div><div class="big num" id="riskArr">$0</div><div class="sub" id="riskSub" style="margin-top:8px"></div></div>
+        <div class="reasons" id="reasons" aria-label="Top risk signals"></div>
+      </article>
+
+      <article class="card hi span-4">
+        <h2>Renewing in 90 days</h2>
+        <div><div class="big num" id="renArr">$0</div><div class="sub" id="renSub" style="margin-top:8px"></div></div>
+        <div class="bars" id="bars" role="img" aria-label="Renewal ARR by month, with at-risk portion"></div>
+      </article>
+
+      <div class="span-3" style="display:grid;gap:20px;grid-template-rows:1fr 1fr;min-width:0">
+        <article class="card"><h2>Net revenue retention</h2>
+          <div class="kpi num">108<small>%</small></div>
+          <div class="sub"><span class="delta" style="color:var(--good)">▲ 2 pts</span> vs last quarter</div></article>
+        <article class="card"><h2>Open P1 tickets</h2>
+          <div class="kpi num">6</div>
+          <div class="sub"><span class="delta" style="color:var(--bad)">▲ 2</span> since yesterday · 3 on at-risk accounts</div></article>
+      </div>
+
+      <article class="card span-12" aria-labelledby="hh">
+        <h2 id="hh">Health across accounts <span class="sub num" id="hcount"></span></h2>
+        <div class="hbar" id="hbar" role="img"></div>
+        <div class="legend" id="legend"></div>
+      </article>
+
+      <article class="card span-8" aria-labelledby="th">
+        <div class="tools">
+          <h2 id="th" style="font-size:18px;color:var(--fg)">Accounts needing attention</h2>
+          <div class="filters"><label class="sr" for="st">Preview state</label>
+            <select id="st" class="chip" title="Preview loading, empty and error states"><option value="ready">State: ready</option><option value="loading">State: loading</option><option value="empty">State: no results</option><option value="error">State: error</option></select></div>
+        </div>
+        <div class="scroll"><table>
+          <caption class="sr">Accounts sorted by risk. Select a column header to sort.</caption>
+          <thead><tr>
+            <th scope="col"><button data-k="name">Account</button></th>
+            <th scope="col"><button data-k="score">Health</button></th>
+            <th scope="col" class="r"><button data-k="arr">ARR</button></th>
+            <th scope="col" class="r"><button data-k="days">Renews in</button></th>
+            <th scope="col">Main signal</th>
+            <th scope="col">Owner</th>
+          </tr></thead>
+          <tbody id="rows"></tbody>
+        </table></div>
+        <div class="sub" id="tfoot"></div>
+      </article>
+
+      <article class="card span-4" aria-labelledby="tk">
+        <h2 id="tk" style="font-size:18px;color:var(--fg)">Your day</h2>
+        <ul class="tasks" id="tasks"></ul>
+      </article>
+    </section>
+  </main>
+</div>
+
+<div id="overlay"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const ACC=[
+ {name:"Halvorsen Logistics",seg:"Enterprise",score:34,arr:480000,days:21,signal:"Exec sponsor left",owner:"Priya Nair",kind:"Champion loss",usage:"-41%",nps:"-12",tix:3,next:"Book exec intro with new COO"},
+ {name:"Brightpath Health",seg:"Enterprise",score:41,arr:362000,days:34,signal:"Logins down 41%",owner:"Tomás Ruiz",kind:"Low usage",usage:"-41%",nps:"+8",tix:1,next:"Run adoption review"},
+ {name:"Marlowe & Finch",seg:"Mid-market",score:38,arr:148000,days:12,signal:"2 open P1 tickets",owner:"Hana Berg",kind:"Support escalation",usage:"-6%",nps:"-20",tix:4,next:"Escalate to engineering lead"},
+ {name:"Kestrel Foods",seg:"Mid-market",score:47,arr:96000,days:48,signal:"Seats unused: 58%",owner:"Priya Nair",kind:"Low usage",usage:"-22%",nps:"+3",tix:0,next:"Seat right-sizing call"},
+ {name:"Tidewater Energy",seg:"Enterprise",score:52,arr:540000,days:67,signal:"Competitor evaluation",owner:"Sam Okafor",kind:"Competitor",usage:"-4%",nps:"+1",tix:2,next:"Schedule value review"},
+ {name:"Orchard Learning",seg:"SMB",score:44,arr:38000,days:29,signal:"Payment failed twice",owner:"Hana Berg",kind:"Billing",usage:"-9%",nps:"+10",tix:0,next:"Confirm billing contact"},
+ {name:"Pinecrest Legal",seg:"Mid-market",score:58,arr:122000,days:75,signal:"No QBR in 6 months",owner:"Tomás Ruiz",kind:"Low engagement",usage:"-11%",nps:"+14",tix:1,next:"Send QBR invite"},
+ {name:"Lumen Studios",seg:"SMB",score:61,arr:27000,days:52,signal:"Onboarding stalled",owner:"Sam Okafor",kind:"Low usage",usage:"-3%",nps:"+9",tix:1,next:"Offer training session"},
+ {name:"Corvid Analytics",seg:"Enterprise",score:78,arr:610000,days:41,signal:"Expansion interest",owner:"Priya Nair",kind:"Healthy",usage:"+18%",nps:"+42",tix:0,next:"Share expansion pricing"},
+ {name:"Atlas Freight",seg:"Mid-market",score:83,arr:204000,days:58,signal:"Healthy",owner:"Hana Berg",kind:"Healthy",usage:"+9%",nps:"+37",tix:0,next:"Request case study"},
+ {name:"Bluebird Dental",seg:"SMB",score:88,arr:19000,days:80,signal:"Healthy",owner:"Sam Okafor",kind:"Healthy",usage:"+5%",nps:"+51",tix:0,next:"None"},
+ {name:"Quarry & Co",seg:"Mid-market",score:71,arr:88000,days:63,signal:"Champion promoted",owner:"Tomás Ruiz",kind:"Healthy",usage:"+2%",nps:"+22",tix:0,next:"Meet new stakeholders"}
+];
+const TASKS=[["Call Halvorsen COO","Renews in 21 days · $480K"],["Reply to Marlowe & Finch escalation","P1 open 3 days"],["Prep Brightpath adoption review","Tomorrow 10:00"],["Send Pinecrest QBR invite","Overdue by 2 days"]];
+const $=s=>document.querySelector(s);
+const st={seg:"All",owner:"",sort:"score",dir:1,state:"ready"};
+const money=n=>n>=1e6?"$"+(n/1e6).toFixed(1)+"M":"$"+Math.round(n/1e3)+"K";
+const band=s=>s<50?["bad","At risk"]:s<70?["warn","Watch"]:["good","Healthy"];
+const barCol=s=>s<50?"var(--bad)":s<70?"#e0a21a":"var(--good)";
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let lastFocus=null,undoTimer=null;
+
+function filtered(){
+  const q=$("#q").value.trim().toLowerCase();
+  return ACC.filter(a=>(st.seg==="All"||a.seg===st.seg)&&(!st.owner||a.owner===st.owner)&&(!q||a.name.toLowerCase().includes(q)));
+}
+function render(){
+  const all=filtered(), risk=all.filter(a=>a.score<50), watch=all.filter(a=>a.score>=50&&a.score<70), good=all.filter(a=>a.score>=70);
+  const sum=l=>l.reduce((t,a)=>t+a.arr,0);
+  $("#riskArr").textContent=money(sum(risk));
+  $("#riskSub").textContent=risk.length+" accounts below a health score of 50";
+  const kinds={};risk.forEach(a=>kinds[a.kind]=(kinds[a.kind]||0)+a.arr);
+  const ent=Object.entries(kinds).sort((a,b)=>b[1]-a[1]).slice(0,4), mx=ent.length?ent[0][1]:1;
+  $("#reasons").innerHTML=ent.length?ent.map(([k,v])=>`<div class="reason"><span>${esc(k)}</span><span class="rtrack"><i style="width:${v/mx*100}%"></i></span><span class="num" style="text-align:right">${money(v)}</span></div>`).join(""):`<div class="sub">No at-risk accounts in this view.</div>`;
+  const ren=all.filter(a=>a.days<=90);
+  $("#renArr").textContent=money(sum(ren));
+  $("#renSub").textContent=ren.length+" renewals · "+money(sum(ren.filter(a=>a.score<50)))+" at risk";
+  const months=[["Nov",0,30],["Dec",31,60],["Jan",61,90]], mm=Math.max(1,...months.map(m=>sum(ren.filter(a=>a.days>=m[1]&&a.days<=m[2]))));
+  $("#bars").innerHTML=months.map(([n,lo,hi])=>{const l=ren.filter(a=>a.days>=lo&&a.days<=hi),t=sum(l),r=sum(l.filter(a=>a.score<50));
+    return `<div class="bcol"><div class="bval num">${money(t)}</div><div class="btrack" style="flex:none;height:${Math.max(6,t/mm*100)}px">${r?`<div class="bseg risk" style="height:${r/t*100}%"></div>`:""}<div class="bseg ok" style="flex:1"></div></div><div class="blab">${n}${r?` · ${money(r)} at risk`:""}</div></div>`}).join("");
+  $("#bars").setAttribute("aria-label","Renewal ARR by month: "+months.map(([n,lo,hi])=>n+" "+money(sum(ren.filter(a=>a.days>=lo&&a.days<=hi)))).join(", "));
+  const tot=all.length||1;
+  $("#hcount").textContent=" · "+all.length+" accounts";
+  $("#hbar").innerHTML=[[risk,"sw-bad"],[watch,"sw-warn"],[good,"sw-good"]].map(([l,c])=>l.length?`<i class="${c}" style="flex:${l.length}"></i>`:"").join("");
+  $("#hbar").setAttribute("aria-label",`${risk.length} at risk, ${watch.length} watch, ${good.length} healthy`);
+  $("#legend").innerHTML=[["sw-bad","At risk",risk],["sw-warn","Watch",watch],["sw-good","Healthy",good]].map(([c,n,l])=>`<span><em class="${c}"></em>${n} <b class="num">${l.length}</b> · ${money(sum(l))}</span>`).join("");
+  renderTable(all);
+}
+function renderTable(all){
+  const body=$("#rows"), cols=6;
+  if(st.state==="loading"){body.innerHTML=Array.from({length:5},()=>`<tr>${`<td><div class="skel"></div></td>`.repeat(cols)}</tr>`).join("");$("#tfoot").textContent="Loading accounts…";return}
+  if(st.state==="error"){body.innerHTML=`<tr><td colspan="${cols}"><div class="state"><h3>Couldn't load accounts</h3>The CRM didn't respond. Your filters are kept.<br><br><button class="btn" id="retry">Try again</button></div></td></tr>`;$("#retry").onclick=()=>{$("#st").value="ready";st.state="ready";render()};$("#tfoot").textContent="";return}
+  let rows=st.state==="empty"?[]:all.slice().sort((a,b)=>{const k=st.sort;return (typeof a[k]==="string"?a[k].localeCompare(b[k]):a[k]-b[k])*st.dir});
+  if(!rows.length){body.innerHTML=`<tr><td colspan="${cols}"><div class="state"><h3>No accounts match these filters</h3>Try a different segment or owner.<br><br><button class="btn sec" id="clr">Clear filters</button></div></td></tr>`;$("#clr").onclick=()=>{st.seg="All";st.owner="";$("#owner").value="";$("#q").value="";$("#st").value="ready";st.state="ready";syncChips();render()};$("#tfoot").textContent="0 accounts";return}
+  body.innerHTML=rows.map((a,i)=>{const [c,l]=band(a.score);return `<tr class="row" data-i="${ACC.indexOf(a)}">
+    <td class="name"><button>${esc(a.name)}<span class="seg">${a.seg}</span></button></td>
+    <td><span class="score"><b class="num">${a.score}</b><span class="mini" aria-hidden="true"><i style="width:${a.score}%;background:${barCol(a.score)}"></i></span><span class="pill ${c}">${l}</span></span></td>
+    <td class="r num">${money(a.arr)}</td><td class="r num">${a.days} days</td><td>${esc(a.signal)}</td><td>${esc(a.owner)}</td></tr>`}).join("");
+  $("#tfoot").textContent=`Showing ${rows.length} of ${rows.length} accounts · select a row for detail`;
+  document.querySelectorAll("th button").forEach(b=>{const on=b.dataset.k===st.sort;b.parentElement.setAttribute("aria-sort",on?(st.dir>0?"ascending":"descending"):"none");b.textContent=b.textContent.replace(/ [▲▼]$/,"")+(on?(st.dir>0?" ▲":" ▼"):"")});
+}
+function syncChips(){document.querySelectorAll("[data-seg]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.seg===st.seg))}
+function openDrawer(a){
+  lastFocus=document.activeElement;const [c,l]=band(a.score);
+  $("#overlay").innerHTML=`<div class="scrim" id="scrim"></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="dn">
+    <div style="display:flex;justify-content:space-between;align-items:start;gap:12px"><div><div class="sub">${a.seg} · Owner ${esc(a.owner)}</div><h2 id="dn">${esc(a.name)}</h2></div><button class="ibtn" id="dx" aria-label="Close detail">✕</button></div>
+    <span class="pill ${c}" style="align-self:flex-start">${l} · score ${a.score}</span>
+    <div class="dgrid"><div><span>ARR</span><b class="num">${money(a.arr)}</b></div><div><span>Renews in</span><b class="num">${a.days} days</b></div><div><span>Usage, 30 days</span><b class="num">${a.usage}</b></div><div><span>NPS change</span><b class="num">${a.nps}</b></div><div><span>Open tickets</span><b class="num">${a.tix}</b></div><div><span>Main signal</span><b style="font-size:14px">${esc(a.signal)}</b></div></div>
+    <div><div class="sub">Suggested next step</div><div style="font-weight:600;font-size:16px;margin-top:4px">${esc(a.next)}</div></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:auto"><button class="btn" id="mk">Add to my day</button><button class="btn sec" id="rs">Snooze 7 days</button></div></aside>`;
+  $("#dx").focus();
+  const close=()=>{$("#overlay").innerHTML="";document.removeEventListener("keydown",esck);lastFocus&&lastFocus.focus()};
+  const esck=e=>{if(e.key==="Escape")close()};document.addEventListener("keydown",esck);
+  $("#scrim").onclick=close;$("#dx").onclick=close;
+  $("#mk").onclick=()=>{close();const li=document.createElement("li");li.innerHTML=`<label><input type="checkbox"><span>${esc(a.next)}<small>${esc(a.name)} · added just now</small></span></label>`;$("#tasks").prepend(li);toast("Added to your day")};
+  $("#rs").onclick=()=>{close();toast(`${a.name} snoozed for 7 days`,true)};
+}
+function toast(msg,undo){
+  clearTimeout(undoTimer);$("#toast").innerHTML=`<div class="toast"><span>${esc(msg)}</span>${undo?`<button id="ud">Undo</button>`:""}</div>`;
+  if(undo)$("#ud").onclick=()=>{$("#toast").innerHTML="";toast("Snooze undone")};
+  undoTimer=setTimeout(()=>$("#toast").innerHTML="",5000);
+}
+document.querySelectorAll("[data-seg]").forEach(b=>b.onclick=()=>{st.seg=b.dataset.seg;syncChips();render()});
+$("#owner").onchange=e=>{st.owner=e.target.value;render()};
+$("#q").oninput=render;
+$("#st").onchange=e=>{st.state=e.target.value;renderTable(filtered())};
+document.querySelectorAll("th button").forEach(b=>b.onclick=()=>{const k=b.dataset.k;if(st.sort===k)st.dir*=-1;else{st.sort=k;st.dir=1}renderTable(filtered())});
+$("#rows").onclick=e=>{const r=e.target.closest("tr.row");if(r)openDrawer(ACC[r.dataset.i])};
+document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key==="k"){e.preventDefault();$("#q").focus()}});
+$("#tasks").innerHTML=TASKS.map(t=>`<li><label><input type="checkbox"><span>${t[0]}<small>${t[1]}</small></span></label></li>`).join("");
+render();
+</script>

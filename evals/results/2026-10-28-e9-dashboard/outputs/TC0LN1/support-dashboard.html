@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Staffing – Morning Brief</title>
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f4f3ef; --surface:#fcfcfb; --text:#0b0b0b; --text2:#52514e; --muted:#6c6b66;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10); --hover:rgba(11,11,11,.045);
+  --s1:#2a78d6; --s2:#eb6834; --good:#0ca30c; --goodtext:#006300; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --gapfill:rgba(208,59,59,.10); --accent:#2a78d6; --accent-ink:#fff; --sel:rgba(42,120,214,.09);
+}
+@media (prefers-color-scheme:dark){:root{
+  color-scheme:dark;
+  --bg:#121211; --surface:#1a1a19; --text:#f0efec; --text2:#c3c2b7; --muted:#9d9c93;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10); --hover:rgba(255,255,255,.05);
+  --s1:#3987e5; --s2:#d95926; --goodtext:#0ca30c; --gapfill:rgba(208,59,59,.20); --accent:#3987e5; --sel:rgba(57,135,229,.16);
+}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1480px;margin:0 auto;padding:20px 24px 48px}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+h1{font-size:20px;margin:0;font-weight:650}
+.sub{color:var(--text2);font-size:13px;margin-top:2px}
+.meta{color:var(--muted);font-size:12px;text-align:right}
+.meta b{color:var(--text2);font-weight:600}
+h2{font-size:14px;margin:0;font-weight:650}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px}
+.card-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 16px 0}
+.card-h p{margin:2px 0 0;color:var(--text2);font-size:12.5px}
+section{margin-top:16px}
+
+/* call banner */
+.call{display:flex;gap:14px;align-items:flex-start;padding:14px 16px;border-left:4px solid var(--crit)}
+.call.ok{border-left-color:var(--good)} .call.warn{border-left-color:var(--warn)}
+.call .ico{flex:none;margin-top:2px}
+.call h2{font-size:16px}
+.call p{margin:3px 0 0;color:var(--text2)}
+.call strong{color:var(--text)}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px}
+.kpi{display:block;width:100%;text-align:left;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:inherit}
+.kpi:hover{background:var(--hover)}
+.kpi .l{color:var(--text2);font-size:12.5px;display:flex;justify-content:space-between}
+.kpi .v{font-size:28px;font-weight:650;line-height:1.15;margin-top:4px;letter-spacing:-.01em}
+.kpi .v small{font-size:14px;color:var(--text2);font-weight:500}
+.kpi .d{font-size:12.5px;margin-top:2px;color:var(--text2);display:flex;gap:6px;align-items:center}
+.d .tag{font-weight:600;display:inline-flex;gap:3px;align-items:center}
+.d .bad{color:var(--text)} .d svg{flex:none}
+
+/* table */
+.main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+.tw{overflow-x:auto;padding:8px 0 0}
+table{border-collapse:collapse;width:100%}
+th,td{padding:0 10px;height:44px;white-space:nowrap;border-bottom:1px solid var(--grid);text-align:left}
+th{height:36px;font-size:11.5px;font-weight:600;color:var(--text2);letter-spacing:.02em;position:sticky;top:0;background:var(--surface)}
+th.n,td.n{text-align:right}
+th[title]{cursor:help} th[title] span{border-bottom:1px dotted var(--muted)}
+tbody tr.q{cursor:pointer}
+tbody tr.q:hover{background:var(--hover)}
+tbody tr.sel{background:var(--sel)!important;box-shadow:inset 3px 0 0 var(--accent)}
+td.name{max-width:230px}
+.qname{background:none;border:0;padding:0;font-weight:600;text-align:left;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:block}
+.tier{font-size:11.5px;color:var(--muted);display:block;line-height:1.2}
+.dim{color:var(--muted)}
+.step{display:inline-flex;align-items:center;gap:0;border:1px solid var(--axis);border-radius:6px;overflow:hidden;background:var(--surface)}
+.step button{width:28px;height:28px;border:0;background:none;font-size:16px;line-height:1}
+.step button:hover:not(:disabled){background:var(--hover)}
+.step button:disabled{opacity:.35;cursor:not-allowed}
+.step output{min-width:30px;text-align:center;font-weight:650}
+.was{font-size:11px;color:var(--muted);display:block;line-height:1;margin-top:2px;text-align:right;height:11px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600}
+.gap{font-weight:650}
+tfoot td{height:42px;font-weight:650;border-bottom:0;background:var(--surface)}
+.foot{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 16px;border-top:1px solid var(--grid);font-size:13px}
+.foot .msg{color:var(--text2)}
+.btn{border:1px solid var(--axis);background:var(--surface);border-radius:6px;padding:6px 12px;font-weight:600;font-size:13px}
+.btn:hover:not(:disabled){background:var(--hover)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.pri:hover:not(:disabled){filter:brightness(1.08);background:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:3px 9px;font-size:12px}
+
+/* moves */
+.moves{list-style:none;margin:0;padding:8px 16px 0}
+.moves li{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--grid)}
+.moves .n{flex:none;font-size:18px;font-weight:700;width:24px;text-align:center}
+.moves .t{font-size:13px;line-height:1.3} .moves .t span{color:var(--text2);font-size:12px;display:block}
+.mfoot{padding:12px 16px 16px;display:flex;flex-direction:column;gap:10px}
+.note{font-size:12.5px;color:var(--text2);margin:0}
+.note b{color:var(--text)}
+.out{list-style:none;padding:8px 16px 14px;margin:0}
+.out li{display:flex;justify-content:space-between;gap:8px;padding:5px 0;font-size:13px}
+.out span{color:var(--muted)}
+
+/* charts */
+.charts{display:grid;grid-template-columns:3fr 2fr;gap:16px}
+.legend{display:flex;gap:16px;padding:8px 16px 0;font-size:12.5px;color:var(--text2);flex-wrap:wrap}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.legend i.sh{height:10px;width:10px;background:var(--gapfill);border:1px solid var(--crit);border-radius:2px}
+.chart{position:relative;padding:4px 8px 8px}
+.chart svg{display:block;width:100%;overflow:visible}
+.chart text{fill:var(--muted);font-size:11px;font-family:inherit}
+.chart .lbl{fill:var(--text2);font-weight:600;font-size:12px}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--axis);border-radius:8px;padding:8px 10px;font-size:12.5px;box-shadow:0 4px 14px rgba(0,0,0,.14);z-index:5;min-width:150px;display:none}
+.tip b{display:block;margin-bottom:3px}
+.tip div{display:flex;justify-content:space-between;gap:14px;color:var(--text2)} .tip div span:last-child{color:var(--text);font-weight:600}
+.tip i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.tbl-sm th,.tbl-sm td{height:30px;font-size:12.5px}
+
+/* tickets */
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid var(--axis)}
+td.subj{max-width:420px;overflow:hidden;text-overflow:ellipsis}
+td.cust{max-width:200px;overflow:hidden;text-overflow:ellipsis}
+th button{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+th button:focus-visible{outline:2px solid var(--accent)}
+.empty{padding:36px 16px;text-align:center;color:var(--text2)}
+.empty b{display:block;color:var(--text);margin-bottom:4px}
+.chipf{display:inline-flex;gap:6px;align-items:center;background:var(--sel);border:1px solid var(--accent);border-radius:99px;padding:2px 4px 2px 10px;font-size:12.5px;font-weight:600}
+.chipf button{border:0;background:none;width:20px;height:20px;border-radius:50%;line-height:1}
+.chipf button:hover{background:var(--hover)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--text);color:var(--surface);padding:10px 14px;border-radius:8px;display:none;gap:14px;align-items:center;z-index:20;font-size:13px;box-shadow:0 6px 24px rgba(0,0,0,.3)}
+.toast button{background:none;border:0;color:inherit;text-decoration:underline;font-weight:700}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+@media (max-width:1180px){.main,.charts{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:720px){.wrap{padding:14px 16px 40px}.kpis{grid-template-columns:repeat(2,1fr)}.meta{text-align:left}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Support staffing — morning brief</h1>
+      <div class="sub">Wednesday, 28 Oct 2026 · where should the 40 agents sit today?</div>
+    </div>
+    <div class="meta">Snapshot <b>07:45 PT</b> · Helpdesk sync every 5 min<br>Day shift starts 08:00 · 36 of 40 agents on shift</div>
+  </header>
+
+  <div id="call" class="card call" role="status" aria-live="polite"></div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <section class="main" id="plan">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <h2>Queue coverage — set today's assignments</h2>
+          <p>Use + / − to move agents between queues. Sorted by shortfall at 07:45. Click a queue to filter the tickets below.</p>
+        </div>
+      </div>
+      <div class="tw"><table id="qtable"></table></div>
+      <div class="foot" id="qfoot"></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card">
+        <div class="card-h"><div><h2>Suggested moves</h2><p>Fewest moves that close the biggest gaps, weighted by customer priority.</p></div></div>
+        <ul class="moves" id="moves"></ul>
+        <div class="mfoot" id="mfoot"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><h2>Out today (4 of 40)</h2></div></div>
+        <ul class="out">
+          <li>Priya Raman <span>PTO · back Mon</span></li>
+          <li>Tomás Herrera <span>PTO · back Fri</span></li>
+          <li>Marcus Webb <span>Sick · day-to-day</span></li>
+          <li>Dana Okafor <span>Training · back 13:00</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="charts">
+    <div class="card" id="c-hour">
+      <div class="card-h">
+        <div><h2>Agents needed vs. scheduled, by hour</h2><p id="hour-sub"></p></div>
+        <button class="btn sm" data-tbl="hour" aria-pressed="false">View as table</button>
+      </div>
+      <div class="legend"><span><i style="background:var(--s1)"></i>Agents needed (forecast)</span><span><i style="background:var(--s2)"></i>Agents scheduled</span><span><i class="sh"></i>Short by 4+ agents</span></div>
+      <div class="chart" id="hour"></div>
+    </div>
+    <div class="card" id="c-trend">
+      <div class="card-h">
+        <div><h2>Open backlog at start of day</h2><p id="trend-sub"></p></div>
+        <button class="btn sm" data-tbl="trend" aria-pressed="false">View as table</button>
+      </div>
+      <div class="chart" id="trend"></div>
+    </div>
+  </section>
+
+  <section class="card" id="tickets">
+    <div class="card-h">
+      <div><h2>Tickets to grab first</h2><p id="tk-sub"></p></div>
+      <div id="tk-filter"></div>
+    </div>
+    <div class="tw"><table id="ttable"></table></div>
+  </section>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ---------- data (snapshot 2026-10-28 07:45 PT) ---------- */
+const ON_SHIFT = 36, ROSTER = 40, PROD_MIN = 330; // productive minutes per agent per day
+const Q = [
+  // id, name, tier, backlog, overnight, forecast today, avg handle min, at-risk(<4h), breached, oldest min, priority, assigned now
+  {id:'ent',  name:'Enterprise Escalations', tier:'Tier 2 · named accounts', b:18, o:11, f:30,  aht:34, risk:4,  br:2, old:552, pr:5, a:3},
+  {id:'bill', name:'Billing & Invoices',     tier:'Tier 1–2 · month-end spike', b:80, o:41, f:150, aht:9,  risk:19, br:6, old:845, pr:4, a:4},
+  {id:'api',  name:'API & Integrations',     tier:'Tier 2 · webhook incident', b:50, o:28, f:66,  aht:19, risk:11, br:5, old:668, pr:4, a:5},
+  {id:'sso',  name:'SSO & Authentication',   tier:'Tier 2',                    b:24, o:9,  f:31,  aht:18, risk:3,  br:0, old:214, pr:4, a:4},
+  {id:'onb',  name:'Onboarding & Setup',     tier:'Tier 1–2',                  b:30, o:14, f:44,  aht:21, risk:5,  br:1, old:430, pr:3, a:4},
+  {id:'rep',  name:'Reporting & Exports',    tier:'Tier 1–2',                  b:52, o:17, f:58,  aht:15, risk:4,  br:0, old:392, pr:2, a:6},
+  {id:'t1',   name:'General How-to',         tier:'Tier 1',                    b:80, o:48, f:190, aht:6,  risk:12, br:3, old:310, pr:2, a:7},
+  {id:'mob',  name:'Mobile App',             tier:'Tier 1',                    b:19, o:7,  f:33,  aht:9,  risk:1,  br:0, old:185, pr:1, a:3},
+];
+Q.forEach(q=>{q.need=Math.ceil((q.b+q.f)*q.aht/PROD_MIN); q.a0=q.a;});
+const ORDER = [...Q].sort((x,y)=>(x.a-x.need)-(y.a-y.need)||y.pr-x.pr).map(q=>q.id);
+const byId = id=>Q.find(q=>q.id===id);
+
+const HOURS=['7a','8a','9a','10a','11a','12p','1p','2p','3p','4p','5p','6p'];
+const NEED =[24,31,38,42,41,35,36,40,38,33,25,18];
+const SCHED=[22,30,36,36,36,32,34,36,36,32,24,16];
+const BACKLOG_DAYS=[['Oct 15',312],['Oct 16',298],['Oct 17',306],['Oct 18',322],['Oct 19',348],['Oct 20',331],['Oct 21',309],['Oct 22',294],['Oct 23',281],['Oct 24',297],['Oct 25',318],['Oct 26',340],['Oct 27',331],['Oct 28',null]];
+
+// minutes of SLA remaining (negative = breached), minutes waiting, ARR $k
+const TK=[
+ {id:'SUP-48871',c:'Halvorsen Logistics',arr:412,q:'ent', s:'Production webhooks delayed >40 min; shipment status stale at all depots',w:185,sla:-22},
+ {id:'SUP-48860',c:'Brightwave Health',arr:286,q:'api', s:'429 rate-limit errors on /v2/records/bulk since 02:10 PT',w:340,sla:-70},
+ {id:'SUP-48889',c:'Ostrander & Pike LLP',arr:96,q:'bill', s:'Annual renewal invoice shows 140 seats; contract says 110',w:390,sla:-41},
+ {id:'SUP-48902',c:'Kestrel Freight Systems',arr:143,q:'bill', s:'Invoice INV-20931 charged twice; customer disputing with their bank',w:230,sla:12},
+ {id:'SUP-48833',c:'Northfield Credit Union',arr:198,q:'sso', s:'SAML login loop after IdP certificate rotation',w:135,sla:35},
+ {id:'SUP-48910',c:'Meridian Bioscience',arr:224,q:'ent', s:'Data export job stuck at 87% for 11 hours — audit due Friday',w:260,sla:48},
+ {id:'SUP-48921',c:'Tallgrass Energy Partners',arr:175,q:'api', s:'OAuth refresh tokens expiring after 15 min instead of 24 h',w:115,sla:65},
+ {id:'SUP-48895',c:'Quillfeather Inc.',arr:38,q:'onb', s:"SCIM provisioning not creating users in the 'Contractors' group",w:430,sla:85},
+ {id:'SUP-48914',c:'Larkspur Hotels Group',arr:61,q:'rep', s:"Scheduled dashboard email is missing last week's data",w:300,sla:100},
+ {id:'SUP-48926',c:'Voss & Calloway Retail',arr:52,q:'t1', s:'How do we bulk-reassign 400 contacts to a new account owner?',w:165,sla:110},
+ {id:'SUP-48918',c:'Ardent Manufacturing',arr:330,q:'sso', s:'MFA enrollment prompt blocks service accounts',w:90,sla:130},
+ {id:'SUP-48899',c:'Solano Water District',arr:47,q:'bill', s:'Need W-9 and updated remit-to address on invoices',w:560,sla:190},
+ {id:'SUP-48930',c:'Pinecrest Education Trust',arr:24,q:'mob', s:'iOS app crashes when opening attachments larger than 20 MB',w:65,sla:175},
+];
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const MINUS='−';
+const sgn=n=>n>0?'+'+n:n<0?MINUS+Math.abs(n):'0';
+const dur=m=>{const a=Math.abs(m),h=Math.floor(a/60),r=a%60;return h?`${h}h ${String(r).padStart(2,'0')}m`:`${r}m`;};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const total=()=>Q.reduce((s,q)=>s+q.a,0);
+
+const ICON={
+  crit:'<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1.5 13 12.5H1z" fill="var(--crit)"/><path d="M7 5.5v3.2M7 10v.1" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  warn:'<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 .8 13.2 7 7 13.2.8 7z" fill="var(--warn)"/><path d="M7 4v3.4M7 9v.1" stroke="#0b0b0b" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  good:'<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="6.2" fill="var(--good)"/><path d="m4 7.2 2.2 2.2L10 5.2" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  over:'<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.6" fill="none" stroke="var(--muted)" stroke-width="1.6"/></svg>',
+  up:'<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1 9.5 8.5h-9z" fill="currentColor"/></svg>',
+  down:'<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 9 .5 1.5h9z" fill="currentColor"/></svg>',
+};
+function status(q){
+  const g=q.a-q.need;
+  if(g<=-2) return {k:'crit',label:'Short',g};
+  if(g===-1) return {k:'warn',label:'Tight',g};
+  if(g<=1)  return {k:'good',label:'Covered',g};
+  return {k:'over',label:'Surplus',g};
+}
+
+/* ---------- state in URL hash ---------- */
+const S={sel:null,sort:'sla',dir:1,tbl:{hour:false,trend:false},prev:null};
+function readHash(){
+  const p=new URLSearchParams(location.hash.slice(1));
+  if(p.get('queue')&&byId(p.get('queue'))) S.sel=p.get('queue');
+  if(['sla','arr','w'].includes(p.get('sort'))) S.sort=p.get('sort');
+  const plan=(p.get('plan')||'').split(',').map(Number);
+  if(plan.length===Q.length&&plan.every(n=>Number.isInteger(n)&&n>=0)&&plan.reduce((a,b)=>a+b,0)===ON_SHIFT) Q.forEach((q,i)=>q.a=plan[i]);
+}
+function writeHash(){
+  const p=new URLSearchParams();
+  if(S.sel)p.set('queue',S.sel);
+  if(S.sort!=='sla')p.set('sort',S.sort);
+  if(Q.some(q=>q.a!==q.a0))p.set('plan',Q.map(q=>q.a).join(','));
+  const h=p.toString();
+  history.replaceState(null,'',h?'#'+h:location.pathname+location.search);
+}
+
+/* ---------- suggestions ---------- */
+function suggest(){
+  const a=Object.fromEntries(Q.map(q=>[q.id,q.a]));
+  const recv=[...Q].sort((x,y)=>y.pr-x.pr||(y.need-a[y.id])-(x.need-a[x.id]));
+  const moves=[];
+  for(const r of recv){
+    while(a[r.id]<r.need){
+      const donor=Q.filter(d=>a[d.id]>d.need).sort((x,y)=>(a[y.id]-y.need)-(a[x.id]-x.need)||x.pr-y.pr)[0];
+      if(!donor)break;
+      a[donor.id]--;a[r.id]++;
+      const m=moves.find(m=>m.from===donor.id&&m.to===r.id);
+      m?m.n++:moves.push({from:donor.id,to:r.id,n:1});
+    }
+  }
+  return {moves,after:a};
+}
+
+/* ---------- renderers ---------- */
+function renderCall(){
+  const short=Q.filter(q=>q.a<q.need),sum=short.reduce((s,q)=>s+q.need-q.a,0);
+  const need=Q.reduce((s,q)=>s+q.need,0);
+  const {moves}=suggest(); const mv=moves.reduce((s,m)=>s+m.n,0);
+  const el=$('#call');
+  const list=short.sort((a,b)=>(a.a-a.need)-(b.a-b.need)).map(q=>`${q.name} (${sgn(q.a-q.need)})`).join(', ');
+  let cls='call',ico='crit',h,p;
+  if(!short.length){cls='call ok';ico='good';h='Every queue is staffed to forecast';p=`All ${ON_SHIFT} on-shift agents are placed against ${need} agents of forecast need.`;}
+  else if(mv>0){h=`Move ${mv} agent${mv>1?'s':''} before 08:00 — ${sum} agent${sum>1?'s':''} short across ${short.length} queue${short.length>1?'s':''}`;
+    p=`<strong>Short:</strong> ${list}. Surplus in ${Q.filter(q=>q.a>q.need).map(q=>q.name).join(', ')} covers part of it; see suggested moves.`;}
+  else{cls='call warn';ico='warn';h=`Plan is balanced, but still ${sum} agent${sum>1?'s':''} short of forecast`;
+    p=`<strong>Remaining gap:</strong> ${list}. Forecast needs ${need} agents; ${ON_SHIFT} are on shift. Options: overtime for the 10:00–11:00 peak, deflect Tier 1 how-to to the help center, or pull Tier 2 leads off project work.`;}
+  el.className='card '+cls;
+  el.innerHTML=`<span class="ico">${ICON[ico==='good'?'good':ico==='warn'?'warn':'crit'].replace('width="14" height="14"','width="22" height="22"')}</span><div><h2>${h}</h2><p>${p}</p></div>`;
+}
+
+function kpi(label,value,delta,tip,href){
+  return `<button class="kpi" data-go="${href}" title="${esc(tip)}"><div class="l">${label}</div><div class="v">${value}</div><div class="d">${delta}</div></button>`;
+}
+function renderKPIs(){
+  const backlog=Q.reduce((s,q)=>s+q.b,0), fc=Q.reduce((s,q)=>s+q.f,0);
+  const risk=Q.reduce((s,q)=>s+q.risk,0), br=Q.reduce((s,q)=>s+q.br,0);
+  const need=Q.reduce((s,q)=>s+q.need,0);
+  const bad=(t)=>`<span class="tag bad">${ICON.up} ${t}</span>`;
+  $('#kpis').innerHTML=
+    kpi('Open backlog',backlog,`${bad('+22')} vs yesterday (331)`,'Tickets open and unresolved at 07:45 PT, all queues.','#trend')+
+    kpi('Forecast inbound today',fc.toLocaleString(),`${bad('+9%')} vs avg Wednesday (552)`,'Forecast new tickets for the full day; based on trailing 8 Wednesdays plus month-end invoice adjustment.','#c-hour')+
+    kpi('SLA at risk (next 4 h)',risk,`${bad(br+' already breached')}`,'Open tickets whose first-response or resolution SLA expires before 11:45 PT.','#tickets')+
+    kpi('First-response SLA, yesterday','91.4<small>%</small>',`<span class="tag bad">${ICON.down} ${MINUS}3.6 pts</span> vs 95% target`,'Share of tickets first-responded within contract SLA, 27 Oct.','#plan')+
+    kpi('Agents needed vs on shift',`${need} <small>vs ${ON_SHIFT}</small>`,`<span class="tag bad">${ICON.down} ${need-ON_SHIFT} short</span> · ${ROSTER-ON_SHIFT} of ${ROSTER} out`,'Agents needed = sum of per-queue need (see Needed column). 4 of 40 are out today.','#plan');
+}
+
+function renderTable(){
+  const t=total(), rem=ON_SHIFT-t;
+  const rows=ORDER.map(id=>byId(id)).map(q=>{
+    const st=status(q), changed=q.a!==q.a0;
+    return `<tr class="q ${S.sel===q.id?'sel':''}" data-q="${q.id}">
+      <td class="name"><button class="qname" data-sel="${q.id}" title="${esc(q.name)}">${esc(q.name)}</button><span class="tier">${esc(q.tier)}</span></td>
+      <td class="n">${q.b}</td><td class="n dim">+${q.o}</td><td class="n">${q.f}</td>
+      <td class="n">${q.risk}${q.br?` <span class="dim">(${q.br} late)</span>`:''}</td>
+      <td class="n">${dur(q.old)}</td>
+      <td class="n"><b>${q.need}</b></td>
+      <td class="n"><div class="step" role="group" aria-label="Agents assigned to ${esc(q.name)}">
+        <button data-d="-1" data-q="${q.id}" aria-label="Remove one agent from ${esc(q.name)}" ${q.a<=0?'disabled':''}>${MINUS}</button>
+        <output>${q.a}</output>
+        <button data-d="1" data-q="${q.id}" aria-label="Add one agent to ${esc(q.name)}" ${rem<=0?'disabled title="All 36 on-shift agents are assigned. Remove one from another queue first."':''}>+</button></div>
+        <span class="was">${changed?`was ${q.a0}`:''}</span></td>
+      <td class="n gap">${sgn(q.a-q.need)}</td>
+      <td><span class="chip">${ICON[st.k]}${st.label}</span></td></tr>`;
+  }).join('');
+  const sum=k=>Q.reduce((s,q)=>s+q[k],0);
+  $('#qtable').innerHTML=`<thead><tr>
+    <th>Queue</th>
+    <th class="n" title="Open tickets at 07:45 PT"><span>Backlog</span></th>
+    <th class="n" title="New tickets received since 17:00 PT yesterday (included in backlog)"><span>Overnight</span></th>
+    <th class="n" title="Forecast new tickets for today"><span>Forecast</span></th>
+    <th class="n" title="Tickets whose SLA expires before 11:45 PT (already-breached count in brackets)"><span>SLA at risk</span></th>
+    <th class="n" title="Age of the oldest ticket still waiting on us"><span>Oldest</span></th>
+    <th class="n" title="(Backlog + forecast) × avg handle time ÷ ${PROD_MIN} productive minutes per agent, rounded up"><span>Needed</span></th>
+    <th class="n">Assigned</th>
+    <th class="n" title="Assigned minus needed"><span>Gap</span></th>
+    <th>Status</th></tr></thead><tbody>${rows}</tbody>
+    <tfoot><tr><td>All queues</td><td class="n">${sum('b')}</td><td class="n dim">+${sum('o')}</td><td class="n">${sum('f')}</td><td class="n">${sum('risk')} <span class="dim">(${sum('br')} late)</span></td><td></td><td class="n">${sum('need')}</td><td class="n">${t}</td><td class="n">${sgn(t-sum('need'))}</td><td></td></tr></tfoot>`;
+  const dirty=Q.some(q=>q.a!==q.a0);
+  $('#qfoot').innerHTML=`<span class="msg">${rem===0?`All ${ON_SHIFT} on-shift agents assigned.`:`<b>${rem} agent${rem>1?'s':''} unassigned</b> — add them to a queue.`} Plan lives in the page link, so you can paste it to team leads.</span>
+    <span style="display:flex;gap:8px"><button class="btn" id="copy">Copy plan link</button><button class="btn" id="reset" ${dirty?'':'disabled'}>Reset to current</button></span>`;
+}
+
+function renderMoves(){
+  const {moves}=suggest(), n=moves.reduce((s,m)=>s+m.n,0);
+  $('#moves').innerHTML=moves.length?moves.map(m=>`<li><span class="n">${m.n}</span><div class="t">${esc(byId(m.from).name)} <b>→</b> ${esc(byId(m.to).name)}<span>${byId(m.to).name} is ${byId(m.to).need-byId(m.to).a} short · ${byId(m.from).name} is ${byId(m.from).a-byId(m.from).need} over</span></div></li>`).join('')
+    :`<li><div class="t">No moves left to make.<span>Nothing is above forecast need, or nothing is short.</span></div></li>`;
+  const short=Q.reduce((s,q)=>s+Math.max(0,q.need-q.a),0);
+  $('#mfoot').innerHTML=(moves.length?`<button class="btn pri" id="apply">Apply ${n} move${n>1?'s':''}</button>`:'')+
+    `<p class="note">${short?`After moves, <b>${Math.max(0,short-n)} agent${short-n===1?'':'s'}</b> of need remain uncovered. Only surplus above forecast need is moved.`:'All forecast need is covered.'}</p>`;
+}
+
+/* ---------- charts ---------- */
+const tip=el=>el.querySelector('.tip');
+function lineChart(host,cfg){
+  const w=Math.max(host.clientWidth-16,280),h=cfg.h||250,m={l:34,r:(cfg.endLabels||cfg.ref)?86:14,t:12,b:26};
+  const iw=w-m.l-m.r,ih=h-m.t-m.b,n=cfg.labels.length;
+  const x=i=>m.l+(n===1?iw/2:i*iw/(n-1)), y=v=>m.t+ih-(v-cfg.min)/(cfg.max-cfg.min)*ih;
+  let s=`<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(cfg.aria)}">`;
+  for(let v=cfg.min;v<=cfg.max;v+=cfg.step) s+=`<line x1="${m.l}" x2="${w-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="${v===cfg.min?'var(--axis)':'var(--grid)'}"/><text x="${m.l-6}" y="${y(v)+4}" text-anchor="end">${v}</text>`;
+  if(cfg.shade) cfg.shade.forEach(([a,b])=>{const hf=iw/(n-1)/2,x0=Math.max(m.l,x(a)-hf),x1=Math.min(w-m.r,x(b)+hf);s+=`<rect x="${x0}" width="${x1-x0}" y="${m.t}" height="${ih}" fill="var(--gapfill)"/>`;});
+  cfg.labels.forEach((l,i)=>{if(!cfg.skip||i%cfg.skip===cfg.skip0)s+=`<text x="${x(i)}" y="${h-8}" text-anchor="middle">${l}</text>`;});
+  if(cfg.ref) s+=`<line x1="${m.l}" x2="${w-m.r}" y1="${y(cfg.ref.v)}" y2="${y(cfg.ref.v)}" stroke="var(--muted)" stroke-dasharray="4 4"/><text x="${w-m.r+6}" y="${y(cfg.ref.v)+4}">${cfg.ref.t}</text>`;
+  const ly=[];
+  cfg.series.forEach(se=>{
+    const pts=se.values.map((v,i)=>v==null?null:[x(i),y(v)]).filter(Boolean);
+    s+=`<path d="${pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join('')}" fill="none" stroke="${se.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    if(se.dots) pts.forEach((p,i)=>s+=`<circle cx="${p[0]}" cy="${p[1]}" r="${i===pts.length-1?5:3}" fill="${se.color}" stroke="var(--surface)" stroke-width="2"/>`);
+    if(cfg.endLabels){const l=pts[pts.length-1];let ty=l[1]+4;ly.forEach(p=>{if(Math.abs(ty-p)<14)ty=p+14;});ly.push(ty);s+=`<text class="lbl" x="${l[0]+8}" y="${ty}">${se.name}</text>`;}
+  });
+  s+=`<g id="hv" style="display:none"><line y1="${m.t}" y2="${m.t+ih}" stroke="var(--muted)"/>${cfg.series.map(()=>`<circle r="4.5" stroke="var(--surface)" stroke-width="2"/>`).join('')}</g>`;
+  s+=`<rect x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent" id="hit"/></svg><div class="tip"></div>`;
+  host.innerHTML=s;
+  const hv=host.querySelector('#hv'),T=tip(host),circles=[...hv.querySelectorAll('circle')];
+  const show=ev=>{
+    const r=host.querySelector('svg').getBoundingClientRect();
+    const i=Math.max(0,Math.min(n-1,Math.round((ev.clientX-r.left-m.l)/iw*(n-1))));
+    hv.style.display='';hv.querySelector('line').setAttribute('x1',x(i));hv.querySelector('line').setAttribute('x2',x(i));
+    cfg.series.forEach((se,k)=>{const v=se.values[i];circles[k].style.display=v==null?'none':'';if(v!=null){circles[k].setAttribute('cx',x(i));circles[k].setAttribute('cy',y(v));circles[k].setAttribute('fill',se.color);}});
+    T.innerHTML=cfg.tip(i);T.style.display='block';
+    const tx=x(i)+16+T.offsetWidth>w?x(i)-T.offsetWidth-12:x(i)+16;
+    T.style.left=(tx+8)+'px';T.style.top=(m.t+4)+'px';
+  };
+  const hit=host.querySelector('#hit');
+  hit.addEventListener('pointermove',show);hit.addEventListener('pointerdown',show);
+  hit.addEventListener('pointerleave',()=>{hv.style.display='none';T.style.display='none';});
+}
+function tableView(host,head,rows){
+  host.innerHTML=`<table class="tbl-sm"><thead><tr>${head.map((h,i)=>`<th class="${i?'n':''}">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((c,i)=>`<td class="${i?'n':''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+function renderHour(){
+  const host=$('#hour');
+  const gaps=NEED.map((nv,i)=>nv-SCHED[i]);
+  const worst=gaps.indexOf(Math.max(...gaps));
+  $('#hour-sub').textContent=`Biggest hourly shortfall: ${HOURS[worst]} (${MINUS}${gaps[worst]}). Shaded hours are short by 4 or more agents.`;
+  if(S.tbl.hour) return tableView(host,['Hour (PT)','Needed','Scheduled','Gap'],HOURS.map((h,i)=>[h,NEED[i],SCHED[i],sgn(SCHED[i]-NEED[i])]));
+  const shade=[];let st=null;
+  gaps.forEach((g,i)=>{if(g>=4&&st===null)st=i;if(st!==null&&(g<4||i===gaps.length-1)){shade.push([st,g>=4?i:i-1]);st=null;}});
+  lineChart(host,{labels:HOURS,min:0,max:50,step:10,h:250,endLabels:true,shade,aria:'Agents needed versus scheduled per hour, 7am to 6pm',
+    series:[{name:'Needed',color:'var(--s1)',values:NEED},{name:'Scheduled',color:'var(--s2)',values:SCHED}],
+    tip:i=>`<b>${HOURS[i]} PT</b><div><span><i style="background:var(--s1)"></i>Needed</span><span>${NEED[i]}</span></div><div><span><i style="background:var(--s2)"></i>Scheduled</span><span>${SCHED[i]}</span></div><div><span>Gap</span><span>${sgn(SCHED[i]-NEED[i])}</span></div>`});
+}
+function renderTrend(){
+  const host=$('#trend'),today=Q.reduce((s,q)=>s+q.b,0);
+  const vals=BACKLOG_DAYS.map(d=>d[1]==null?today:d[1]), prior=vals.slice(0,-1);
+  const avg=Math.round(prior.reduce((a,b)=>a+b,0)/prior.length);
+  $('#trend-sub').textContent=`${today} today, ${today-avg>0?'+':MINUS}${Math.abs(today-avg)} vs 13-day average (${avg}). Highest in 14 days.`;
+  if(S.tbl.trend) return tableView(host,['Date','Open backlog'],BACKLOG_DAYS.map((d,i)=>[d[0]+(i===13?' (today)':''),vals[i]]));
+  lineChart(host,{labels:BACKLOG_DAYS.map(d=>d[0].replace('Oct ','')),min:240,max:400,step:40,h:250,skip:3,skip0:1,ref:{v:avg,t:'13-day avg'},
+    aria:'Open backlog at start of day, Oct 15 to Oct 28',
+    series:[{name:'Backlog',color:'var(--s1)',values:vals,dots:true}],
+    tip:i=>`<b>Oct ${BACKLOG_DAYS[i][0].slice(4)}${i===13?' (today)':''}</b><div><span><i style="background:var(--s1)"></i>Open backlog</span><span>${vals[i]}</span></div>`});
+}
+
+/* ---------- tickets ---------- */
+function slaCell(m){
+  if(m<0) return `<span class="chip">${ICON.crit}Breached ${dur(m)} ago</span>`;
+  if(m<=60) return `<span class="chip">${ICON.warn}${dur(m)} left</span>`;
+  return `<span class="chip" style="font-weight:500">${dur(m)} left</span>`;
+}
+function renderTickets(){
+  const all=S.sel?TK.filter(t=>t.q===S.sel):TK;
+  const key={sla:'sla',arr:'arr',w:'w'}[S.sort];
+  const rows=[...all].sort((a,b)=>(a[key]-b[key])*S.dir);
+  const totalRisk=S.sel?byId(S.sel).risk+byId(S.sel).br:Q.reduce((s,q)=>s+q.risk+q.br,0);
+  $('#tk-sub').textContent=`Showing ${rows.length} of ${totalRisk} tickets at risk or already breached${S.sel?'':', across all queues'}. Sorted by ${{sla:'SLA time left',arr:'account ARR',w:'time waiting'}[S.sort]}.`;
+  $('#tk-filter').innerHTML=S.sel?`<span class="chipf">Queue: ${esc(byId(S.sel).name)} <button id="clr" aria-label="Clear queue filter">×</button></span>`:'';
+  if(!rows.length){$('#ttable').innerHTML=`<tbody><tr><td class="empty" style="height:auto"><b>No tickets at risk in ${esc(byId(S.sel).name)}.</b>Nothing here expires before 11:45 PT. <br><button class="btn sm" id="clr2" style="margin-top:10px">Show all queues</button></td></tr></tbody>`;return;}
+  const th=(k,l,cls)=>`<th class="${cls||''}" aria-sort="${S.sort===k?(S.dir>0?'ascending':'descending'):'none'}"><button data-sort="${k}">${l}${S.sort===k?(S.dir>0?' ↑':' ↓'):''}</button></th>`;
+  $('#ttable').innerHTML=`<thead><tr><th>Ticket</th><th>Customer</th>${th('arr','ARR','n')}<th>Queue</th><th>Issue</th>${th('w','Waiting','n')}${th('sla','SLA')}</tr></thead><tbody>`+
+    rows.map(t=>`<tr><td><b>${t.id}</b></td><td class="cust" title="${esc(t.c)}">${esc(t.c)}</td><td class="n">$${t.arr}k</td><td>${esc(byId(t.q).name)}</td><td class="subj" title="${esc(t.s)}">${esc(t.s)}</td><td class="n">${dur(t.w)}</td><td>${slaCell(t.sla)}</td></tr>`).join('')+`</tbody>`;
+}
+
+/* ---------- events ---------- */
+function toast(msg,undo){
+  const t=$('#toast');t.innerHTML=`<span>${msg}</span>${undo?'<button id="undo">Undo</button>':''}`;t.style.display='flex';
+  clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',8000);
+  if(undo)$('#undo').onclick=()=>{undo();t.style.display='none';};
+}
+function renderAll(){renderCall();renderKPIs();renderTable();renderMoves();renderTickets();writeHash();}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button,tr.q'); if(!b)return;
+  if(b.dataset.go){document.querySelector(b.dataset.go).scrollIntoView({block:'start'});return;}
+  if(b.dataset.d){const q=byId(b.dataset.q),d=+b.dataset.d;if(d>0&&total()>=ON_SHIFT)return;if(q.a+d<0)return;q.a+=d;renderAll();const nb=document.querySelector(`button[data-q="${q.id}"][data-d="${d}"]:not(:disabled)`)||document.querySelector(`button[data-q="${q.id}"][data-d="${-d}"]:not(:disabled)`);nb&&nb.focus();return;}
+  if(b.id==='apply'){const snap=Q.map(q=>q.a),{after,moves}=suggest();Q.forEach(q=>q.a=after[q.id]);renderAll();
+    toast(`Applied ${moves.reduce((s,m)=>s+m.n,0)} moves.`,()=>{Q.forEach((q,i)=>q.a=snap[i]);renderAll();});return;}
+  if(b.id==='reset'){const snap=Q.map(q=>q.a);Q.forEach(q=>q.a=q.a0);renderAll();toast('Plan reset to current assignments.',()=>{Q.forEach((q,i)=>q.a=snap[i]);renderAll();});return;}
+  if(b.id==='copy'){navigator.clipboard&&navigator.clipboard.writeText(location.href).then(()=>toast('Plan link copied.'),()=>toast('Copy failed — copy the address bar instead.'));return;}
+  if(b.id==='clr'||b.id==='clr2'){S.sel=null;renderAll();return;}
+  if(b.dataset.sort){const k=b.dataset.sort;if(S.sort===k)S.dir*=-1;else{S.sort=k;S.dir=k==='arr'?-1:k==='w'?-1:1;}renderAll();return;}
+  if(b.dataset.tbl){const k=b.dataset.tbl;S.tbl[k]=!S.tbl[k];b.setAttribute('aria-pressed',S.tbl[k]);b.textContent=S.tbl[k]?'View as chart':'View as table';k==='hour'?renderHour():renderTrend();return;}
+  const row=b.closest('tr.q');
+  if(row&&!e.target.closest('.step')){S.sel=S.sel===row.dataset.q?null:row.dataset.q;renderAll();if(S.sel)$('#tickets').scrollIntoView({block:'nearest'});}
+});
+let rz;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{renderHour();renderTrend();},120);});
+
+readHash();
+renderAll();renderHour();renderTrend();
+</script>
+</body>
+</html>

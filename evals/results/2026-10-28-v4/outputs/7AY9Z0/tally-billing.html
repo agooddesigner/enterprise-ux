@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tally Billing Overview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
+<style>
+/*
+  Direction: cool paper canvas, white 16px-radius cards with hairline borders, indigo as the single data accent.
+  Layout: 12-col bento. One ink anchor card (projected invoice) is the hero; four quiet KPI tiles beside it;
+  explanation (trend + billing details) then action (invoices) below.
+*/
+:root {
+  --font: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --line: #e4e7ef;
+  --line-strong: #cfd4e2;
+  --fg: #10132a;
+  --muted: #586079;
+  --track: #eceef5;
+  --hover: #f3f4f9;
+
+  --accent: #5144d8;
+  --accent-fg: #ffffff;
+  --accent-soft: #edebfd;
+  --bar: #c9cdf2;
+
+  --anchor: #10132a;
+  --anchor-fg: #ffffff;
+  --anchor-muted: #aab1c9;
+  --anchor-line: rgba(255,255,255,.14);
+  --anchor-seg-1: rgba(255,255,255,.30);
+  --anchor-seg-2: rgba(255,255,255,.55);
+  --anchor-seg-3: #b8b2ff;
+  --anchor-seg-4: rgba(255,255,255,.16);
+
+  --good: #0b6b44;  --good-bg: #e3f4ec;
+  --warn: #8a4f06;  --warn-bg: #fdf0d9;
+  --bad:  #b2271c;  --bad-bg:  #fdebe9;
+
+  --shadow: 0 1px 2px rgba(16,19,42,.04);
+  --r-card: 16px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a0c12; --card: #12151d; --line: #232838; --line-strong: #353c52;
+    --fg: #eceef6; --muted: #9aa2b8; --track: #1c2030; --hover: #181c27;
+    --accent: #9e96ff; --accent-fg: #0a0c12; --accent-soft: #1f1c3f; --bar: #3a3f66;
+    --anchor: #1a1b45; --anchor-fg: #ffffff; --anchor-muted: #b7bbdc; --anchor-line: rgba(255,255,255,.16);
+    --good: #66d6a4; --good-bg: #0f2b21;
+    --warn: #f3bb62; --warn-bg: #342610;
+    --bad:  #ff9d94; --bad-bg:  #3b1613;
+    --shadow: none;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a0c12; --card: #12151d; --line: #232838; --line-strong: #353c52;
+  --fg: #eceef6; --muted: #9aa2b8; --track: #1c2030; --hover: #181c27;
+  --accent: #9e96ff; --accent-fg: #0a0c12; --accent-soft: #1f1c3f; --bar: #3a3f66;
+  --anchor: #1a1b45; --anchor-fg: #ffffff; --anchor-muted: #b7bbdc; --anchor-line: rgba(255,255,255,.16);
+  --good: #66d6a4; --good-bg: #0f2b21;
+  --warn: #f3bb62; --warn-bg: #342610;
+  --bad:  #ff9d94; --bad-bg:  #3b1613;
+  --shadow: none;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 400 14px/1.5 var(--font);
+  font-variant-numeric: tabular-nums;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 56px;
+}
+button, select { font: inherit; color: inherit; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.anchor :focus-visible { outline-color: #fff; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.wrap { max-width: 1200px; margin: 0 auto; }
+
+/* top bar */
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -.01em; }
+.logo { width: 26px; height: 26px; border-radius: 8px; background: var(--fg); color: var(--bg); display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+.brand span.sep { color: var(--line-strong); font-weight: 400; }
+.brand span.sub { color: var(--muted); font-weight: 500; }
+.tools { display: flex; align-items: center; gap: 8px; }
+.icon-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); display: grid; place-items: center; cursor: pointer; }
+.icon-btn:hover { background: var(--hover); }
+.icon-btn svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.select-wrap { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12.5px; }
+.select-wrap select { height: 36px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); padding: 0 12px; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 600; font-size: 12.5px; }
+
+/* page head */
+.head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px; padding-block: 28px 24px; }
+h1 { margin: 0; font-size: clamp(30px, 4.6vw, 44px); line-height: 1.08; letter-spacing: -.03em; font-weight: 600; text-wrap: balance; }
+.fresh { margin: 10px 0 0; color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.fresh .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--line-strong); }
+.head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* buttons */
+.btn { height: 36px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--card); font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.btn:hover { background: var(--hover); text-decoration: none; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.sm { height: 30px; padding: 0 12px; font-size: 13px; }
+.anchor .btn { background: #fff; color: #10132a; border-color: #fff; }
+.anchor .btn.ghost { background: transparent; color: var(--anchor-fg); border-color: var(--anchor-line); }
+.anchor .btn.ghost:hover { background: rgba(255,255,255,.08); }
+.anchor .btn:hover { filter: none; }
+
+/* alert strip */
+.strip { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 12px 16px; border-radius: 12px; background: var(--warn-bg); color: var(--fg); border: 1px solid color-mix(in srgb, var(--warn) 25%, transparent); margin-bottom: 20px; }
+.strip svg { width: 18px; height: 18px; stroke: var(--warn); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.strip p { margin: 0; flex: 1 1 320px; min-width: 0; }
+.strip strong { font-weight: 600; }
+.strip a { font-weight: 500; color: var(--warn); text-decoration: underline; text-underline-offset: 3px; }
+
+/* grid */
+.bento { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; }
+.bento > * { min-width: 0; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-card); padding: 24px; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+.card.anchor { background: var(--anchor); color: var(--anchor-fg); border-color: transparent; }
+.hero { grid-column: span 6; grid-row: span 2; padding: 28px; }
+.tile { grid-column: span 3; }
+.c-chart { grid-column: span 7; }
+.c-details { grid-column: span 5; }
+.c-table { grid-column: span 12; padding: 0; }
+
+.label { font-size: 13px; font-weight: 500; color: var(--muted); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.anchor .label { color: var(--anchor-muted); }
+.card h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+.card-head p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+
+.num { font-weight: 600; letter-spacing: -.035em; line-height: 1; margin-top: 12px; white-space: nowrap; }
+.num .u { font-size: .5em; font-weight: 500; letter-spacing: -.01em; color: var(--muted); margin-left: .12em; }
+.num .cur { font-size: .5em; vertical-align: .62em; margin-right: .08em; letter-spacing: 0; font-weight: 500; }
+.num .dec { font-size: .5em; letter-spacing: -.01em; font-weight: 500; vertical-align: baseline; }
+.hero .num { font-size: clamp(48px, 6.4vw, 72px); }
+.anchor .num .dec, .anchor .num .cur { color: var(--anchor-muted); }
+.tile .num { font-size: 38px; }
+.note { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+.anchor .note { color: var(--anchor-muted); }
+.hero .lede { font-size: 15px; line-height: 1.5; color: var(--anchor-fg); margin: 16px 0 0; max-width: 46ch; }
+.grow { flex: 1; min-height: 16px; }
+
+/* pills */
+.pill { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 12.5px; font-weight: 500; white-space: nowrap; background: var(--track); color: var(--muted); }
+.pill i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pill.good { background: var(--good-bg); color: var(--good); }
+.pill.warn { background: var(--warn-bg); color: var(--warn); }
+.pill.bad { background: var(--bad-bg); color: var(--bad); }
+.pill.neutral { background: var(--track); color: var(--fg); }
+.pill.inv { background: rgba(255,255,255,.14); color: #fff; }
+
+/* meters */
+.meter { height: 8px; border-radius: 999px; background: var(--track); position: relative; overflow: hidden; margin-top: 16px; }
+.meter > b { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: var(--accent); }
+.meter.warn > b { background: var(--warn); }
+.meter-cap { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+
+/* hero breakdown */
+.seg { display: flex; gap: 2px; height: 12px; margin-top: 24px; }
+.seg span { border-radius: 4px; min-width: 4px; }
+.seg span:first-child { border-radius: 999px 4px 4px 999px; }
+.seg span:last-child { border-radius: 4px 999px 999px 4px; }
+.lines { list-style: none; margin: 14px 0 0; padding: 0; }
+.lines li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 7px 0; border-top: 1px solid var(--anchor-line); font-size: 13.5px; }
+.lines li:first-child { border-top: 0; }
+.lines .sw { width: 10px; height: 10px; border-radius: 3px; align-self: center; }
+.lines .d { color: var(--anchor-muted); font-size: 12.5px; margin-left: 6px; }
+.lines .amt { font-weight: 500; }
+.lines li.total { padding-top: 10px; }
+.hero-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--anchor-line); }
+.hero-foot .note { margin: 0; }
+.hero-foot .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.delta { display: inline-flex; margin-left: 10px; vertical-align: middle; }
+
+/* chart */
+.bars { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; align-items: end; }
+.bar { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+.track { height: 200px; border-radius: 12px; background: var(--track); display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 6px 6px; overflow: hidden; }
+.fill { width: 100%; border-radius: 8px; background: var(--bar); min-height: 6px; }
+.bar.now .fill { background: var(--accent); }
+.bar.proj .fill { background: repeating-linear-gradient(135deg, var(--accent) 0 5px, color-mix(in srgb, var(--accent) 55%, var(--card)) 5px 10px); }
+.bar .v { font-size: 12.5px; font-weight: 500; margin-bottom: 6px; white-space: nowrap; }
+.bar .m { text-align: center; font-size: 12.5px; color: var(--muted); }
+.bar.proj .m { color: var(--fg); font-weight: 500; }
+.chart-note { margin: 16px 0 0; color: var(--muted); font-size: 13px; }
+.chart-note strong { color: var(--fg); font-weight: 600; }
+
+/* details */
+dl.kv { margin: 0; display: grid; grid-template-columns: 124px minmax(0, 1fr); gap: 0; }
+dl.kv dt, dl.kv dd { margin: 0; padding: 11px 0; border-top: 1px solid var(--line); }
+dl.kv dt:first-of-type, dl.kv dt:first-of-type + dd { border-top: 0; padding-top: 0; }
+dl.kv dt { color: var(--muted); font-size: 13px; }
+dl.kv dd { overflow-wrap: anywhere; }
+.pm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.card-foot { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 20px; }
+
+/* table */
+.table-head { padding: 20px 24px; display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; justify-content: space-between; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { height: 32px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: transparent; cursor: pointer; color: var(--muted); font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
+.chip:hover { background: var(--hover); }
+.chip[aria-pressed="true"] { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+.chip .n { opacity: .75; font-weight: 400; }
+.tscroll { overflow-x: auto; border-top: 1px solid var(--line); }
+table { border-collapse: collapse; width: 100%; min-width: 760px; }
+th { text-align: left; font-weight: 500; font-size: 12.5px; color: var(--muted); padding: 10px 16px; white-space: nowrap; }
+th:first-child, td:first-child { padding-left: 24px; }
+th:last-child, td:last-child { padding-right: 24px; }
+td { padding: 14px 16px; border-top: 1px solid var(--line); white-space: nowrap; }
+tbody tr:first-child td { border-top: 0; }
+tbody tr:hover td { background: var(--hover); }
+.r { text-align: right; }
+.inv-no { font-weight: 500; }
+.table-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; padding: 14px 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+
+/* states */
+.sk { position: relative; overflow: hidden; background: var(--track); border-radius: 8px; }
+.sk::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent); animation: sh 1.4s infinite; }
+:root[data-theme="dark"] .sk::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,.07), transparent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sk::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,.07), transparent); } }
+.anchor .sk { background: rgba(255,255,255,.12); }
+.anchor .sk::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,.16), transparent); }
+@keyframes sh { to { transform: translateX(100%); } }
+.msg { flex: 1; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 12px; padding: 12px 0; min-height: 96px; }
+.msg.center { align-items: center; text-align: center; padding: 40px 24px; }
+.msg p { margin: 0; max-width: 44ch; }
+.msg .t { font-weight: 600; font-size: 15px; }
+.msg .s { color: var(--muted); }
+.anchor .msg .s { color: var(--anchor-muted); }
+
+@media (max-width: 1100px) {
+  .hero { grid-column: span 12; grid-row: auto; }
+  .tile { grid-column: span 6; }
+  .c-chart, .c-details { grid-column: span 12; }
+}
+@media (max-width: 640px) {
+  .tile { grid-column: span 12; }
+  .card, .hero { padding: 20px; }
+  .select-wrap span { display: none; }
+  .bars { gap: 6px; }
+  .track { height: 160px; padding: 0 3px 3px; }
+  .bar .v { font-size: 11px; }
+  dl.kv { grid-template-columns: 1fr; }
+  dl.kv dt { border-top: 1px solid var(--line); padding: 11px 0 0; }
+  dl.kv dd { border-top: 0; padding-top: 2px; }
+  dl.kv dt:first-of-type { border-top: 0; padding-top: 0; }
+  .table-head { padding: 16px; }
+  th:first-child, td:first-child { padding-left: 16px; }
+  th:last-child, td:last-child { padding-right: 16px; }
+  .table-foot { padding: 14px 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .sk::after { animation: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="topbar">
+    <div class="brand"><span class="logo" aria-hidden="true">T</span>Tally <span class="sep">/</span> <span class="sub">Harbor &amp; Pine Logistics</span></div>
+    <div class="tools">
+      <label class="select-wrap"><span>Preview state</span>
+        <select id="state" aria-label="Preview state">
+          <option value="ready">Ready</option>
+          <option value="loading">Loading</option>
+          <option value="error">Error</option>
+          <option value="empty">New account</option>
+        </select>
+      </label>
+      <button class="icon-btn" id="theme" type="button" aria-label="Switch colour theme" title="Switch colour theme">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+      </button>
+      <span class="avatar" title="Priya Raman, Finance manager" aria-label="Priya Raman, Finance manager">PR</span>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="head">
+      <div>
+        <h1>Billing overview</h1>
+        <p class="fresh">
+          <span>Billing period 1–31 Oct 2026</span><span class="dot" aria-hidden="true"></span>
+          <span>Day 28 of 31</span><span class="dot" aria-hidden="true"></span>
+          <span>Updated 28 Oct 2026, 08:10 UTC</span>
+          <button class="btn sm" id="refresh" type="button">Refresh</button>
+        </p>
+      </div>
+      <div class="head-actions">
+        <button class="btn" type="button" id="exportBtn">Export invoices (CSV)</button>
+        <button class="btn primary" type="button">Update payment method</button>
+      </div>
+    </div>
+
+    <div id="alert"></div>
+    <div class="bento" id="bento" aria-busy="false"></div>
+  </main>
+  <div class="sr-only" role="status" aria-live="polite" id="live"></div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- data ---------- */
+  var usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+  function parts(n) {
+    var s = Math.abs(n).toFixed(2).split(".");
+    return { i: Number(s[0]).toLocaleString("en-US"), d: s[1] };
+  }
+  function big(n, cls) {
+    var p = parts(n);
+    return '<span class="cur">$</span>' + p.i + '<span class="dec">.' + p.d + '</span>';
+  }
+
+  var lines = [
+    { k: "Platform fee",    d: "Tally Business",                        amt: 18000.00, c: "var(--anchor-seg-1)" },
+    { k: "Seats",           d: "212 × $64.00",                          amt: 13568.00, c: "var(--anchor-seg-2)" },
+    { k: "Event overage",   d: "5.2M × $1.20 per 1,000",                amt: 6240.00,  c: "var(--anchor-seg-3)" },
+    { k: "Add-ons",         d: "Audit log retention",                   amt: 2400.00,  c: "var(--anchor-seg-4)" }
+  ];
+  var subtotal = lines.reduce(function (a, l) { return a + l.amt; }, 0);   // 40,208.00
+  var tax = Math.round(subtotal * 0.0825 * 100) / 100;                    // 3,317.16
+  var total = subtotal + tax;                                             // 43,525.16
+
+  var months = [
+    { m: "May", v: 34210.00 }, { m: "Jun", v: 35880.40 }, { m: "Jul", v: 36402.88 },
+    { m: "Aug", v: 37115.62 }, { m: "Sep", v: 38920.14 }, { m: "Oct", v: total, proj: true }
+  ];
+
+  var invoices = [
+    { no: "TLY-2609-0031", period: "Sep 2026", issued: "1 Oct 2026", due: "31 Oct 2026", amt: 38920.14, st: "Open" },
+    { no: "TLY-2608-0027", period: "Aug 2026", issued: "1 Sep 2026", due: "1 Oct 2026",  amt: 37115.62, st: "Paid" },
+    { no: "TLY-2607-0024", period: "Jul 2026", issued: "1 Aug 2026", due: "31 Aug 2026", amt: 36402.88, st: "Paid" },
+    { no: "TLY-2606-0019", period: "Jun 2026", issued: "1 Jul 2026", due: "31 Jul 2026", amt: 35880.40, st: "Paid" },
+    { no: "TLY-2605-0016", period: "May 2026", issued: "1 Jun 2026", due: "1 Jul 2026",  amt: 34210.00, st: "Paid" },
+    { no: "TLY-2604-0012", period: "Apr 2026", issued: "1 May 2026", due: "31 May 2026", amt: 33744.19, st: "Paid" }
+  ];
+  var TOTAL_INVOICES = 18;
+
+  /* ---------- url state ---------- */
+  var params = new URLSearchParams(location.search);
+  var state = ["ready", "loading", "error", "empty"].indexOf(params.get("state")) > -1 ? params.get("state") : "ready";
+  var filter = ["all", "open", "paid"].indexOf(params.get("status")) > -1 ? params.get("status") : "all";
+  function syncUrl() {
+    try {
+      var p = new URLSearchParams();
+      if (state !== "ready") p.set("state", state);
+      if (filter !== "all") p.set("status", filter);
+      var q = p.toString();
+      history.replaceState(null, "", location.pathname + (q ? "?" + q : ""));
+    } catch (e) { /* sandboxed: keep state in memory only */ }
+  }
+
+  var $ = function (id) { return document.getElementById(id); };
+  function say(t) { $("live").textContent = t; }
+
+  /* ---------- pieces ---------- */
+  var warnIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 10v4M12 17.5v.01"/></svg>';
+  function retry() { return '<button class="btn sm" type="button" data-retry>Retry</button>'; }
+
+  function errorBody(what) {
+    return '<div class="msg" role="alert"><p class="t">' + what + ' didn’t load</p><p class="s">Billing data is temporarily unavailable. Nothing was charged or changed. Try again in a moment.</p>' + retry() + '</div>';
+  }
+
+  function hero() {
+    if (state === "loading") {
+      return '<section class="card anchor hero" aria-label="Projected invoice" aria-hidden="true">' +
+        '<div class="sk" style="height:14px;width:180px"></div><div class="sk" style="height:64px;width:min(100%,360px);margin-top:16px"></div>' +
+        '<div class="sk" style="height:40px;width:70%;margin-top:20px"></div><div class="sk" style="height:12px;margin-top:24px"></div>' +
+        [0,1,2,3].map(function(){return '<div class="sk" style="height:18px;margin-top:16px"></div>';}).join("") + '</section>';
+    }
+    if (state === "error") {
+      return '<section class="card anchor hero" aria-label="Projected invoice"><div class="label">Projected invoice</div>' + errorBody("Your projected invoice") + '</section>';
+    }
+    var segs = lines.map(function (l) {
+      return '<span style="flex:' + l.amt + ';background:' + l.c + '" title="' + l.k + ' ' + usd.format(l.amt) + '"></span>';
+    }).join("");
+    var li = lines.map(function (l) {
+      return '<li><span class="sw" style="background:' + l.c + '"></span><span>' + l.k + '<span class="d">' + l.d + '</span></span><span class="amt">' + usd.format(l.amt) + '</span></li>';
+    }).join("");
+    return '<section class="card anchor hero" aria-label="Projected invoice">' +
+      '<div class="label"><span>Projected invoice for October</span></div>' +
+      '<div class="num" aria-label="' + usd.format(total) + '">' + big(total) + '<span class="pill inv delta" title="Compared with the September invoice of $38,920.14">▲ 11.8% vs September</span></div>' +
+      '<p class="lede">Event overage is the main driver. You passed the 36M included events on 26 Oct and are on track for 41.2M by month end.</p>' +
+      '<div class="seg" role="img" aria-label="Invoice makeup: platform fee 44.8%, seats 33.7%, event overage 15.5%, add-ons 6.0%">' + segs + '</div>' +
+      '<ul class="lines">' + li +
+        '<li class="total"><span></span><span>Estimated tax<span class="d">8.25%</span></span><span class="amt">' + usd.format(tax) + '</span></li>' +
+      '</ul>' +
+      '<div class="grow"></div>' +
+      '<div class="hero-foot"><p class="note">Issues 1 Nov 2026 · Net 30 · Autopay to Visa •••• 4242</p>' +
+      '<div class="acts"><button class="btn" type="button">View estimate details</button><button class="btn ghost" type="button">Set spend cap</button></div></div>' +
+      '</section>';
+  }
+
+  function tileSkel(label) {
+    return '<section class="card tile" aria-label="' + label + '" aria-hidden="true"><div class="sk" style="height:14px;width:120px"></div>' +
+      '<div class="sk" style="height:38px;width:150px;margin-top:14px"></div><div class="sk" style="height:12px;width:80%;margin-top:14px"></div>' +
+      '<div class="grow"></div><div class="sk" style="height:8px;border-radius:999px"></div></section>';
+  }
+  function tileErr(label) {
+    return '<section class="card tile" aria-label="' + label + '"><div class="label">' + label + '</div>' + errorBody(label) + '</section>';
+  }
+
+  function tiles() {
+    if (state === "loading") return ["Outstanding balance", "Seats in use", "Events this period", "Contract renewal"].map(tileSkel).join("");
+    if (state === "error") return ["Outstanding balance", "Seats in use", "Events this period", "Contract renewal"].map(tileErr).join("");
+    return '' +
+      '<section class="card tile" aria-label="Outstanding balance">' +
+        '<div class="label"><span>Outstanding balance</span><span class="pill good"><i></i>Autopay on</span></div>' +
+        '<div class="num">' + big(38920.14) + '</div>' +
+        '<p class="note">1 open invoice, TLY-2609-0031, due 31 Oct 2026 (in 3 days)</p>' +
+        '<div class="grow"></div>' +
+        '<a href="#invoices" data-goto="open">View open invoice →</a>' +
+      '</section>' +
+
+      '<section class="card tile" aria-label="Seats in use">' +
+        '<div class="label"><span>Seats in use</span><span class="pill neutral">85%</span></div>' +
+        '<div class="num">212<span class="u">of 250</span></div>' +
+        '<p class="note">38 seats available · $64.00 per seat per month</p>' +
+        '<div class="grow"></div>' +
+        '<div class="meter" role="img" aria-label="212 of 250 seats in use"><b style="width:84.8%"></b></div>' +
+      '</section>' +
+
+      '<section class="card tile" aria-label="Events this period">' +
+        '<div class="label"><span>Events this period</span><span class="pill warn"><i></i>Over by 1.2M</span></div>' +
+        '<div class="num">37.2M<span class="u">of 36M</span></div>' +
+        '<p class="note">Overage so far: $1,440.00 at $1.20 per 1,000</p>' +
+        '<div class="grow"></div>' +
+        '<div class="meter warn" role="img" aria-label="37.2 million of 36 million included events used, 103%"><b style="width:100%"></b></div>' +
+      '</section>' +
+
+      '<section class="card tile" aria-label="Contract renewal">' +
+        '<div class="label"><span>Contract renewal</span><span class="pill neutral">Auto-renews</span></div>' +
+        '<div class="num">137<span class="u">days</span></div>' +
+        '<p class="note">Renews 14 Mar 2027. Give notice by 12 Feb 2027 to change or cancel.</p>' +
+        '<div class="grow"></div>' +
+        '<div class="meter" role="img" aria-label="Contract year 62% elapsed"><b style="width:62.5%"></b></div>' +
+      '</section>';
+  }
+
+  function chart() {
+    var head = '<div class="card-head"><div><h2>Monthly invoice total</h2><p>Last 6 billing periods, USD incl. tax</p></div></div>';
+    if (state === "loading") {
+      return '<section class="card c-chart" aria-label="Monthly invoice total" aria-hidden="true">' + head +
+        '<div class="bars">' + [60,66,70,74,80,88].map(function (h) { return '<div class="sk" style="height:' + (h * 2.2) + 'px;border-radius:12px"></div>'; }).join("") + '</div></section>';
+    }
+    if (state === "error") return '<section class="card c-chart" aria-label="Monthly invoice total">' + head + errorBody("The invoice trend") + '</section>';
+    if (state === "empty") return '<section class="card c-chart" aria-label="Monthly invoice total">' + head +
+      '<div class="msg center"><p class="t">No billing history yet</p><p class="s">Your first invoice is issued on 1 Nov 2026. Totals for each period will appear here.</p></div></section>';
+
+    var max = 50000;
+    var bars = months.map(function (x) {
+      var h = Math.max(3, (x.v / max) * 100);
+      var cls = x.proj ? "bar now proj" : "bar";
+      return '<div class="' + cls + '"><div class="track"><div class="v">' + usd.format(Math.round(x.v)).replace(".00", "") + '</div><div class="fill" style="height:' + h * 0.82 + '%"></div></div><div class="m">' + x.m + (x.proj ? ' <span class="sr-only">projected</span><br><span style="font-weight:400;color:var(--muted)">Projected</span>' : '') + '</div></div>';
+    }).join("");
+    var rows = months.map(function (x) { return '<tr><td>' + x.m + (x.proj ? ' (projected)' : '') + '</td><td>' + usd.format(x.v) + '</td></tr>'; }).join("");
+    return '<section class="card c-chart" aria-label="Monthly invoice total">' + head +
+      '<div class="bars" role="img" aria-label="Bar chart of monthly invoice totals from May to October 2026, rising from $34,210 to a projected $43,525">' + bars + '</div>' +
+      '<table class="sr-only"><caption>Monthly invoice totals</caption><thead><tr><th>Month</th><th>Total</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<p class="chart-note"><strong>Up 27% since May</strong> including this month’s projection. Bars start at $0; the track shows a $50,000 scale.</p></section>';
+  }
+
+  function details() {
+    var head = '<div class="card-head"><div><h2>Billing details</h2></div><a href="#" data-noop>Edit</a></div>';
+    if (state === "loading") {
+      return '<section class="card c-details" aria-label="Billing details" aria-hidden="true">' + head +
+        [0,1,2,3,4].map(function () { return '<div class="sk" style="height:18px;margin-top:18px"></div>'; }).join("") + '</section>';
+    }
+    if (state === "error") return '<section class="card c-details" aria-label="Billing details">' + head + errorBody("Billing details") + '</section>';
+    return '<section class="card c-details" aria-label="Billing details">' + head +
+      '<dl class="kv">' +
+        '<dt>Payment method</dt><dd><div class="pm"><span>Visa •••• 4242</span><span class="pill warn"><i></i>Expires 30 Nov 2026</span></div></dd>' +
+        '<dt>Bill to</dt><dd>Harbor &amp; Pine Logistics, Inc.<br><span style="color:var(--muted)">400 Pier Ave, Portland, OR 97209</span></dd>' +
+        '<dt>Billing contact</dt><dd>Priya Raman<br><span style="color:var(--muted)">ap@harborpine.example</span></dd>' +
+        '<dt>PO number</dt><dd>HP-77412</dd>' +
+        '<dt>Tax ID</dt><dd>US EIN ••-•••4821</dd>' +
+        '<dt>Plan</dt><dd>Tally Business, annual contract, invoiced monthly</dd>' +
+      '</dl>' +
+      '<div class="card-foot"><button class="btn sm" type="button">Update payment method</button><button class="btn sm" type="button">Change plan</button></div>' +
+    '</section>';
+  }
+
+  function table() {
+    var head = '<div class="table-head" id="invoices"><div><h2>Invoices</h2></div></div>';
+    if (state === "loading") {
+      return '<section class="card c-table" aria-label="Invoices" aria-hidden="true">' + head +
+        '<div class="tscroll" style="padding:16px 24px">' + [0,1,2,3,4,5].map(function () { return '<div class="sk" style="height:20px;margin:14px 0"></div>'; }).join("") + '</div></section>';
+    }
+    if (state === "error") return '<section class="card c-table" aria-label="Invoices">' + head + '<div style="padding:0 24px 24px">' + errorBody("Your invoices") + '</div></section>';
+    if (state === "empty") return '<section class="card c-table" aria-label="Invoices">' + head +
+      '<div class="msg center"><p class="t">No invoices yet</p><p class="s">Tally issues your first invoice on 1 Nov 2026. You will get an email at ap@harborpine.example when it is ready.</p></div></section>';
+
+    var list = invoices.filter(function (i) { return filter === "all" || i.st.toLowerCase() === filter; });
+    var open = invoices.filter(function (i) { return i.st === "Open"; }).length;
+    var chips = [["all", "All", TOTAL_INVOICES], ["open", "Open", open], ["paid", "Paid", TOTAL_INVOICES - open]].map(function (c) {
+      return '<button class="chip" type="button" data-filter="' + c[0] + '" aria-pressed="' + (filter === c[0]) + '">' + c[1] + ' <span class="n">' + c[2] + '</span></button>';
+    }).join("");
+    var pill = { Open: "warn", Paid: "good" };
+    var rows = list.map(function (i) {
+      return '<tr><td><a class="inv-no" href="#" data-noop>' + i.no + '</a></td><td>' + i.period + '</td><td>' + i.issued + '</td><td>' + i.due +
+        '</td><td class="r">' + usd.format(i.amt) + '</td><td><span class="pill ' + pill[i.st] + '"><i></i>' + i.st + '</span></td>' +
+        '<td class="r"><button class="btn sm" type="button" aria-label="Download PDF for ' + i.no + '">PDF</button></td></tr>';
+    }).join("");
+    var body = list.length
+      ? '<div class="tscroll" tabindex="0" role="region" aria-label="Invoices table"><table><thead><tr><th scope="col">Invoice</th><th scope="col">Period</th><th scope="col">Issued</th><th scope="col">Due</th><th scope="col" class="r">Amount</th><th scope="col">Status</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+      : '<div class="msg center" style="border-top:1px solid var(--line)"><p class="t">No ' + filter + ' invoices</p><p class="s">Nothing matches this filter.</p><button class="btn sm" type="button" data-filter="all">Show all invoices</button></div>';
+    return '<section class="card c-table" aria-label="Invoices">' +
+      '<div class="table-head"><div><h2>Invoices</h2></div><div class="chips" role="group" aria-label="Filter invoices by status">' + chips + '</div></div>' +
+      body +
+      '<div class="table-foot"><span>Showing ' + list.length + ' of ' + (filter === "all" ? TOTAL_INVOICES : (filter === "open" ? open : TOTAL_INVOICES - open)) + ' · Amounts in USD, incl. tax</span><a href="#" data-noop>View all invoices →</a></div>' +
+    '</section>';
+  }
+
+  function alertStrip() {
+    if (state !== "ready") return "";
+    return '<div class="strip" role="status">' + warnIcon +
+      '<p><strong>You’re over your included events.</strong> Passed 36M on 26 Oct. Overage accrued so far is $1,440.00, projected $6,240.00 by 31 Oct.</p>' +
+      '<a href="#" data-noop>Set a spend cap</a></div>';
+  }
+
+  /* ---------- render ---------- */
+  function render() {
+    $("bento").setAttribute("aria-busy", state === "loading" ? "true" : "false");
+    $("alert").innerHTML = alertStrip();
+    $("bento").innerHTML = hero() + tiles() + chart() + details() + table();
+    $("state").value = state;
+    syncUrl();
+  }
+
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("[data-filter],[data-retry],[data-noop],[data-goto]");
+    if (!t) return;
+    if (t.hasAttribute("data-noop")) { e.preventDefault(); return; }
+    if (t.hasAttribute("data-goto")) { e.preventDefault(); filter = "open"; render(); var el = $("invoices"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); say("Showing open invoices"); return; }
+    if (t.hasAttribute("data-retry")) { load(); return; }
+    filter = t.getAttribute("data-filter");
+    render();
+    var chip = document.querySelector('[data-filter="' + filter + '"]');
+    if (chip) chip.focus();
+    say("Showing " + filter + " invoices");
+  });
+
+  var timer;
+  function load() {
+    clearTimeout(timer);
+    state = "loading"; render(); say("Loading billing data");
+    timer = setTimeout(function () { state = "ready"; render(); say("Billing data updated"); }, 900);
+  }
+  $("refresh").addEventListener("click", load);
+  $("state").addEventListener("change", function (e) { clearTimeout(timer); state = e.target.value; render(); say("Showing " + state + " state"); });
+
+  /* theme: system by default, toggle overrides */
+  $("theme").addEventListener("click", function () {
+    var root = document.documentElement;
+    var cur = root.getAttribute("data-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    root.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
+  });
+
+  /* CSV export of the visible invoices */
+  $("exportBtn").addEventListener("click", function () {
+    var list = invoices.filter(function (i) { return filter === "all" || i.st.toLowerCase() === filter; });
+    var csv = "Invoice,Period,Issued,Due,Amount (USD),Status\n" + list.map(function (i) {
+      return [i.no, i.period, i.issued, i.due, i.amt.toFixed(2), i.st].join(",");
+    }).join("\n");
+    try {
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+      a.download = "tally-invoices.csv";
+      document.body.appendChild(a); a.click(); a.remove();
+      say("Exported " + list.length + " invoices");
+    } catch (err) { say("Export isn’t available here"); }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

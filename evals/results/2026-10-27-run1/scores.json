@@ -1,0 +1,170 @@
+[
+  {
+    "code": "9SNA5X",
+    "case": "E8",
+    "condition": "v1",
+    "score": 10,
+    "max": 12
+  },
+  {
+    "code": "B9Y5LX",
+    "case": "E5",
+    "condition": "baseline",
+    "score": 8,
+    "max": 12
+  },
+  {
+    "code": "QM5P67",
+    "case": "E2",
+    "condition": "v1",
+    "score": 14,
+    "max": 15
+  },
+  {
+    "code": "9YWVJI",
+    "case": "E1",
+    "condition": "baseline",
+    "score": 15,
+    "max": 20
+  },
+  {
+    "code": "TJEIUB",
+    "case": "E6",
+    "condition": "v2",
+    "score": 20,
+    "max": 20
+  },
+  {
+    "code": "K0M5PM",
+    "case": "E6",
+    "condition": "baseline",
+    "score": 19,
+    "max": 20
+  },
+  {
+    "code": "GDLX7P",
+    "case": "E8",
+    "condition": "baseline",
+    "score": 11,
+    "max": 12
+  },
+  {
+    "code": "197ZF1",
+    "case": "E2",
+    "condition": "v2",
+    "score": 12,
+    "max": 15
+  },
+  {
+    "code": "T59682",
+    "case": "E2",
+    "condition": "baseline",
+    "score": 13,
+    "max": 15
+  },
+  {
+    "code": "EIHDD0",
+    "case": "E5",
+    "condition": "v1",
+    "score": 7,
+    "max": 12
+  },
+  {
+    "code": "5LV11T",
+    "case": "E4",
+    "condition": "v1",
+    "score": 5,
+    "max": 10
+  },
+  {
+    "code": "RDIF8M",
+    "case": "E1",
+    "condition": "v2",
+    "score": 18,
+    "max": 20
+  },
+  {
+    "code": "3X8NEQ",
+    "case": "E5",
+    "condition": "v2",
+    "score": 12,
+    "max": 12
+  },
+  {
+    "code": "7PWIB4",
+    "case": "E3",
+    "condition": "baseline",
+    "score": 10,
+    "max": 12
+  },
+  {
+    "code": "KM1CFP",
+    "case": "E3",
+    "condition": "v1",
+    "score": 11,
+    "max": 12
+  },
+  {
+    "code": "HOTBRR",
+    "case": "E4",
+    "condition": "v2",
+    "score": 10,
+    "max": 10
+  },
+  {
+    "code": "HB875G",
+    "case": "E3",
+    "condition": "v2",
+    "score": 12,
+    "max": 12
+  },
+  {
+    "code": "GQMDIZ",
+    "case": "E8",
+    "condition": "v2",
+    "score": 12,
+    "max": 12
+  },
+  {
+    "code": "U71Z6B",
+    "case": "E4",
+    "condition": "baseline",
+    "score": 8,
+    "max": 10
+  },
+  {
+    "code": "92P3GN",
+    "case": "E6",
+    "condition": "v1",
+    "score": 19,
+    "max": 20
+  },
+  {
+    "code": "4ZQLSE",
+    "case": "E1",
+    "condition": "v1",
+    "score": 19,
+    "max": 20
+  },
+  {
+    "code": "HQU3TN",
+    "case": "E7",
+    "condition": "v1",
+    "score": 10,
+    "max": 10
+  },
+  {
+    "code": "TLC5FE",
+    "case": "E7",
+    "condition": "v2",
+    "score": 9,
+    "max": 10
+  },
+  {
+    "code": "VR5LJL",
+    "case": "E7",
+    "condition": "baseline",
+    "score": 9,
+    "max": 10
+  }
+]

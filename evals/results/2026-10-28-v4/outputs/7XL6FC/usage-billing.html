@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usage &amp; billing · Ledgerly</title>
+<link rel="stylesheet" href="acme-ds.css">
+<style>
+/*
+  Assumptions (no one to ask): admins open this a few times a month, so the page
+  leads with the answer ("what will I be charged?") and explains rather than packs.
+  Direction: classic enterprise on Acme tokens — quiet canvas, white cards, one teal accent,
+  hero = projected invoice. Page-level layout only; all components are ds-*.
+  Preview states: ?state=loading | empty | error | readonly   ·   ?period=current | sep | aug
+*/
+*{box-sizing:border-box}
+body{margin:0;line-height:1.5}
+a{color:var(--ds-color-brand);text-underline-offset:2px}
+a:focus-visible,select:focus-visible,summary:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--ds-color-focus);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--ds-color-text-muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:8px;top:-48px;display:inline-flex;align-items:center;text-decoration:none;z-index:10}
+.skip:focus{top:8px}
+
+/* shell */
+.shell{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+.side{background:var(--ds-color-surface);border-right:1px solid var(--ds-color-border);padding:var(--ds-space-4);display:flex;flex-direction:column;gap:var(--ds-space-4);position:sticky;top:0;height:100vh}
+.brand{font-weight:600;font-size:var(--ds-text-lg);display:flex;align-items:center;gap:var(--ds-space-2);padding:0 var(--ds-space-2)}
+.brand i{width:20px;height:20px;border-radius:var(--ds-radius-md);background:var(--ds-color-brand);display:inline-block}
+.ws{width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center;height:44px}
+.ws small{display:block;color:var(--ds-color-text-muted);font-size:var(--ds-text-xs);font-weight:400;line-height:1.2}
+.nav{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.nav a{display:flex;align-items:center;gap:var(--ds-space-3);min-height:36px;padding:0 var(--ds-space-3);border-radius:var(--ds-radius-md);color:var(--ds-color-text);text-decoration:none}
+.nav a:hover{background:var(--ds-color-surface-raised)}
+.nav a[aria-current=page]{background:var(--ds-color-brand-subtle);color:#134E4A;font-weight:600}
+.nav .grp{font-size:var(--ds-text-xs);text-transform:uppercase;letter-spacing:.04em;color:var(--ds-color-text-muted);padding:var(--ds-space-3) var(--ds-space-3) var(--ds-space-1)}
+.ico{width:16px;height:16px;border:1.5px solid currentColor;border-radius:3px;flex:none;opacity:.7}
+.main{min-width:0}
+.top{height:56px;background:var(--ds-color-surface);border-bottom:1px solid var(--ds-color-border);display:flex;align-items:center;gap:var(--ds-space-3);padding:0 var(--ds-space-8)}
+.search{flex:1;max-width:420px;display:flex;align-items:center;justify-content:space-between;text-align:left;color:var(--ds-color-text-muted)}
+kbd{font:500 var(--ds-text-xs) var(--ds-font);border:1px solid var(--ds-color-border-strong);border-radius:var(--ds-radius-sm);padding:1px 6px;background:var(--ds-color-surface-raised)}
+.sp{flex:1}
+.avatar{width:36px;border-radius:50%;background:var(--ds-color-brand-subtle);color:#134E4A;font-weight:600;font-size:var(--ds-text-sm);padding:0}
+.dot{position:relative}
+.dot b{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--ds-color-danger)}
+
+.page{padding:var(--ds-space-6) var(--ds-space-8) 64px;max-width:1160px}
+.crumbs{font-size:var(--ds-text-sm);color:var(--ds-color-text-muted);margin-bottom:var(--ds-space-2)}
+.crumbs a{color:inherit}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:var(--ds-space-4);flex-wrap:wrap;margin-bottom:var(--ds-space-4)}
+h1{margin:0;font-size:var(--ds-text-2xl);line-height:1.2;font-weight:600}
+h2{margin:0;font-size:var(--ds-text-lg);font-weight:600}
+h3{margin:0;font-size:var(--ds-text-md);font-weight:600}
+.fresh{font-size:var(--ds-text-sm);color:var(--ds-color-text-muted);margin:var(--ds-space-1) 0 0}
+.tools{display:flex;align-items:center;gap:var(--ds-space-3)}
+.tools label{font-size:var(--ds-text-sm);color:var(--ds-color-text-muted)}
+.small{font-size:var(--ds-text-sm)}
+
+.banner{display:flex;gap:var(--ds-space-3);align-items:flex-start;padding:var(--ds-space-3) var(--ds-space-4);border:1px solid;border-radius:var(--ds-radius-lg);margin-bottom:var(--ds-space-4)}
+.banner--warning{background:var(--ds-color-warning-subtle);border-color:#F3D08A}
+.banner--danger{background:var(--ds-color-danger-subtle);border-color:#F4B4B4}
+.banner--info{background:var(--ds-color-surface-raised);border-color:var(--ds-color-border-strong)}
+.banner strong{display:block}
+.banner .grow{flex:1}
+.linkbtn{text-decoration:none;display:inline-flex;align-items:center}
+
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:var(--ds-space-4)}
+.c7{grid-column:span 7}.c5{grid-column:span 5}.c12{grid-column:span 12}
+.card-h{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--ds-space-3);margin-bottom:var(--ds-space-4)}
+.hero .big{font-size:48px;font-weight:600;line-height:1.1;letter-spacing:-.01em;margin:var(--ds-space-2) 0 var(--ds-space-1)}
+.lines{list-style:none;margin:var(--ds-space-4) 0 0;padding:0;border-top:1px solid var(--ds-color-border)}
+.lines li{display:flex;justify-content:space-between;gap:var(--ds-space-4);padding:var(--ds-space-2) 0;border-bottom:1px solid var(--ds-color-border)}
+.lines li.tot{font-weight:600}
+.lines .why{display:block;font-size:var(--ds-text-xs);color:var(--ds-color-text-muted);font-weight:400}
+.facts{display:grid;gap:var(--ds-space-3);margin:0}
+.facts div{display:flex;justify-content:space-between;gap:var(--ds-space-4)}
+.facts dt{color:var(--ds-color-text-muted)}
+.facts dd{margin:0;text-align:right;font-weight:500}
+
+.meters{display:grid;gap:var(--ds-space-6);align-content:start}
+.meter-top{display:flex;justify-content:space-between;align-items:baseline;gap:var(--ds-space-3);flex-wrap:wrap}
+.track{height:10px;border-radius:5px;background:var(--ds-color-surface-raised);border:1px solid var(--ds-color-border);margin:var(--ds-space-2) 0;overflow:hidden}
+.fill{height:100%;background:var(--ds-color-brand)}
+.fill.warn{background:var(--ds-color-warning)}
+.meter-sub{font-size:var(--ds-text-sm);color:var(--ds-color-text-muted);display:flex;justify-content:space-between;gap:var(--ds-space-3);flex-wrap:wrap}
+
+.chart{width:100%;height:auto;display:block}
+.chart text{font:12px var(--ds-font);fill:var(--ds-color-text-muted)}
+.legend{display:flex;gap:var(--ds-space-4);flex-wrap:wrap;font-size:var(--ds-text-sm);color:var(--ds-color-text-muted);margin-top:var(--ds-space-2)}
+.legend i{display:inline-block;width:16px;height:0;border-top:2px solid var(--ds-color-brand);vertical-align:middle;margin-right:6px}
+.legend i.d{border-top-style:dashed}
+.legend i.l{border-top-color:var(--ds-color-warning)}
+details.alt{margin-top:var(--ds-space-3);font-size:var(--ds-text-sm)}
+details.alt summary{cursor:pointer;color:var(--ds-color-brand)}
+
+.field{display:grid;gap:var(--ds-space-1);margin-bottom:var(--ds-space-4)}
+.field label{font-weight:500}
+.field .hint{font-size:var(--ds-text-sm);color:var(--ds-color-text-muted)}
+.field .err{font-size:var(--ds-text-sm);color:var(--ds-color-danger)}
+.input-pre{display:flex;align-items:center;gap:var(--ds-space-2)}
+.input-pre .ds-input{width:140px}
+.ds-input[aria-invalid=true]{border-color:var(--ds-color-danger)}
+.ds-input:disabled{background:var(--ds-color-surface-raised);color:var(--ds-color-text-muted);cursor:not-allowed}
+.ds-btn--sm{height:28px;padding:0 var(--ds-space-3);font-size:var(--ds-text-sm)}
+.ds-btn--quiet{border-color:transparent;background:transparent;color:var(--ds-color-brand)}
+.row-actions{display:flex;gap:var(--ds-space-2);flex-wrap:wrap}
+.tbl-wrap{overflow-x:auto}
+.ds-table td.r,.ds-table th.r{text-align:right}
+.ds-table td,.ds-table tbody th{font-variant-numeric:tabular-nums;white-space:nowrap}
+.ds-table tbody th{font-weight:500;text-align:left;padding:0 var(--ds-space-3);border-bottom:1px solid var(--ds-color-border);height:var(--ds-row-height)}
+
+.skel{background:linear-gradient(90deg,var(--ds-color-surface-raised),#E8EEF5,var(--ds-color-surface-raised));background-size:200% 100%;animation:sh 1.4s infinite;border-radius:var(--ds-radius-md)}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skel{animation:none}}
+.empty{text-align:center;padding:var(--ds-space-8) var(--ds-space-4)}
+.empty p{max-width:52ch;margin:var(--ds-space-2) auto var(--ds-space-4)}
+.toast{position:fixed;right:24px;bottom:24px;background:var(--ds-color-text);color:#fff;padding:var(--ds-space-3) var(--ds-space-4);border-radius:var(--ds-radius-lg);box-shadow:0 4px 12px rgba(15,23,42,.25);max-width:340px}
+.toast[hidden]{display:none}
+.statebar{margin-top:var(--ds-space-8);font-size:var(--ds-text-sm);color:var(--ds-color-text-muted);border-top:1px solid var(--ds-color-border);padding-top:var(--ds-space-4)}
+
+@media (max-width:1000px){
+  .c7,.c5{grid-column:span 12}
+  .shell{grid-template-columns:1fr}
+  .side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--ds-color-border)}
+  .nav{grid-auto-flow:column;overflow-x:auto;grid-auto-columns:max-content}
+  .nav .grp{display:none}
+  .top,.page{padding-left:var(--ds-space-4);padding-right:var(--ds-space-4)}
+}
+</style>
+</head>
+<body>
+<a class="skip ds-btn" href="#content">Skip to content</a>
+<div class="shell">
+  <aside class="side" aria-label="Workspace">
+    <div class="brand"><i aria-hidden="true"></i>Ledgerly</div>
+    <button class="ds-btn ws" type="button" aria-haspopup="listbox"><span>Harbor &amp; Finch Ltd<small>Workspace · Business plan</small></span><span aria-hidden="true">▾</span></button>
+    <nav aria-label="Primary">
+      <ul class="nav">
+        <li><a href="#"><span class="ico" aria-hidden="true"></span>Overview</a></li>
+        <li><a href="#"><span class="ico" aria-hidden="true"></span>Invoices</a></li>
+        <li><a href="#"><span class="ico" aria-hidden="true"></span>Reconciliation</a></li>
+        <li class="grp" aria-hidden="true">Admin</li>
+        <li><a href="#"><span class="ico" aria-hidden="true"></span>Members &amp; roles</a></li>
+        <li><a href="#"><span class="ico" aria-hidden="true"></span>Integrations</a></li>
+        <li><a href="#" aria-current="page"><span class="ico" aria-hidden="true"></span>Usage &amp; billing</a></li>
+        <li><a href="#"><span class="ico" aria-hidden="true"></span>Audit log</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <button class="ds-btn search" type="button" aria-label="Search Ledgerly, shortcut Command K"><span>Search Ledgerly</span><kbd>⌘K</kbd></button>
+      <span class="sp"></span>
+      <button class="ds-btn dot" type="button" aria-label="Notifications, 1 unread">Alerts<b aria-hidden="true"></b></button>
+      <button class="ds-btn avatar" type="button" aria-label="Account menu for Dana Okafor">DO</button>
+    </header>
+
+    <main class="page" id="content" tabindex="-1">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="#">Admin</a> / <span aria-current="page">Usage &amp; billing</span></nav>
+      <div class="head">
+        <div>
+          <h1>Usage &amp; billing</h1>
+          <p class="fresh" id="fresh"></p>
+        </div>
+        <div class="tools">
+          <label for="period">Billing period</label>
+          <select class="ds-input" id="period">
+            <option value="current">1–31 Oct 2026 (current)</option>
+            <option value="sep">1–30 Sep 2026</option>
+            <option value="aug">1–31 Aug 2026</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="view"></div>
+
+      <p class="statebar">Prototype states:
+        <a href="?">Ready</a> ·
+        <a href="?state=loading">Loading</a> ·
+        <a href="?state=empty">New workspace</a> ·
+        <a href="?state=error">Error</a> ·
+        <a href="?state=readonly">Not billing owner</a>
+      </p>
+    </main>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+const qs = new URLSearchParams(location.search);
+const state = qs.get('state') || 'ready';
+const readonly = state === 'readonly';
+const $ = (s, r=document) => r.querySelector(s);
+const fmt = n => n.toLocaleString('en-US');
+const usd = n => '$' + n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+const PERIODS = {
+  current:{label:'1–31 Oct 2026', mon:'Oct 2026', billed:'1 Nov 2026', day:28, days:31, docs:5412, projDocs:5992, seats:38, bank:18, api:1.62, apiProj:1.79, gb:41.2, final:false},
+  sep:    {label:'1–30 Sep 2026', mon:'Sep 2026', billed:'1 Oct 2026', day:30, days:30, docs:4688, projDocs:4688, seats:37, bank:17, api:1.44, apiProj:1.44, gb:38.6, final:true},
+  aug:    {label:'1–31 Aug 2026', mon:'Aug 2026', billed:'1 Sep 2026', day:31, days:31, docs:5120, projDocs:5120, seats:36, bank:17, api:1.51, apiProj:1.51, gb:36.9, final:true},
+};
+const key = PERIODS[qs.get('period')] ? qs.get('period') : 'current';
+const P = PERIODS[key];
+const INC = {docs:5000, seats:40, bank:25, api:2.0, gb:100};
+const SEAT_PRICE = 24, OVER = 0.08;
+const overProj = Math.max(0, P.projDocs - INC.docs), overNow = Math.max(0, P.docs - INC.docs);
+const total = INC.seats * SEAT_PRICE + overProj * OVER;
+
+const INVOICES = [
+  ['LGR-2026-0091','1 Oct 2026','Sep 2026',960.00],
+  ['LGR-2026-0080','1 Sep 2026','Aug 2026',969.60],
+  ['LGR-2026-0069','1 Aug 2026','Jul 2026',960.00],
+  ['LGR-2026-0058','1 Jul 2026','Jun 2026',960.00],
+  ['LGR-2026-0047','1 Jun 2026','May 2026',960.00],
+  ['LGR-2026-0036','1 May 2026','Apr 2026',912.00],
+  ['LGR-2026-0025','1 Apr 2026','Mar 2026',912.00],
+  ['LGR-2026-0014','1 Mar 2026','Feb 2026',912.00],
+];
+const VISIBLE = 5;
+
+const badge = (s,c) => `<span class="ds-badge ds-badge--${c}">${s}</span>`;
+
+function meter(id,name,used,inc,unit,note,f=fmt){
+  const pct = used/inc*100, warn = pct>=75;
+  const status = pct>=100 ? `${f(+(used-inc).toFixed(1))} ${unit} over included` : `${Math.round(pct)}% used`;
+  return `<div>
+    <div class="meter-top"><h3 id="m-${id}">${name}</h3>
+      <span class="num"><strong>${f(used)}</strong> <span class="muted">of ${f(inc)} ${unit}</span></span></div>
+    <div class="track" role="meter" aria-labelledby="m-${id}" aria-valuemin="0" aria-valuemax="${inc}" aria-valuenow="${Math.min(used,inc)}" aria-valuetext="${f(used)} of ${f(inc)} ${unit}, ${status}"><div class="fill${warn?' warn':''}" style="width:${Math.min(100,pct)}%"></div></div>
+    <div class="meter-sub"><span>${warn?'Warning: ':''}${status}</span><span>${note}</span></div>
+  </div>`;
+}
+
+function chart(){
+  // cumulative documents by day: deterministic weekday-weighted shape ending exactly at P.docs
+  const w=[], N=P.day;
+  for(let d=1;d<=N;d++){const dow=(d+2)%7; w.push(dow===5||dow===6?0.25:1+((d*7)%5)/10)}
+  const sum=w.reduce((a,b)=>a+b,0); let acc=0; const cum=w.map(x=>{acc+=x;return Math.round(acc/sum*P.docs)});
+  const W=640,H=240,L=48,R=16,T=12,B=28, max=6500;
+  const x=d=>L+(d-1)/(P.days-1)*(W-L-R), y=v=>T+(1-v/max)*(H-T-B);
+  const line=cum.map((v,i)=>`${i?'L':'M'}${x(i+1).toFixed(1)},${y(v).toFixed(1)}`).join('');
+  const proj = P.final ? '' : `<path d="M${x(N).toFixed(1)},${y(P.docs).toFixed(1)}L${x(P.days).toFixed(1)},${y(P.projDocs).toFixed(1)}" fill="none" stroke="var(--ds-color-brand)" stroke-width="2" stroke-dasharray="5 4"/>`;
+  const ticks=[0,2000,4000,6000].map(v=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--ds-color-border)"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end">${fmt(v)}</text>`).join('');
+  const xt=[1,8,15,22,P.days].map(d=>`<text x="${x(d)}" y="${H-8}" text-anchor="middle">${d}</text>`).join('');
+  const alt=[7,14,21,N].filter((d,i,a)=>d<=N&&a.indexOf(d)===i).map(d=>`<tr><td>Day ${d}</td><td class="r">${fmt(cum[d-1])}</td></tr>`).join('');
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="ct">
+    <title id="ct">Cumulative documents processed, day 1 to ${N}: ${fmt(P.docs)}${P.final?'':`, projected ${fmt(P.projDocs)} by day ${P.days}`}. Included amount ${fmt(INC.docs)}.</title>
+    ${ticks}${xt}
+    <line x1="${L}" x2="${W-R}" y1="${y(INC.docs)}" y2="${y(INC.docs)}" stroke="var(--ds-color-warning)" stroke-width="1.5"/>
+    <text x="${L+6}" y="${y(INC.docs)-6}" style="fill:var(--ds-color-warning);font-weight:500">Included: ${fmt(INC.docs)}</text>
+    <path d="${line}" fill="none" stroke="var(--ds-color-brand)" stroke-width="2.5" stroke-linejoin="round"/>${proj}
+    <circle cx="${x(N)}" cy="${y(P.docs)}" r="4" fill="var(--ds-color-brand)"/>
+    <text x="${x(N)-8}" y="${y(P.docs)+(P.docs>INC.docs?-10:18)}" text-anchor="end" style="fill:var(--ds-color-text);font-weight:500">${fmt(P.docs)}</text>
+  </svg>
+  <div class="legend"><span><i></i>Documents processed (cumulative)</span>${P.final?'':'<span><i class="d"></i>Projected at current pace</span>'}<span><i class="l"></i>Included in plan</span></div>
+  <details class="alt"><summary>View as table</summary><div class="tbl-wrap"><table class="ds-table"><thead><tr><th scope="col">Day of period</th><th scope="col" class="r">Documents so far</th></tr></thead><tbody>${alt}</tbody></table></div></details>`;
+}
+
+function invoiceRows(all){
+  return (all ? INVOICES : INVOICES.slice(0,VISIBLE)).map(i=>`<tr><th scope="row">${i[0]}</th><td>${i[1]}</td><td>${i[2]}</td><td class="r">${usd(i[3])}</td><td>${badge('Paid','success')}</td><td class="r"><a class="ds-btn ds-btn--sm ds-btn--quiet linkbtn" href="#" aria-label="Download PDF for ${i[0]}">Download PDF</a></td></tr>`).join('');
+}
+
+function hero(){
+  return `<section class="ds-card hero c7" aria-labelledby="h-hero">
+    <div class="card-h"><div><h2 id="h-hero">${P.final?'Invoiced for':'Projected invoice for'} ${P.mon}</h2><span class="muted small">${P.final?'Billed '+P.billed:'Billed '+P.billed+' to Visa ending 4242'}</span></div>${P.final?badge('Paid','success'):'<span class="ds-badge">Estimate</span>'}</div>
+    <div class="big num">${usd(total)}</div>
+    <p class="muted" style="margin:0">${P.final?'Final amount, before tax.':`Based on usage through day ${P.day} of ${P.days}, before tax. The final amount is set on 31 Oct.`}</p>
+    <ul class="lines">
+      <li><span>${INC.seats} seats × ${usd(SEAT_PRICE)}<span class="why">Billed on plan size (${INC.seats}), not seats assigned (${P.seats})</span></span><span class="num">${usd(INC.seats*SEAT_PRICE)}</span></li>
+      <li><span>Extra documents: ${fmt(overProj)} × ${usd(OVER)}<span class="why">${fmt(INC.docs)} documents included each month${P.final||!overNow?'':`; ${usd(overNow*OVER)} accrued so far`}</span></span><span class="num">${usd(overProj*OVER)}</span></li>
+      <li class="tot"><span>Total</span><span class="num">${usd(total)}</span></li>
+    </ul>
+  </section>`;
+}
+
+function plan(){
+  return `<section class="ds-card c5" aria-labelledby="h-plan">
+    <div class="card-h"><h2 id="h-plan">Plan</h2>${readonly?'':'<button class="ds-btn" type="button">Change plan</button>'}</div>
+    <dl class="facts">
+      <div><dt>Plan</dt><dd>Business · annual</dd></div>
+      <div><dt>Seats</dt><dd class="num">${P.seats} assigned of ${INC.seats} · <a href="#">Manage</a></dd></div>
+      <div><dt>Price</dt><dd class="num">${usd(SEAT_PRICE)} per seat per month</dd></div>
+      <div><dt>Renews</dt><dd>14 Mar 2027</dd></div>
+      <div><dt>Payment method</dt><dd>Visa ending 4242 · exp 08/2028</dd></div>
+      <div><dt>Billing owner</dt><dd>Priya Raman</dd></div>
+    </dl>
+    ${readonly?'':'<div class="row-actions" style="margin-top:var(--ds-space-4)"><button class="ds-btn" type="button">Update payment method</button><button class="ds-btn ds-btn--quiet" type="button">Billing details &amp; tax ID</button></div>'}
+  </section>`;
+}
+
+function usageCard(){
+  return `<section class="ds-card c12" aria-labelledby="h-use">
+    <div class="card-h"><div><h2 id="h-use">Usage, ${P.label}</h2><span class="muted small">All members of this workspace</span></div></div>
+    <div class="grid">
+      <div class="c5 meters">
+        ${meter('docs','Documents processed',P.docs,INC.docs,'docs',`${usd(OVER)} each beyond included`)}
+        ${meter('bank','Bank connections',P.bank,INC.bank,'connections','Hard limit, no overage charge')}
+        ${meter('api','API calls',P.api,INC.api,'M calls','Resets 1 Nov',n=>n.toFixed(2))}
+        ${meter('gb','Storage',P.gb,INC.gb,'GB','Includes attachments',n=>n.toFixed(1))}
+      </div>
+      <div class="c7">
+        <h3 style="margin-bottom:var(--ds-space-2)">Documents processed, day by day</h3>
+        ${chart()}
+      </div>
+    </div>
+  </section>`;
+}
+
+function alerts(){
+  const dis = readonly ? 'disabled' : '';
+  return `<section class="ds-card c5" aria-labelledby="h-al">
+    <div class="card-h"><h2 id="h-al">Spend alert</h2></div>
+    <form id="alertForm" novalidate>
+      <div class="field">
+        <label for="cap">Email billing owners when projected charges pass</label>
+        <div class="input-pre"><span aria-hidden="true">$</span><input class="ds-input num" id="cap" inputmode="decimal" value="1,200.00" ${dis} aria-describedby="cap-h cap-e"><span class="muted">per month</span></div>
+        <span class="hint" id="cap-h">Current projection: ${usd(total)}. This only sends an email; nothing is paused or blocked.</span>
+        <span class="err" id="cap-e" hidden></span>
+      </div>
+      <div class="field"><label for="pct">Also warn when any included amount reaches</label>
+        <select class="ds-input" id="pct" style="width:140px" ${dis}><option>75%</option><option selected>90%</option><option>100%</option></select></div>
+      ${readonly?`<p class="muted small" style="margin:0">Only the billing owner can change alerts. <a href="#">Ask Priya Raman</a></p>`:'<button class="ds-btn ds-btn--primary" type="submit">Save alert settings</button>'}
+    </form>
+  </section>`;
+}
+
+function invoices(){
+  return `<section class="ds-card c7" aria-labelledby="h-inv">
+    <div class="card-h"><h2 id="h-inv">Invoices</h2><span class="muted small">USD, before tax</span></div>
+    <div class="tbl-wrap"><table class="ds-table"><thead><tr><th scope="col">Invoice</th><th scope="col">Issued</th><th scope="col">For</th><th scope="col" class="r">Amount</th><th scope="col">Status</th><th scope="col" class="r"><span class="sr">Download</span></th></tr></thead>
+    <tbody id="invBody">${invoiceRows(false)}</tbody></table></div>
+    <div style="margin-top:var(--ds-space-3)"><button class="ds-btn" type="button" id="more">Show ${INVOICES.length-VISIBLE} older invoices</button></div>
+  </section>`;
+}
+
+function banner(){
+  if (P.final || overNow<=0) return '';
+  return `<div class="banner banner--warning" role="note"><div class="grow"><strong>You’ve passed the ${fmt(INC.docs)} documents included this month.</strong>
+  You’re ${fmt(overNow)} over today (${usd(overNow*OVER)} so far) and on pace for about ${usd(overProj*OVER)} by month end. Your seats and other limits are unaffected.</div>
+  ${readonly?'':'<a class="ds-btn linkbtn" href="#h-plan">Review plan</a>'}</div>`;
+}
+
+function render(){
+  const v = $('#view');
+  if (state==='loading'){
+    v.innerHTML = `<div class="grid" role="status" aria-label="Loading usage and billing"><div class="ds-card c7"><div class="skel" style="height:24px;width:50%"></div><div class="skel" style="height:56px;width:40%;margin:16px 0"></div><div class="skel" style="height:120px"></div></div><div class="ds-card c5"><div class="skel" style="height:200px"></div></div><div class="ds-card c12"><div class="skel" style="height:260px"></div></div></div>`;
+    $('#fresh').textContent='Loading usage…'; return;
+  }
+  if (state==='error'){
+    v.innerHTML = `<div class="banner banner--danger" role="alert"><div class="grow"><strong>Usage and billing couldn’t be loaded.</strong>Your plan and invoices are not affected; we just couldn’t reach the billing service. Try again, or check the <a href="#">status page</a>. Reference: BIL-503-7f2a.</div><a class="ds-btn linkbtn" href="?">Try again</a></div>`;
+    $('#fresh').textContent='Last successful update unavailable'; return;
+  }
+  if (state==='empty'){
+    v.innerHTML = `<div class="grid"><section class="ds-card c12"><div class="empty"><h2>No usage yet</h2><p class="muted">This workspace is on a 14-day trial, so there’s nothing to bill. Usage appears here after your first document is processed, and your first invoice is issued when the trial ends on 11 Nov 2026.</p><div class="row-actions" style="justify-content:center"><button class="ds-btn ds-btn--primary" type="button">Choose a plan</button><button class="ds-btn" type="button">Import documents</button></div></div></section></div>`;
+    $('#fresh').textContent='Trial workspace · no usage recorded'; return;
+  }
+  v.innerHTML = `${readonly?`<div class="banner banner--info" role="note"><div class="grow"><strong>You can view billing but not change it.</strong>Billing is managed by Priya Raman, the billing owner. <a href="#">Request a change</a></div></div>`:''}
+    ${banner()}
+    <div class="grid">${hero()}${plan()}${usageCard()}${alerts()}${invoices()}</div>`;
+  $('#fresh').textContent = (P.final ? `Final figures for ${P.label}` : 'Usage as of 28 Oct 2026, 14:00 UTC') + ' · Harbor & Finch Ltd workspace';
+
+  $('#more').addEventListener('click',e=>{
+    $('#invBody').innerHTML = invoiceRows(true);
+    e.target.hidden = true; toast('Showing all '+INVOICES.length+' invoices.');
+  });
+  $('#alertForm').addEventListener('submit',e=>{
+    e.preventDefault();
+    const inp=$('#cap'), err=$('#cap-e'), n=parseFloat(inp.value.replace(/[$,\s]/g,''));
+    if (isNaN(n) || n<=0){
+      inp.setAttribute('aria-invalid','true'); err.hidden=false;
+      err.textContent='Enter an amount greater than $0, for example 1,200.00.'; inp.focus(); return;
+    }
+    inp.removeAttribute('aria-invalid'); err.hidden=true;
+    toast('Alert saved. Billing owners will be emailed above '+usd(n)+' a month.');
+  });
+}
+
+function toast(msg){
+  const t=$('#toast'); t.textContent=msg; t.hidden=false;
+  clearTimeout(toast.t); toast.t=setTimeout(()=>t.hidden=true,6000);
+}
+
+$('#period').value = key;
+$('#period').addEventListener('change',e=>{
+  qs.set('period',e.target.value); location.search = qs.toString();
+});
+render();
+</script>
+</body>
+</html>

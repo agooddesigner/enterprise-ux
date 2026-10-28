@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tally Billing Overview</title>
+<style>
+/* Layout: restrained single column of sections; bento KPI grid (1 hero 2x2 + 4 tiles) leads, then trend + aging, then invoices. */
+:root {
+  --bg: #f6f8fb;
+  --surface: #ffffff;
+  --surface-2: #f1f4f9;
+  --line: #e3e8ef;
+  --ink: #0f1b2d;
+  --ink-2: #4a5a73;
+  --ink-3: #6b7a90;
+  --accent: #3550d6; --on-accent: #ffffff;
+  --accent-soft: #e8ecfc;
+  --series-2: #8a97ad;
+  --good: #0a7d4f;   --good-bg: #e2f5ec;
+  --warn: #946200;   --warn-bg: #fdf1d6;
+  --bad: #b42323;    --bad-bg: #fde8e8;
+  --bad-mark: #d64545; --warn-mark: #d99a1c; --good-mark: #2f9e6b;
+  --shadow: 0 1px 2px rgba(15,27,45,.04);
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1220; --surface: #121b2d; --surface-2: #17223a; --line: #223049;
+    --ink: #e9eef7; --ink-2: #aab6ca; --ink-3: #8896ae;
+    --accent: #8da2ff; --on-accent: #0b1220; --accent-soft: #1d2a52; --series-2: #6c7b96;
+    --good: #5fd0a0; --good-bg: #12302a; --warn: #f0c565; --warn-bg: #352a10; --bad: #ff9b9b; --bad-bg: #3a1a20;
+    --bad-mark: #ef6a6a; --warn-mark: #e8b13f; --good-mark: #46bb86;
+    --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1220; --surface: #121b2d; --surface-2: #17223a; --line: #223049;
+  --ink: #e9eef7; --ink-2: #aab6ca; --ink-3: #8896ae;
+  --accent: #8da2ff; --on-accent: #0b1220; --accent-soft: #1d2a52; --series-2: #6c7b96;
+  --good: #5fd0a0; --good-bg: #12302a; --warn: #f0c565; --warn-bg: #352a10; --bad: #ff9b9b; --bad-bg: #3a1a20;
+  --bad-mark: #ef6a6a; --warn-mark: #e8b13f; --good-mark: #46bb86;
+  --shadow: none; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.5 var(--font); -webkit-font-smoothing: antialiased;
+}
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 56px max(16px, env(safe-area-inset-left, 0px)); }
+
+/* Header */
+header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; margin-bottom: 24px; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.logo { width: 24px; height: 24px; border-radius: 6px; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+.crumb { color: var(--ink-3); }
+.crumb b { color: var(--ink); font-weight: 600; }
+.tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+button, select { font: inherit; color: var(--ink); }
+.btn { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; cursor: pointer; box-shadow: var(--shadow); }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+h1 { font-size: 22px; line-height: 1.25; letter-spacing: -.01em; margin: 0 0 4px; font-weight: 650; }
+.sub { color: var(--ink-3); margin: 0 0 24px; }
+h2 { font-size: 14px; font-weight: 600; margin: 0; }
+.eyebrow { font-size: 12px; color: var(--ink-3); letter-spacing: .02em; }
+
+/* Cards: only the bento hero gets weight; the rest stay flat and hairline-bordered */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; box-shadow: var(--shadow); min-width: 0; }
+
+/* Bento */
+.bento { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: auto auto; gap: 12px; margin-bottom: 12px; }
+.hero { grid-column: span 2; grid-row: span 2; display: flex; flex-direction: column; gap: 6px; padding: 24px; }
+.hero .big { font-size: clamp(40px, 6vw, 60px); line-height: 1.05; letter-spacing: -.03em; font-weight: 650; margin-top: 8px; }
+.hero .big small { font-size: .5em; color: var(--ink-3); font-weight: 500; letter-spacing: 0; }
+.delta { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); flex-wrap: wrap; }
+.pill { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.pill.good { background: var(--good-bg); color: var(--good); }
+.pill.warn { background: var(--warn-bg); color: var(--warn); }
+.pill.bad { background: var(--bad-bg); color: var(--bad); }
+.pill.neutral { background: var(--surface-2); color: var(--ink-2); }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.spark { margin-top: auto; padding-top: 16px; }
+.spark svg { display: block; width: 100%; height: 88px; overflow: visible; }
+
+.tile { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; }
+.tile .val { font-size: 24px; font-weight: 600; letter-spacing: -.02em; line-height: 1.2; margin-top: 4px; }
+.tile .note { font-size: 12.5px; color: var(--ink-3); }
+.tile .note b { font-weight: 600; color: var(--ink-2); }
+.tile.alert { border-color: color-mix(in srgb, var(--bad-mark) 40%, var(--line)); }
+
+/* Sections */
+.grid2 { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 12px; margin-bottom: 12px; }
+.card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.legend { display: flex; gap: 14px; font-size: 12.5px; color: var(--ink-2); flex-wrap: wrap; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+
+#chart { position: relative; }
+#chart svg { display: block; width: 100%; height: auto; }
+#chart text { fill: var(--ink-3); font: 11px var(--font); }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; box-shadow: 0 4px 16px rgba(15,27,45,.12); min-width: 150px; opacity: 0; transition: opacity .1s; z-index: 2; }
+.tip.on { opacity: 1; }
+.tip .t { color: var(--ink-3); margin-bottom: 4px; }
+.tip .r { display: flex; justify-content: space-between; gap: 16px; }
+.tip .r i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+
+.aging-total { font-size: 24px; font-weight: 600; letter-spacing: -.02em; }
+.stack { display: flex; gap: 2px; height: 12px; margin: 14px 0 16px; }
+.stack span { display: block; border-radius: 3px; min-width: 4px; }
+.age-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.age-list li { display: grid; grid-template-columns: 10px 1fr auto; gap: 10px; align-items: baseline; }
+.age-list i { width: 10px; height: 10px; border-radius: 2px; }
+.age-list .cnt { color: var(--ink-3); font-size: 12.5px; margin-left: 6px; }
+
+/* Table */
+.tbl-wrap { overflow-x: auto; margin: 0 -20px; padding: 0 20px; }
+table { width: 100%; border-collapse: collapse; min-width: 640px; }
+th { text-align: left; font-weight: 500; font-size: 12px; color: var(--ink-3); padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 12px 12px 12px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+th.r, td.r { text-align: right; padding-right: 0; }
+td.id { font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); }
+.cust { font-weight: 550; }
+.seg { display: inline-flex; background: var(--surface-2); border-radius: 7px; padding: 2px; gap: 2px; }
+.seg button { border: 0; background: transparent; padding: 4px 10px; border-radius: 5px; cursor: pointer; color: var(--ink-2); font-size: 13px; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(15,27,45,.12); font-weight: 550; }
+.foot { color: var(--ink-3); font-size: 12px; margin-top: 20px; }
+
+@media (max-width: 900px) {
+  .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero { grid-column: span 2; grid-row: auto; }
+  .grid2 { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 420px) {
+  .bento { grid-template-columns: minmax(0, 1fr); }
+  .hero { grid-column: auto; padding: 20px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo" aria-hidden="true">T</div>
+      <div class="crumb">Tally <span aria-hidden="true">/</span> <b>Billing</b></div>
+    </div>
+    <div class="tools">
+      <button class="btn" id="theme" type="button" aria-label="Toggle color theme">Theme</button>
+      <button class="btn" type="button">Export CSV</button>
+      <button class="btn primary" type="button">Create invoice</button>
+    </div>
+  </header>
+
+  <h1>Billing overview</h1>
+  <p class="sub">October 2026, through Oct 28. All amounts in USD.</p>
+
+  <!-- Bento KPIs -->
+  <section class="bento" aria-label="Key billing metrics">
+    <article class="card hero">
+      <div class="eyebrow">Cash collected this month</div>
+      <div class="big num">$412,860</div>
+      <div class="delta"><span class="pill good">+3.7%</span> vs. $398,210 collected in September</div>
+      <div class="spark" id="spark" aria-hidden="true"></div>
+    </article>
+
+    <article class="card tile">
+      <div class="eyebrow">Outstanding</div>
+      <div class="val num">$186,420</div>
+      <div class="note"><b class="num">64</b> open invoices</div>
+    </article>
+    <article class="card tile alert">
+      <div class="eyebrow">Overdue</div>
+      <div class="val num">$41,230</div>
+      <div class="note"><span class="pill bad">17 invoices</span></div>
+    </article>
+    <article class="card tile">
+      <div class="eyebrow">Failed payments</div>
+      <div class="val num">9</div>
+      <div class="note"><b class="num">$6,840</b> retrying automatically</div>
+    </article>
+    <article class="card tile">
+      <div class="eyebrow">Next payout</div>
+      <div class="val num">$128,450</div>
+      <div class="note">Fri, Oct 30 to ••4417</div>
+    </article>
+  </section>
+
+  <section class="grid2">
+    <article class="card">
+      <div class="card-head">
+        <div>
+          <h2>Invoiced vs. collected</h2>
+          <div class="eyebrow">Last 12 months</div>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--accent)"></i>Collected</span>
+          <span><i style="background:var(--series-2)"></i>Invoiced</span>
+        </div>
+      </div>
+      <div id="chart"><div class="tip" id="tip" role="status"></div></div>
+    </article>
+
+    <article class="card">
+      <div class="card-head" style="margin-bottom:4px">
+        <h2>Receivables aging</h2>
+      </div>
+      <div class="aging-total num">$186,420</div>
+      <div class="eyebrow">Total outstanding</div>
+      <div class="stack" role="img" aria-label="Aging: $145,190 not yet due, $24,100 up to 30 days late, $17,130 over 30 days late">
+        <span style="flex:145190;background:var(--good-mark)"></span>
+        <span style="flex:24100;background:var(--warn-mark)"></span>
+        <span style="flex:17130;background:var(--bad-mark)"></span>
+      </div>
+      <ul class="age-list">
+        <li><i style="background:var(--good-mark)"></i><span>Not yet due<span class="cnt num">47</span></span><span class="num">$145,190</span></li>
+        <li><i style="background:var(--warn-mark)"></i><span>1–30 days late<span class="cnt num">11</span></span><span class="num">$24,100</span></li>
+        <li><i style="background:var(--bad-mark)"></i><span>31+ days late<span class="cnt num">6</span></span><span class="num">$17,130</span></li>
+      </ul>
+    </article>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Invoices</h2>
+      <div class="seg" role="group" aria-label="Filter invoices">
+        <button type="button" data-f="all" aria-pressed="true">All</button>
+        <button type="button" data-f="overdue" aria-pressed="false">Overdue</button>
+        <button type="button" data-f="failed" aria-pressed="false">Failed</button>
+        <button type="button" data-f="paid" aria-pressed="false">Paid</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Customer</th><th>Invoice</th><th>Due</th><th>Status</th><th class="r">Amount</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="foot">Figures for October are month to date. Payouts settle two business days after collection.</p>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  try { var saved = localStorage.getItem('tally-theme'); if (saved) root.setAttribute('data-theme', saved); } catch (e) {}
+  document.getElementById('theme').addEventListener('click', function () {
+    var cur = root.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    var next = cur === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('tally-theme', next); } catch (e) {}
+  });
+
+  var months = ['Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'];
+  var full = ['Nov 2025','Dec 2025','Jan 2026','Feb 2026','Mar 2026','Apr 2026','May 2026','Jun 2026','Jul 2026','Aug 2026','Sep 2026','Oct 2026 (to date)'];
+  var collected = [268310,281940,290120,301550,296780,318420,334900,347260,361080,379640,398210,412860];
+  var invoiced  = [275400,288900,299700,308200,311500,327800,341200,356900,370500,389300,409600,431200];
+  var usd = function (n) { return '$' + n.toLocaleString('en-US'); };
+  var NS = 'http://www.w3.org/2000/svg';
+  function el(n, a, p) { var e = document.createElementNS(NS, n); for (var k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; }
+
+  /* Hero sparkline */
+  (function () {
+    var W = 400, H = 88, min = 250000, max = 430000;
+    var x = function (i) { return 4 + i * (W - 8) / 11; };
+    var y = function (v) { return H - 6 - (v - min) / (max - min) * (H - 14); };
+    var s = el('svg', { viewBox: '0 0 ' + W + ' ' + H, preserveAspectRatio: 'none' });
+    var d = collected.map(function (v, i) { return (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1); }).join('');
+    el('path', { d: d + 'L' + x(11) + ' ' + H + 'L' + x(0) + ' ' + H + 'Z', fill: 'var(--accent)', 'fill-opacity': '.1' }, s);
+    el('path', { d: d, fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2, 'stroke-linejoin': 'round', 'vector-effect': 'non-scaling-stroke' }, s);
+    document.getElementById('spark').appendChild(s);
+    // endpoint dot as HTML so it isn't stretched by preserveAspectRatio
+    var dot = document.createElement('span');
+    dot.style.cssText = 'position:absolute;width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--surface);transform:translate(-50%,-50%);left:' + (x(11) / W * 100) + '%;top:' + (y(collected[11]) / H * 100) + '%';
+    var box = document.getElementById('spark'); box.style.position = 'relative';
+    box.style.paddingTop = '16px';
+    dot.style.top = 'calc(16px + ' + (y(collected[11]) / H * 88) + 'px)';
+    box.appendChild(dot);
+  })();
+
+  /* Main chart: two lines, one shared axis */
+  (function () {
+    var host = document.getElementById('chart'), tip = document.getElementById('tip');
+    var W = 640, H = 260, L = 48, R = 12, T = 12, B = 28, min = 240000, max = 440000;
+    var x = function (i) { return L + i * (W - L - R) / 11; };
+    var y = function (v) { return T + (1 - (v - min) / (max - min)) * (H - T - B); };
+    var s = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Monthly invoiced and collected revenue, last 12 months' });
+    [240000, 290000, 340000, 390000, 440000].forEach(function (v) {
+      el('line', { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: 'var(--line)', 'stroke-width': 1 }, s);
+      var t = el('text', { x: L - 8, y: y(v) + 4, 'text-anchor': 'end' }, s); t.textContent = '$' + (v / 1000) + 'k';
+    });
+    months.forEach(function (m, i) {
+      var t = el('text', { x: x(i), y: H - 8, 'text-anchor': 'middle' }, s); t.textContent = m;
+    });
+    function line(data, color, w) {
+      var d = data.map(function (v, i) { return (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1); }).join('');
+      el('path', { d: d, fill: 'none', stroke: color, 'stroke-width': w, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, s);
+    }
+    line(invoiced, 'var(--series-2)', 2);
+    line(collected, 'var(--accent)', 2);
+    el('circle', { cx: x(11), cy: y(collected[11]), r: 4, fill: 'var(--accent)', stroke: 'var(--surface)', 'stroke-width': 2 }, s);
+    var cross = el('line', { y1: T, y2: H - B, stroke: 'var(--ink-3)', 'stroke-width': 1, 'stroke-dasharray': '3 3', visibility: 'hidden' }, s);
+    var d1 = el('circle', { r: 4, fill: 'var(--accent)', stroke: 'var(--surface)', 'stroke-width': 2, visibility: 'hidden' }, s);
+    var d2 = el('circle', { r: 4, fill: 'var(--series-2)', stroke: 'var(--surface)', 'stroke-width': 2, visibility: 'hidden' }, s);
+    var hit = el('rect', { x: L, y: T, width: W - L - R, height: H - T - B, fill: 'transparent' }, s);
+    host.insertBefore(s, tip);
+    function show(e) {
+      var r = s.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * W;
+      var i = Math.max(0, Math.min(11, Math.round((px - L) / ((W - L - R) / 11))));
+      cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('visibility', 'visible');
+      d1.setAttribute('cx', x(i)); d1.setAttribute('cy', y(collected[i])); d1.setAttribute('visibility', 'visible');
+      d2.setAttribute('cx', x(i)); d2.setAttribute('cy', y(invoiced[i])); d2.setAttribute('visibility', 'visible');
+      tip.innerHTML = '<div class="t">' + full[i] + '</div>' +
+        '<div class="r"><span><i style="background:var(--accent)"></i>Collected</span><b class="num">' + usd(collected[i]) + '</b></div>' +
+        '<div class="r"><span><i style="background:var(--series-2)"></i>Invoiced</span><b class="num">' + usd(invoiced[i]) + '</b></div>';
+      var left = x(i) / W * r.width + 12;
+      if (left + 170 > r.width) left = x(i) / W * r.width - 172;
+      tip.style.left = left + 'px'; tip.style.top = '8px'; tip.classList.add('on');
+    }
+    function hide() {
+      [cross, d1, d2].forEach(function (n) { n.setAttribute('visibility', 'hidden'); });
+      tip.classList.remove('on');
+    }
+    hit.addEventListener('mousemove', show); hit.addEventListener('mouseleave', hide);
+    hit.addEventListener('touchstart', function (e) { show(e.touches[0]); }, { passive: true });
+    hit.addEventListener('touchmove', function (e) { show(e.touches[0]); }, { passive: true });
+  })();
+
+  /* Invoices */
+  var invoices = [
+    { c: 'Northwind Logistics', id: 'INV-20418', due: 'Oct 12', s: 'overdue', l: '16 days late', a: 18400 },
+    { c: 'Halcyon Health', id: 'INV-20431', due: 'Oct 20', s: 'failed', l: 'Card declined', a: 4250 },
+    { c: 'Brightwave Media', id: 'INV-20440', due: 'Nov 3', s: 'open', l: 'Due in 6 days', a: 12900 },
+    { c: 'Ostrander & Reid LLP', id: 'INV-20402', due: 'Sep 21', s: 'overdue', l: '37 days late', a: 9730 },
+    { c: 'Pinecrest Foods', id: 'INV-20447', due: 'Oct 24', s: 'paid', l: 'Paid Oct 26', a: 7800 },
+    { c: 'Mosaic Education', id: 'INV-20452', due: 'Nov 10', s: 'open', l: 'Due in 13 days', a: 22600 },
+    { c: 'Quanta Robotics', id: 'INV-20445', due: 'Oct 25', s: 'paid', l: 'Paid Oct 25', a: 31500 }
+  ];
+  var pill = { overdue: 'bad', failed: 'warn', open: 'neutral', paid: 'good' };
+  var tbody = document.getElementById('rows');
+  function render(f) {
+    tbody.innerHTML = invoices.filter(function (r) { return f === 'all' || r.s === f; }).map(function (r) {
+      return '<tr><td class="cust">' + r.c + '</td><td class="id">' + r.id + '</td><td class="num">' + r.due +
+        '</td><td><span class="pill ' + pill[r.s] + '">' + r.l + '</span></td><td class="r num">' + usd(r.a) + '</td></tr>';
+    }).join('') || '<tr><td colspan="5" style="color:var(--ink-3)">No invoices match this filter.</td></tr>';
+  }
+  render('all');
+  document.querySelectorAll('.seg button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.seg button').forEach(function (o) { o.setAttribute('aria-pressed', o === b); });
+      render(b.dataset.f);
+    });
+  });
+})();
+</script>
+</body>
+</html>

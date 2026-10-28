@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Staffing today · Support Ops</title>
+<link rel="stylesheet" href="bento-kit.css">
+<style>
+  /* page-specific layout only — everything else comes from the kit */
+  .hero-grid { display: grid; grid-template-columns: auto 1fr; gap: var(--s6); align-items: center; }
+  .ring-wrap { position: relative; width: 132px; height: 132px; }
+  .ring-wrap .ring { width: 132px; height: 132px; }
+  .ring-label { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+  .ring-label b { font: 700 28px/1 var(--font-display); }
+  .ring-label span { display: block; font-size: 11px; color: var(--on-ink-2); margin-top: 4px; }
+  .hero-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s3); margin-top: var(--s6); }
+  .hero-stats .inset { padding: 14px 16px; }
+  .kpi-foot { display: flex; align-items: center; gap: var(--s2); margin-top: var(--s4); flex-wrap: wrap; }
+  .spark { display: flex; align-items: flex-end; gap: 4px; height: 44px; margin-top: var(--s5); }
+  .spark i { flex: 1; border-radius: 6px; background: var(--accent-soft); }
+  .spark i.now { background: var(--accent); }
+  .cov-row { display: grid; grid-template-columns: 180px 1fr 92px 120px; gap: var(--s4); align-items: center; padding: 12px 0; }
+  .cov-row + .cov-row { border-top: 1px solid var(--line); }
+  .cov-name a { color: var(--text); font-weight: 600; }
+  .cov-name .meta { display: block; }
+  .cov-val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .move { display: grid; grid-template-columns: auto 1fr auto; gap: var(--s3); align-items: center; padding: 12px; border-radius: var(--r-inner); background: rgba(255,255,255,.55); }
+  .move + .move { margin-top: var(--s2); }
+  .move b { font-weight: 600; }
+  .move .arrow { color: #3f4a1f; }
+  .heat { grid-template-columns: 34px repeat(12, 1fr); align-items: center; }
+  .heat .rowlab, .heat .collab { font-size: 11px; color: var(--text-3); }
+  .heat .collab { text-align: center; }
+  .toolbar { display: flex; gap: var(--s3); align-items: center; flex-wrap: wrap; margin-bottom: var(--s6); }
+  .toolbar .sep { width: 1px; height: 24px; background: #d4d7de; margin: 0 var(--s1); }
+  .preview { position: fixed; right: 20px; bottom: 20px; background: var(--ink); color: var(--on-ink); border-radius: var(--r-pill); padding: 6px 6px 6px 16px;
+    display: flex; gap: 8px; align-items: center; font-size: 12px; box-shadow: var(--shadow-pop); z-index: 5; }
+  .preview select { background: #1c1c22; color: var(--on-ink); border: 0; border-radius: var(--r-pill); padding: 8px 12px; font: inherit; }
+  .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: var(--ink); color: var(--on-ink); padding: 10px 10px 10px 18px;
+    border-radius: var(--r-pill); display: none; align-items: center; gap: 14px; box-shadow: var(--shadow-pop); font-size: 13px; z-index: 6; }
+  .toast.show { display: flex; }
+  .toast button { background: var(--highlight); color: var(--ink); border: 0; border-radius: var(--r-pill); padding: 8px 14px; font-weight: 600; cursor: pointer; }
+  [data-widget][data-state="loading"] .w-body { display: none; } [data-widget][data-state="loading"] .w-loading { display: block; }
+  [data-widget][data-state="error"] .w-body { display: none; } [data-widget][data-state="error"] .w-error { display: grid; }
+  .w-loading, .w-error { display: none; }
+</style>
+</head>
+<body>
+<a class="sr-only" href="#main">Skip to content</a>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">◆</span> Relay Support</div>
+    <nav class="pillnav" aria-label="Primary">
+      <a href="#" aria-current="page">Staffing</a><a href="#">Queues</a><a href="#">Agents</a><a href="#">Forecast</a><a href="#">Reports</a>
+    </nav>
+    <button class="icon-btn" aria-label="Search (⌘K)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+    <button class="icon-btn" aria-label="Notifications, 2 unread"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21h4"/></svg><span class="dot"></span></button>
+    <span class="avatar" title="Dana Lindqvist — VP Support">DL</span>
+  </header>
+
+  <main id="main">
+    <div class="page-head">
+      <div>
+        <h1 class="page-title">Staffing today</h1>
+        <p class="page-sub"><b>Wed, 28 Oct</b> · Window today 00:00–20:00 PT · <span id="asof">Data as of 08:10 PT</span>
+          <button class="btn btn-light btn-sm" id="refresh" style="margin-left:8px" aria-label="Refresh data">↻ Refresh</button></p>
+      </div>
+      <button class="btn btn-primary" id="applyAll">Apply 3 suggested moves</button>
+    </div>
+
+    <div class="toolbar" role="group" aria-label="Filters (applied to every widget)">
+      <span class="label">Channel</span>
+      <div class="chips" data-filter="channel">
+        <button class="chip" aria-pressed="true" data-v="all">All channels</button>
+        <button class="chip" aria-pressed="false" data-v="email">Email</button>
+        <button class="chip" aria-pressed="false" data-v="chat">Chat</button>
+        <button class="chip" aria-pressed="false" data-v="phone">Phone</button>
+      </div>
+      <span class="sep" aria-hidden="true"></span>
+      <span class="label">Region</span>
+      <div class="chips" data-filter="region">
+        <button class="chip" aria-pressed="true" data-v="all">Global</button>
+        <button class="chip" aria-pressed="false" data-v="amer">AMER</button>
+        <button class="chip" aria-pressed="false" data-v="emea">EMEA</button>
+      </div>
+    </div>
+
+    <div class="notice warn" id="incident" role="status" style="margin-bottom:20px">
+      <strong>Integrations queue is running hot.</strong> API webhook delays since 06:40 PT are sending ~2× normal volume. <a href="#" style="margin-left:auto">View incident INC-2291 →</a>
+    </div>
+
+    <section class="bento" aria-label="Staffing overview">
+
+      <!-- Hero: the decision -->
+      <article class="card ink span-5" data-widget="hero">
+        <div class="card-head">
+          <div><p class="card-kicker">Where to send people now</p><h2 class="card-title">46 agents needed, 37 on shift</h2></div>
+          <a class="btn btn-on-ink btn-sm" href="#/agents?view=shift">Shift roster →</a>
+        </div>
+        <div class="w-body">
+          <div class="hero-grid">
+            <div class="ring-wrap">
+              <svg class="ring" viewBox="0 0 120 120" aria-hidden="true"><circle class="ring-track" cx="60" cy="60" r="50"/><circle class="ring-fill" cx="60" cy="60" r="50" stroke-dasharray="314" stroke-dashoffset="61"/></svg>
+              <div class="ring-label"><div><b>80%</b><span>coverage</span></div></div>
+            </div>
+            <div>
+              <div class="metric xl">9<sup>short</sup></div>
+              <p class="meta" style="margin:8px 0 0">2 queues will breach SLA before 11:00 PT without moves.</p>
+            </div>
+          </div>
+          <div class="hero-stats">
+            <div class="inset"><div class="label">Backlog</div><div class="metric m">1,284</div></div>
+            <div class="inset"><div class="label">SLA at risk (4h)</div><div class="metric m">58</div></div>
+            <div class="inset"><div class="label">Forecast today</div><div class="metric m">2,140</div></div>
+          </div>
+        </div>
+        <div class="w-loading"><div class="skeleton" style="height:132px"></div><div class="skeleton" style="height:72px;margin-top:24px"></div></div>
+      </article>
+
+      <!-- KPI: First response -->
+      <article class="card span-4" data-widget="frt">
+        <div class="card-head"><div><p class="card-kicker">Median first response</p></div><span class="delta up-bad" aria-label="Up 8 minutes versus yesterday, worse">▲ 8m vs yesterday</span></div>
+        <div class="w-body">
+          <div class="metric">38<span class="unit">min</span></div>
+          <p class="meta" style="margin:8px 0 0">Target 30 min · worst: Integrations 1h 12m</p>
+          <div class="spark" aria-label="First response by hour: rising since 06:00, 38 minutes now">
+            <i style="height:30%"></i><i style="height:28%"></i><i style="height:34%"></i><i style="height:41%"></i><i style="height:52%"></i><i style="height:63%"></i><i style="height:70%"></i><i class="now" style="height:84%"></i>
+          </div>
+          <div style="display:flex;justify-content:space-between" class="meta"><span>00:00</span><span>Now 08:00</span></div>
+        </div>
+        <div class="w-loading"><div class="skeleton" style="height:44px;width:60%"></div><div class="skeleton" style="height:44px;margin-top:24px"></div></div>
+      </article>
+
+      <!-- KPI: SLA met (highlight card) -->
+      <article class="card hl span-3" data-widget="sla">
+        <div class="card-head"><p class="card-kicker" style="color:#3f4a1f">SLA met, last 24h</p></div>
+        <div class="w-body">
+          <div class="metric">91<span class="dec">.4%</span></div>
+          <div class="kpi-foot"><span class="delta down-bad" style="background:#fff;color:#b91c1c">▼ 2.6 pts</span><span class="meta">target 95%</span></div>
+          <div class="hbar" style="margin-top:24px;background:rgba(255,255,255,.6)" role="img" aria-label="91.4% of tickets met SLA; target 95%"><span style="width:91.4%;background:var(--ink)"></span></div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px" class="meta"><span>0%</span><span>Target 95%</span></div>
+        </div>
+        <div class="w-loading"><div class="skeleton" style="height:44px;width:60%"></div></div>
+      </article>
+
+      <!-- Coverage by queue -->
+      <article class="card span-7" data-widget="coverage">
+        <div class="card-head">
+          <div><p class="card-kicker">Agents assigned vs needed, adjust to plan</p><h2 class="card-title">Coverage by queue</h2></div>
+          <div class="legend"><span><i style="background:var(--bad)"></i>Short</span><span><i style="background:#f59e0b"></i>Tight</span><span><i style="background:#22c55e"></i>Covered</span></div>
+        </div>
+        <div class="w-body" id="coverage"></div>
+        <div class="w-loading"><div class="skeleton" style="height:40px"></div><div class="skeleton" style="height:40px;margin-top:12px"></div><div class="skeleton" style="height:40px;margin-top:12px"></div></div>
+        <div class="w-error state-msg"><h4>Coverage couldn't load</h4><p>The rest of the dashboard is still current.</p><button class="btn btn-light btn-sm" data-retry="coverage">Retry</button></div>
+      </article>
+
+      <!-- Recommended moves (highlight) -->
+      <article class="card span-5" data-widget="moves" style="background:#f3f0ff">
+        <div class="card-head">
+          <div><p class="card-kicker">Suggested by routing, based on skills and backlog</p><h2 class="card-title">Recommended moves</h2></div>
+          <span class="badge neutral">3 moves</span>
+        </div>
+        <div class="w-body">
+          <div class="move"><span class="avatar">PR</span><div><b>Priya Raman</b> · <span class="meta">API certified</span><div class="meta">General How-to <span class="arrow">→</span> <b style="color:var(--text)">Integrations &amp; API</b></div></div><button class="btn btn-light btn-sm" data-move="0">Move</button></div>
+          <div class="move"><span class="avatar">MK</span><div><b>Marcus Kim</b> · <span class="meta">Billing L2</span><div class="meta">Reporting <span class="arrow">→</span> <b style="color:var(--text)">Billing &amp; Invoices</b></div></div><button class="btn btn-light btn-sm" data-move="1">Move</button></div>
+          <div class="move"><span class="avatar">AO</span><div><b>Ama Owusu</b> · <span class="meta">API certified</span><div class="meta">Onboarding <span class="arrow">→</span> <b style="color:var(--text)">Integrations &amp; API</b></div></div><button class="btn btn-light btn-sm" data-move="2">Move</button></div>
+          <p class="meta" style="margin:14px 0 0">Projected after moves: coverage 89%, 0 queues breaching before 11:00 PT.</p>
+        </div>
+      </article>
+
+      <!-- Queue table -->
+      <article class="card span-8" data-widget="queues">
+        <div class="card-head">
+          <div><p class="card-kicker">Sorted by SLA risk · select a queue to open it</p><h2 class="card-title">Queues needing attention</h2></div>
+          <a class="btn btn-light btn-sm" href="#/queues">All 9 queues →</a>
+        </div>
+        <div class="w-body">
+          <div class="table-wrap" tabindex="0" aria-label="Queues table, scrollable">
+            <table class="data">
+              <caption class="sr-only">Queues needing attention today, sortable</caption>
+              <thead><tr>
+                <th scope="col">Queue</th>
+                <th scope="col" class="num" aria-sort="none"><button data-sort="backlog">Backlog</button></th>
+                <th scope="col" class="num" aria-sort="descending"><button data-sort="risk">SLA at risk ↓</button></th>
+                <th scope="col" class="num" aria-sort="none"><button data-sort="oldest">Oldest</button></th>
+                <th scope="col">Status</th>
+              </tr></thead>
+              <tbody id="qrows"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="w-loading"><div class="skeleton" style="height:36px"></div><div class="skeleton" style="height:36px;margin-top:10px"></div><div class="skeleton" style="height:36px;margin-top:10px"></div></div>
+        <div class="w-error state-msg"><h4>Queues couldn't load</h4><p>Last good data from 08:05 PT is hidden to avoid staffing on stale numbers.</p><button class="btn btn-light btn-sm" data-retry="queues">Retry</button></div>
+      </article>
+
+      <!-- Incoming volume heatmap -->
+      <article class="card span-4" data-widget="volume">
+        <div class="card-head"><div><p class="card-kicker">Tickets per hour, forecast</p><h2 class="card-title">Incoming today</h2></div></div>
+        <div class="w-body">
+          <div class="heat" id="heat" role="img" aria-label="Forecast volume peaks between 09:00 and 12:00 PT on chat and email"></div>
+          <div class="legend" style="margin-top:14px"><span>Low</span><span style="flex:1;height:8px;border-radius:99px;background:linear-gradient(90deg,#e0e7ff,#4f46e5);margin-top:4px"></span><span>High</span></div>
+          <p class="meta" style="margin:12px 0 0">Peak 09:00–12:00 PT: plan breaks after 12:30.</p>
+        </div>
+        <div class="w-loading"><div class="skeleton" style="height:120px"></div></div>
+        <div class="w-error state-msg"><h4>Forecast unavailable</h4><button class="btn btn-light btn-sm" data-retry="volume">Retry</button></div>
+      </article>
+
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="undo">Undo</button></div>
+
+<div class="preview" aria-label="Design preview controls">Preview state
+  <select id="previewState" aria-label="Preview state">
+    <option value="ready">Ready</option><option value="loading">Loading</option><option value="partial">One widget failed</option>
+  </select>
+</div>
+
+<script>
+const QUEUES = [
+  { id:"integrations", name:"Integrations & API", tier:"Tier 2 · webhooks, SSO", backlog:312, risk:24, oldest:"3h 12m", need:10, have:6 },
+  { id:"billing", name:"Billing & Invoices", tier:"Tier 1 · plan changes", backlog:228, risk:17, oldest:"2h 40m", need:8, have:6 },
+  { id:"enterprise", name:"Enterprise (named accounts)", tier:"Priority SLA 1h", backlog:64, risk:9, oldest:"58m", need:6, have:5 },
+  { id:"sso", name:"SSO & Authentication", tier:"Tier 2", backlog:91, risk:5, oldest:"1h 05m", need:5, have:5 },
+  { id:"reporting", name:"Reporting & Analytics", tier:"Tier 1", backlog:140, risk:3, oldest:"44m", need:5, have:6 },
+  { id:"howto", name:"General How-to", tier:"Tier 1 · chat heavy", backlog:449, risk:0, oldest:"21m", need:12, have:9 },
+];
+const MOVES = [["howto","integrations"],["reporting","billing"],["onboarding","integrations"]];
+const params = new URLSearchParams(location.search);
+
+/* ---- Filters in the URL (applied to every widget) ---- */
+document.querySelectorAll("[data-filter]").forEach(group => {
+  const key = group.dataset.filter, cur = params.get(key) || "all";
+  group.querySelectorAll(".chip").forEach(c => {
+    c.setAttribute("aria-pressed", String(c.dataset.v === cur));
+    c.addEventListener("click", () => {
+      group.querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === c)));
+      c.dataset.v === "all" ? params.delete(key) : params.set(key, c.dataset.v);
+      history.replaceState(null, "", "?" + params.toString());
+      reload(); // every widget refetches for the new filter
+    });
+  });
+});
+
+/* ---- Coverage rows with steppers ---- */
+function status(q){ const r=q.have/q.need; return r<.8?["bad","Short"]:r<1?["warn","Tight"]:["good","Covered"]; }
+function renderCoverage(){
+  const el = document.getElementById("coverage");
+  el.innerHTML = QUEUES.map((q,i)=>{ const [cls,lab]=status(q); const pct=Math.min(100,Math.round(q.have/q.need*100));
+    return `<div class="cov-row"><div class="cov-name"><a href="#/queues/${q.id}">${q.name}</a><span class="meta">${q.tier}</span></div>
+      <div class="hbar ${cls}" role="img" aria-label="${q.have} of ${q.need} agents, ${pct}%"><span style="width:${pct}%"></span></div>
+      <div class="cov-val">${q.have}<span class="meta"> / ${q.need}</span></div>
+      <div style="display:flex;gap:8px;align-items:center;justify-content:flex-end"><span class="badge ${cls}">${lab}</span>
+      <span class="stepper" role="group" aria-label="Agents on ${q.name}"><button aria-label="Remove one agent from ${q.name}" data-step="-1" data-i="${i}">−</button><output>${q.have}</output><button aria-label="Add one agent to ${q.name}" data-step="1" data-i="${i}">+</button></span></div></div>`; }).join("");
+  el.querySelectorAll("[data-step]").forEach(b=>b.onclick=()=>{ const q=QUEUES[b.dataset.i]; q.have=Math.max(0,q.have+ +b.dataset.step); renderCoverage(); announce(`${q.name}: ${q.have} of ${q.need} agents`); });
+}
+
+/* ---- Queue table, sortable ---- */
+let sortKey="risk", sortDir=-1;
+function renderQueues(){
+  const mins=s=>{const m=s.match(/(\d+)h/), n=s.match(/(\d+)m/); return (m?+m[1]*60:0)+(n?+n[1]:0);};
+  const rows=[...QUEUES].filter(q=>q.risk>0).sort((a,b)=>(sortKey==="oldest"?mins(a.oldest)-mins(b.oldest):a[sortKey]-b[sortKey])*sortDir);
+  document.getElementById("qrows").innerHTML = rows.map(q=>{ const [cls,lab]=q.risk>15?["crit","Breaching soon"]:q.risk>5?["warn","At risk"]:["neutral","Watch"];
+    return `<tr><td><a class="primary" href="#/queues/${q.id}">${q.name}</a><span class="sub">${q.tier}</span></td>
+      <td class="num">${q.backlog.toLocaleString("en-US")}</td><td class="num"><b>${q.risk}</b></td><td class="num">${q.oldest}</td>
+      <td><span class="badge ${cls}">${lab}</span></td></tr>`; }).join("");
+}
+document.querySelectorAll("th button[data-sort]").forEach(b=>b.onclick=()=>{
+  const k=b.dataset.sort; sortDir = sortKey===k ? -sortDir : -1; sortKey=k;
+  document.querySelectorAll("th[aria-sort]").forEach(th=>{ th.setAttribute("aria-sort","none"); th.querySelector("button").textContent=th.querySelector("button").textContent.replace(/ [↑↓]$/,""); });
+  const th=b.closest("th"); th.setAttribute("aria-sort", sortDir<0?"descending":"ascending"); b.textContent += sortDir<0?" ↓":" ↑";
+  renderQueues(); announce(`Sorted by ${b.textContent.replace(/ [↑↓]$/,"")}, ${sortDir<0?"descending":"ascending"}`);
+});
+
+/* ---- Heatmap ---- */
+(function(){ const hours=["07","08","09","10","11","12","13","14","15","16","17","18"], rows={Email:[3,5,8,9,9,7,6,5,5,4,3,2],Chat:[2,4,9,10,10,8,7,7,6,5,3,2],Phone:[1,2,4,5,5,4,3,3,3,2,2,1]};
+  let h=`<span></span>`+hours.map(x=>`<span class="collab">${x}</span>`).join("");
+  for(const [k,v] of Object.entries(rows)) h+=`<span class="rowlab">${k}</span>`+v.map(n=>`<span class="cell" style="opacity:${(.12+n/11).toFixed(2)}" title="${k} ${n*20} tickets"></span>`).join("");
+  document.getElementById("heat").innerHTML=h; })();
+
+/* ---- Moves with Undo ---- */
+let undoFn=null;
+function toast(msg, undo){ document.getElementById("toastMsg").textContent=msg; undoFn=undo; document.getElementById("toast").classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>document.getElementById("toast").classList.remove("show"),8000); }
+document.getElementById("undo").onclick=()=>{ undoFn&&undoFn(); document.getElementById("toast").classList.remove("show"); };
+function move(i){ const [from,to]=MOVES[i]; const f=QUEUES.find(q=>q.id===from), t=QUEUES.find(q=>q.id===to); f&&f.have--; t.have++; renderCoverage();
+  return ()=>{ f&&f.have++; t.have--; renderCoverage(); }; }
+document.querySelectorAll("[data-move]").forEach(b=>b.onclick=()=>{ const u=move(+b.dataset.move); b.disabled=true; b.textContent="Moved"; toast(`Moved 1 agent to ${QUEUES.find(q=>q.id===MOVES[+b.dataset.move][1]).name}`, ()=>{u(); b.disabled=false; b.textContent="Move";}); });
+document.getElementById("applyAll").onclick=()=>{ const undos=[...document.querySelectorAll("[data-move]:not(:disabled)")].map(b=>{b.disabled=true;b.textContent="Moved";return [b,move(+b.dataset.move)];});
+  toast(`Applied ${undos.length} moves · coverage now ${Math.round(QUEUES.reduce((s,q)=>s+Math.min(q.have,q.need),0)/QUEUES.reduce((s,q)=>s+q.need,0)*100)}%`, ()=>undos.forEach(([b,u])=>{u();b.disabled=false;b.textContent="Move";})); };
+
+/* ---- Per-widget states + refresh ---- */
+const live=document.createElement("div"); live.className="sr-only"; live.setAttribute("role","status"); document.body.append(live);
+function announce(t){ live.textContent=""; setTimeout(()=>live.textContent=t,30); }
+function setState(w,s){ document.querySelectorAll(w?`[data-widget="${w}"]`:"[data-widget]").forEach(el=>el.dataset.state=s); }
+function reload(fail){ setState(null,"loading"); setTimeout(()=>{ setState(null,"ready"); if(fail) setState(fail,"error"); renderCoverage(); renderQueues();
+  document.getElementById("asof").textContent="Data as of "+new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",timeZone:"America/Los_Angeles"})+" PT"; announce("Dashboard updated"); }, 900); }
+document.querySelectorAll("[data-retry]").forEach(b=>b.onclick=()=>{ setState(b.dataset.retry,"loading"); setTimeout(()=>{setState(b.dataset.retry,"ready");},700); });
+document.getElementById("refresh").onclick=()=>reload();
+const ps=document.getElementById("previewState"); ps.value=params.get("state")||"ready";
+ps.onchange=()=>{ ps.value==="ready"?params.delete("state"):params.set("state",ps.value); history.replaceState(null,"","?"+params); applyPreview(); };
+function applyPreview(){ const v=ps.value; if(v==="loading") setState(null,"loading"); else { setState(null,"ready"); if(v==="partial") setState("coverage","error"); } }
+renderCoverage(); renderQueues(); applyPreview();
+</script>
+</body>
+</html>

@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Staffing Dashboard</title>
+<style>
+:root{
+  --canvas:#eceef5; --card:#fff; --ink:#12122a; --ink-2:#55586f; --ink-3:#6b6e85;
+  --line:#e4e6ef; --track:#eef0f6; --accent:#4f46e5; --accent-soft:#e9e8fd;
+  --good:#0b6e45; --good-bg:#e0f4ea; --warn:#8f5200; --warn-bg:#fdefd0;
+  --bad:#b0231a; --bad-bg:#fde6e3; --info:#274f9c; --info-bg:#e3ecfa;
+  --bar:#5b54e8; --bar-tight:#c96f12; --on-ink:#f4f4fb; --on-ink-2:#c9cbe0;
+  --r:24px; --gap:20px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--canvas);color:var(--ink);font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:12px;top:-60px;background:var(--ink);color:#fff;padding:10px 14px;border-radius:10px;z-index:100}
+.skip:focus{top:12px}
+
+/* shell */
+.shell{display:grid;grid-template-columns:88px 1fr;min-height:100vh}
+nav.side{position:sticky;top:0;height:100vh;padding:20px 12px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.logo{width:44px;height:44px;border-radius:14px;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;margin-bottom:14px}
+.nav-i{width:64px;padding:9px 0 7px;border-radius:18px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--ink-2);text-decoration:none;font-weight:500}
+.nav-i svg{width:20px;height:20px}
+.nav-i:hover{background:#fff8}
+.nav-i[aria-current=page]{background:var(--ink);color:#fff}
+.nav-sp{flex:1}
+main{padding:20px 28px 56px 8px;min-width:0}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.crumbs{color:var(--ink-3);font-size:13px}
+.crumbs b{color:var(--ink);font-weight:600}
+.top .sp{flex:1}
+.search{position:relative}
+.search input{width:260px;height:44px;border-radius:22px;border:1px solid var(--line);background:#fff;padding:0 48px 0 40px;font:inherit}
+.search svg{position:absolute;left:14px;top:13px;width:18px;height:18px;color:var(--ink-3)}
+.search kbd{position:absolute;right:12px;top:11px;font:600 11px/1 inherit;background:var(--track);border-radius:6px;padding:4px 6px;color:var(--ink-3)}
+.ibtn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:#fff;display:grid;place-items:center;position:relative}
+.ibtn svg{width:19px;height:19px}
+.ibtn .dot{position:absolute;top:9px;right:10px;width:9px;height:9px;border-radius:50%;background:var(--bad);border:2px solid #fff}
+.avatar{width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:600;border:0}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:14px 0 22px}
+h1{font-size:clamp(30px,4vw,48px);line-height:1.05;letter-spacing:-.02em;margin:0;font-weight:700}
+.fresh{display:flex;align-items:center;gap:10px;color:var(--ink-2);font-size:13px;margin-top:8px}
+.fresh .live{width:8px;height:8px;border-radius:50%;background:#1aa86b}
+.pill-btn{height:40px;padding:0 18px;border-radius:20px;border:1px solid var(--line);background:#fff;font-weight:600;display:inline-flex;align-items:center;gap:8px}
+.pill-btn:hover{border-color:#c8cbdb}
+
+/* bento */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:var(--gap)}
+.card{background:var(--card);border-radius:var(--r);padding:24px;min-width:0;position:relative}
+.card h2{margin:0;font-size:15px;font-weight:650}
+.card .sub{color:var(--ink-2);font-size:13px;margin:2px 0 0}
+.card-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}
+.c-hero{grid-column:span 5;background:var(--ink);color:var(--on-ink);display:flex;flex-direction:column}
+.c-kpis{grid-column:span 7;display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+.c-table{grid-column:span 12}
+.c-chart{grid-column:span 7}
+.c-side{grid-column:span 5;display:flex;flex-direction:column;gap:var(--gap)}
+.c-side .card{flex:1}
+
+/* hero */
+.kicker{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--on-ink-2);font-weight:600}
+.hero-t{font-size:clamp(28px,3.2vw,40px);line-height:1.08;letter-spacing:-.02em;font-weight:700;margin:10px 0 10px}
+.hero-s{color:var(--on-ink-2);margin:0 0 18px;max-width:46ch}
+.moves{list-style:none;padding:0;margin:0 0 16px;display:flex;flex-direction:column;gap:10px}
+.move{display:flex;align-items:center;gap:12px;background:#ffffff14;border-radius:18px;padding:12px 14px}
+.move .t{flex:1;min-width:0}
+.move .t b{font-weight:600}
+.move .t small{display:block;color:var(--on-ink-2);font-size:12.5px;margin-top:2px}
+.arrow{opacity:.7;margin:0 4px}
+.btn-light{height:38px;padding:0 16px;border-radius:19px;border:0;background:#fff;color:var(--ink);font-weight:650;white-space:nowrap}
+.btn-light:hover{background:#e8e8f7}
+.btn-lime{height:44px;padding:0 22px;border-radius:22px;border:0;background:#d4f56a;color:var(--ink);font-weight:700}
+.btn-lime:hover{background:#c5ea4e}
+.hero-f{margin-top:auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-top:6px}
+.hero-note{color:var(--on-ink-2);font-size:13px;flex:1;min-width:180px}
+.hero-note b{color:#fff}
+
+/* kpi */
+.kpi{display:flex;flex-direction:column;justify-content:space-between;min-height:150px}
+.kpi .lab{font-size:13px;color:var(--ink-2);font-weight:550}
+.kpi .val{font-size:clamp(36px,4vw,48px);font-weight:700;letter-spacing:-.02em;line-height:1;margin:10px 0 8px}
+.kpi .val small{font-size:.45em;font-weight:600;color:var(--ink-2);margin-left:3px;letter-spacing:0}
+.kpi .row{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+.delta{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:4px 10px 4px 8px;border-radius:14px}
+.delta::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.delta.bad{background:var(--bad-bg);color:var(--bad)} .delta.good{background:var(--good-bg);color:var(--good)} .delta.warn{background:var(--warn-bg);color:var(--warn)}
+.spark{width:96px;height:36px;flex:none}
+.kpi a.drill{position:absolute;inset:0;border-radius:var(--r)}
+.kpi a.drill:focus-visible{outline-offset:-3px}
+
+/* chips + table */
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{height:34px;padding:0 14px;border-radius:17px;border:1px solid var(--line);background:#fff;font-weight:550;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+.chip[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip .n{opacity:.75;font-weight:500}
+.tw{overflow-x:auto;margin:0 -8px}
+table{border-collapse:collapse;width:100%;min-width:900px}
+th,td{text-align:left;padding:14px 8px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+th{font-size:12px;color:var(--ink-2);font-weight:600;padding-top:6px;padding-bottom:10px}
+th button{background:none;border:0;padding:4px 6px;margin:-4px -6px;font-weight:600;font-size:12px;color:inherit;border-radius:8px;display:inline-flex;gap:4px;align-items:center}
+th button:hover{color:var(--ink)}
+th[aria-sort] button{color:var(--ink)}
+td.r,th.r{text-align:right}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:#f7f8fc}
+.qn{font-weight:600}
+.qn small{display:block;font-weight:400;color:var(--ink-3);font-size:12px}
+.mini{display:flex;align-items:center;gap:10px}
+.bar{width:90px;height:8px;border-radius:4px;background:var(--track);overflow:hidden;position:relative}
+.bar i{display:block;height:100%;border-radius:4px;background:var(--bar)}
+.bar.short i{background:var(--bad)}
+.st{display:inline-flex;align-items:center;gap:7px;padding:4px 11px 4px 9px;border-radius:14px;font-size:12.5px;font-weight:600}
+.st::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.st.bad{background:var(--bad-bg);color:var(--bad)} .st.warn{background:var(--warn-bg);color:var(--warn)} .st.good{background:var(--good-bg);color:var(--good)} .st.info{background:var(--info-bg);color:var(--info)}
+.flag{color:var(--bad);font-weight:600;font-size:12px}
+.link{font-weight:600;text-decoration:none;font-size:13px;padding:6px 10px;border-radius:12px}
+.link:hover{background:var(--accent-soft)}
+.empty{padding:36px 8px;text-align:center;color:var(--ink-2)}
+.empty b{display:block;color:var(--ink);font-size:15px;margin-bottom:4px}
+
+/* chart */
+.legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--ink-2);font-size:12.5px;align-items:center}
+.legend span{display:inline-flex;gap:7px;align-items:center}
+.sw{width:12px;height:12px;border-radius:4px;display:inline-block}
+.sw.ln{height:3px;width:16px;border-radius:2px;background:var(--ink)}
+.chart-wrap{position:relative}
+.chart-wrap svg{width:100%;height:auto;display:block;overflow:visible}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.5;opacity:0;transition:opacity .08s;z-index:5;min-width:170px;box-shadow:0 8px 24px #12122a33}
+.tip b{display:block;margin-bottom:2px}
+.tip.on{opacity:1}
+.callout{margin-top:14px;background:var(--warn-bg);color:#5e3500;border-radius:16px;padding:12px 14px;font-size:13px}
+.callout b{color:#3d2300}
+.seg{display:inline-flex;background:var(--track);border-radius:18px;padding:3px}
+.seg button{border:0;background:none;height:30px;padding:0 14px;border-radius:15px;font-weight:600;font-size:12.5px;color:var(--ink-2)}
+.seg button[aria-pressed=true]{background:#fff;color:var(--ink);box-shadow:0 1px 3px #12122a22}
+.mini-t{width:100%;border-collapse:collapse;min-width:0}
+.mini-t th,.mini-t td{padding:8px 6px}
+
+/* side cards */
+.stack{display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px;margin:6px 0 14px}
+.stack i{display:block;height:100%}
+.alist{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:13px}
+.alist li{display:flex;align-items:center;gap:10px}
+.alist .k{width:10px;height:10px;border-radius:3px;flex:none}
+.alist .v{margin-left:auto;font-weight:650}
+.alist .m{color:var(--ink-3);font-size:12px}
+.esc{list-style:none;margin:0;padding:0}
+.esc li{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.esc li:last-child{border-bottom:0;padding-bottom:0}
+.esc li:first-child{padding-top:0}
+.esc .b{flex:1;min-width:0}
+.esc a.n{font-weight:650;color:var(--ink);text-decoration:none}
+.esc a.n:hover{text-decoration:underline}
+.esc .d{color:var(--ink-2);font-size:12.5px}
+.esc .age{font-weight:650;font-size:13px;text-align:right;white-space:nowrap}
+.esc .age small{display:block;font-weight:400;color:var(--ink-3)}
+
+/* states */
+.sk{background:linear-gradient(90deg,var(--track),#f6f7fb,var(--track));background-size:200% 100%;animation:sh 1.3s infinite;border-radius:10px}
+.card.hero-sk .sk{background:linear-gradient(90deg,#ffffff14,#ffffff26,#ffffff14);background-size:200% 100%}
+@keyframes sh{to{background-position:-200% 0}}
+.err{display:flex;flex-direction:column;gap:10px;align-items:flex-start;color:var(--ink-2);padding:6px 0}
+.err b{color:var(--ink)}
+.hero .err,.c-hero .err{color:var(--on-ink-2)} .c-hero .err b{color:#fff}
+.banner{background:var(--bad-bg);color:#6e140d;border-radius:18px;padding:12px 18px;margin-bottom:var(--gap);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.banner b{color:#4a0d08}
+.banner .sp{flex:1}
+.banner button{height:34px;padding:0 16px;border-radius:17px;border:1px solid #b0231a66;background:#fff;font-weight:600}
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:var(--ink);color:#fff;border-radius:26px;padding:8px 8px 8px 22px;display:flex;align-items:center;gap:16px;opacity:0;pointer-events:none;transition:.2s;z-index:50;max-width:calc(100vw - 32px)}
+.toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast button{height:36px;border-radius:18px;border:0;background:#fff;color:var(--ink);font-weight:650;padding:0 16px}
+footer{margin-top:28px;color:var(--ink-3);font-size:12.5px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+footer select{height:30px;border-radius:15px;border:1px solid var(--line);background:#fff;padding:0 10px;font:inherit}
+
+@media (max-width:1180px){
+  .c-hero,.c-kpis,.c-chart,.c-side{grid-column:span 12}
+}
+@media (max-width:760px){
+  .shell{grid-template-columns:1fr}
+  nav.side{position:fixed;bottom:0;left:0;right:0;top:auto;height:auto;flex-direction:row;justify-content:space-around;background:#fffd;backdrop-filter:blur(8px);z-index:20;padding:6px}
+  .logo,.nav-sp{display:none}
+  .nav-i{width:auto;flex:1}
+  main{padding:16px 16px 100px}
+  .c-kpis{grid-template-columns:1fr}
+  .search input{width:100%} .search{flex:1;min-width:180px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#content">Skip to dashboard</a>
+<div class="shell">
+  <nav class="side" aria-label="Primary">
+    <div class="logo" aria-hidden="true">H</div>
+    <a class="nav-i" href="#" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="10" rx="2"/><rect x="13" y="3" width="8" height="6" rx="2"/><rect x="13" y="11" width="8" height="10" rx="2"/><rect x="3" y="15" width="8" height="6" rx="2"/></svg>Today</a>
+    <a class="nav-i" href="#queues"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Queues</a>
+    <a class="nav-i" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.5a3.5 3.5 0 010 7M18 14.8c1.9.7 3.2 2.3 3.5 5.2"/></svg>Agents</a>
+    <a class="nav-i" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 20h18M6 16v-5M11 16V6M16 16v-8M21 16v-3"/></svg>Reports</a>
+    <div class="nav-sp"></div>
+    <a class="nav-i" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>Settings</a>
+  </nav>
+
+  <main id="content">
+    <div class="top">
+      <div class="crumbs">Support Operations <span aria-hidden="true">/</span> <b>Daily staffing</b></div>
+      <div class="sp"></div>
+      <div class="search" role="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <label class="sr" for="q">Filter queues</label>
+        <input id="q" type="search" placeholder="Filter queues…" autocomplete="off">
+        <kbd aria-hidden="true">/</kbd>
+      </div>
+      <button class="ibtn" aria-label="Notifications, 2 unread"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 1112 0c0 5 2 6 2 6H4s2-1 2-6M10 19a2 2 0 004 0"/></svg><span class="dot"></span></button>
+      <button class="avatar" aria-label="Account menu: Renata Okafor">RO</button>
+    </div>
+
+    <div class="head">
+      <div>
+        <h1>Good morning, Renata</h1>
+        <div class="fresh"><span class="live" aria-hidden="true"></span><span>Wednesday, Oct 28 · All times PT · <span id="upd">Updated 07:52</span></span></div>
+      </div>
+      <button class="pill-btn" id="refresh"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 11-2.3-5.7M20 4v5h-5"/></svg>Refresh</button>
+    </div>
+
+    <div id="banner"></div>
+
+    <div class="grid">
+      <section class="card c-hero" id="hero" aria-labelledby="hero-t"></section>
+      <div class="c-kpis" id="kpis"></div>
+
+      <section class="card c-table" id="queues" aria-labelledby="qt">
+        <div class="card-h">
+          <div><h2 id="qt">Queues: who needs agents today</h2><p class="sub">Needed = (today's inbound + 35% of current backlog) × avg handle time ÷ 6 productive hrs per agent</p></div>
+          <div class="tools" role="group" aria-label="Filter queues" id="chips"></div>
+        </div>
+        <div id="tbl"></div>
+      </section>
+
+      <section class="card c-chart" id="chart" aria-labelledby="ct"></section>
+
+      <div class="c-side">
+        <section class="card" id="agents" aria-labelledby="at"></section>
+        <section class="card" id="esc" aria-labelledby="et"></section>
+      </div>
+    </div>
+
+    <footer>
+      <span>Source: helpdesk sync + WFM schedule. Forecast model v3.2, trained on 12 weeks.</span>
+      <label>Preview state <select id="stateSel"><option value="ready">Ready</option><option value="loading">Loading</option><option value="error">Error</option></select></label>
+    </footer>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="undo">Undo</button></div>
+
+<script>
+/* ---------- data ---------- */
+const QUEUES=[
+ {id:'enterprise',name:'Enterprise Priority',note:'P1/P2 · named accounts',f:48,b:22,db:+3,aht:35,assigned:6,atRisk:3,oldest:42,target:60},
+ {id:'integrations',name:'Integrations & API',note:'Webhooks, SSO connectors, API errors',f:110,b:90,db:+21,aht:18,assigned:5,atRisk:22,oldest:205,target:240},
+ {id:'billing',name:'Billing & Invoicing',note:'Invoices, renewals, seat changes',f:230,b:60,db:-14,aht:8,assigned:8,atRisk:4,oldest:75,target:240},
+ {id:'onboarding',name:'Onboarding & Setup',note:'First 90 days · implementation',f:70,b:40,db:+4,aht:16,assigned:4,atRisk:6,oldest:200,target:240},
+ {id:'tech',name:'Technical Support',note:'Core product how-to and bugs',f:190,b:120,db:+9,aht:12,assigned:8,atRisk:14,oldest:175,target:240},
+ {id:'access',name:'Account & Access',note:'Logins, roles, permissions',f:160,b:34,db:-2,aht:7,assigned:4,atRisk:2,oldest:35,target:120},
+ {id:'data',name:'Data & Reporting',note:'Dashboards, exports, warehouse sync',f:40,b:30,db:+17,aht:18,assigned:1,atRisk:9,oldest:520,target:480}
+];
+const ROSTER=40, OUT=[['On PTO',2,'#8b8fa8'],['Out sick',1,'#b6b9cc'],['In training until 11:00',1,'#d3d5e2']];
+const WORKING=ROSTER-OUT.reduce((s,o)=>s+o[1],0);
+const ESC=[
+ {acct:'Northwind Logistics',arr:412,issue:'SSO login loop after IdP certificate rotation, 1,800 users locked out',q:'Integrations & API',age:'5h 10m',owner:'Dana Whitfield'},
+ {acct:'Halvorsen Health',arr:288,issue:'Scheduled exports failing since Mon, audit report due Friday',q:'Data & Reporting',age:'2d 3h',owner:'Unassigned'},
+ {acct:'Brightline Retail',arr:236,issue:'Invoice double-billed after seat true-up; CFO copied',q:'Billing & Invoicing',age:'1d 6h',owner:'Marcus Obi'},
+ {acct:'Tessera Bank',arr:520,issue:'Webhook retries timing out in prod, P2 open 9h',q:'Enterprise Priority',age:'9h 02m',owner:'Priya Nair'},
+ {acct:'Quarry & Co',arr:164,issue:'Implementation blocked on SCIM mapping; go-live Nov 2',q:'Onboarding & Setup',age:'3d',owner:'Lena Park'}
+];
+const HOURS=['8a','9a','10a','11a','12p','1p','2p','3p','4p','5p'];
+const W=[60,105,132,128,96,88,112,98,70,43], SHIFT=[24,32,36,34,30,36,36,34,30,24], TPH=3.5;
+const SP={backlog:[301,312,298,322,340,331,310,325,349,358,342,351,358,396],frt:[27,26,24,25,26,28,25,24,22,23,24,22,22,23],csat:[92.4,92.1,92.6,91.9,92.0,91.7,92.3,91.8,91.5,91.9,91.2,91.4,91.0,91.2],risk:[31,28,35,33,38,36,29,41,44,39,47,52,48,60]};
+
+/* ---------- state ---------- */
+const P=new URLSearchParams(location.search);
+const S={state:P.get('state')||'ready',filter:P.get('filter')||'all',sort:P.get('sort')||'gap',dir:P.get('dir')||'asc',q:P.get('q')||'',chartView:'chart'};
+const assign=Object.fromEntries(QUEUES.map(q=>[q.id,q.assigned]));
+const hist=[]; let toastT;
+const $=id=>document.getElementById(id);
+const need=q=>Math.ceil((q.f+.35*q.b)*q.aht/360);
+const gap=q=>assign[q.id]-need(q);
+const fmtMin=m=>Math.floor(m/60)+':'+String(m%60).padStart(2,'0');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pl=(n,w)=>n+' '+w+(n===1?'':'s');
+function syncURL(){const p=new URLSearchParams();if(S.state!=='ready')p.set('state',S.state);if(S.filter!=='all')p.set('filter',S.filter);if(S.sort!=='gap'||S.dir!=='asc'){p.set('sort',S.sort);p.set('dir',S.dir)}if(S.q)p.set('q',S.q);const s=p.toString();history.replaceState(null,'',location.pathname+(s?'?'+s:''))}
+
+/* ---------- moves ---------- */
+function computeMoves(){
+  const a={...assign}, moves=[];
+  const g=q=>a[q.id]-need(q);
+  for(let i=0;i<40;i++){
+    const donor=QUEUES.filter(q=>q.id!=='enterprise'&&g(q)>0).sort((x,y)=>g(y)-g(x))[0];
+    const rec=QUEUES.filter(q=>g(q)<0).sort((x,y)=>(-g(y)*(1+y.atRisk/10))-(-g(x)*(1+x.atRisk/10)))[0];
+    if(!donor||!rec)break;
+    a[donor.id]--;a[rec.id]++;
+    const m=moves.find(m=>m.from===donor.id&&m.to===rec.id);
+    m?m.n++:moves.push({from:donor.id,to:rec.id,n:1});
+  }
+  return moves;
+}
+const qn=id=>QUEUES.find(q=>q.id===id);
+function applyMoves(ms,label){
+  hist.push({...assign});
+  ms.forEach(m=>{assign[m.from]-=m.n;assign[m.to]+=m.n});
+  toast(label);render();
+}
+function toast(msg){$('toastMsg').textContent=msg;$('toast').classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>$('toast').classList.remove('on'),9000)}
+$('undo').onclick=()=>{const h=hist.pop();if(h){Object.assign(assign,h);render();toast(hist.length?'Move undone':'Move undone. Back to the original roster.')}clearTimeout(toastT);toastT=setTimeout(()=>$('toast').classList.remove('on'),3500)};
+
+/* ---------- render pieces ---------- */
+function skel(h,w='100%'){return `<div class="sk" style="height:${h}px;width:${w}"></div>`}
+function errBlock(what){return `<div class="err" role="alert"><b>Couldn't load ${what}</b><span>The helpdesk sync timed out (last good data: yesterday 18:04). We'd rather show nothing than numbers you can't trust.</span><button class="pill-btn" data-retry>Try again</button></div>`}
+
+function renderHero(){
+  const el=$('hero');el.classList.toggle('hero-sk',S.state==='loading');
+  if(S.state==='loading'){el.innerHTML=`<div class="sk" style="height:14px;width:40%"></div><div style="height:16px"></div>${skel(44)}<div style="height:10px"></div>${skel(44,'70%')}<div style="height:24px"></div>${skel(56)}<div style="height:10px"></div>${skel(56)}`;return}
+  if(S.state==='error'){el.innerHTML=`<div class="kicker">Today's staffing call</div>${errBlock('the staffing recommendation')}`;return}
+  const ms=computeMoves(), tot=ms.reduce((s,m)=>s+m.n,0);
+  const needAll=QUEUES.reduce((s,q)=>s+need(q),0), short=Math.max(0,needAll-WORKING);
+  const donors=[...new Set(ms.map(m=>qn(m.from).name))];
+  let title,sub;
+  if(tot){
+    title=`Move ${pl(tot,'agent')} out of ${donors.join(' and ')}`;
+    const worst=ms.map(m=>qn(m.to)).sort((a,b)=>b.atRisk-a.atRisk)[0];
+    sub=`${worst.name} is ${-gap(worst)} short with ${worst.atRisk} tickets set to breach SLA in the next 4 hours. ${donors[0]} has more people than its workload needs.`;
+  }else{
+    title=short?'No spare agents to move':'Coverage is balanced for today';
+    sub=short?`Every queue is at or below what its workload needs. The gap has to be closed with overtime, deflection, or priority changes.`:`Every queue has the agents its forecast needs. Nothing to change.`;
+  }
+  const rows=ms.map((m,i)=>{const f=qn(m.from),t=qn(m.to);return `<li class="move"><div class="t"><b>${pl(m.n,'agent')}</b> ${esc(f.name)}<span class="arrow" aria-hidden="true">→</span><span class="sr"> to </span>${esc(t.name)}<small>${t.atRisk} at risk, oldest ${fmtMin(t.oldest)}${t.oldest>t.target?' (over target)':''} · after move: ${assign[t.id]+m.n} of ${need(t)} needed</small></div><button class="btn-light" data-move="${i}">Apply</button></li>`}).join('');
+  const afterShort=short;
+  el.innerHTML=`<div class="kicker">Today's staffing call</div><h2 class="hero-t" id="hero-t">${esc(title)}</h2><p class="hero-s">${esc(sub)}</p>${rows?`<ul class="moves">${rows}</ul>`:''}
+  <div class="hero-f">${tot>1?`<button class="btn-lime" id="applyAll">Apply all ${tot} moves</button>`:''}<div class="hero-note"><b>${WORKING} of ${ROSTER}</b> agents working. Workload needs <b>${needAll}</b>${afterShort?` — <b>${pl(afterShort,'agent')} short</b> even after moves.`:'.'}</div></div>`;
+  el.querySelectorAll('[data-move]').forEach(b=>b.onclick=()=>{const m=ms[+b.dataset.move];applyMoves([m],`Moved ${pl(m.n,'agent')} from ${qn(m.from).name} to ${qn(m.to).name}`)});
+  const aa=$('applyAll');if(aa)aa.onclick=()=>applyMoves(ms,`Applied ${tot} moves`);
+}
+
+function spark(d,color){
+  const w=96,h=36,mn=Math.min(...d),mx=Math.max(...d),r=mx-mn||1;
+  const pts=d.map((v,i)=>[i*(w-6)/(d.length-1)+3,h-4-(v-mn)/r*(h-8)]);
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" role="img" aria-label="14-day trend"><polyline points="${pts.map(p=>p.map(n=>n.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${pts.at(-1)[0]}" cy="${pts.at(-1)[1]}" r="3.5" fill="${color}" stroke="#fff" stroke-width="2"/></svg>`;
+}
+function renderKpis(){
+  const el=$('kpis');
+  if(S.state==='loading'){el.innerHTML=[0,1,2,3].map(()=>`<div class="card kpi">${skel(12,'50%')}${skel(44,'40%')}${skel(24,'60%')}</div>`).join('');return}
+  if(S.state==='error'){el.innerHTML=`<div class="card" style="grid-column:span 2">${errBlock('headline numbers')}</div>`;return}
+  const open=QUEUES.reduce((s,q)=>s+q.b,0), risk=QUEUES.reduce((s,q)=>s+q.atRisk,0);
+  const K=[
+   {lab:'Open backlog',val:open,u:'tickets',d:'+38 vs yesterday',c:'bad',sp:SP.backlog,col:'#b0231a',href:'#queues',aria:'Open backlog, see queues'},
+   {lab:'Set to breach SLA by 12:00',val:risk,u:'tickets',d:'+12 vs yesterday',c:'bad',sp:SP.risk,col:'#b0231a',href:'#queues',aria:'Tickets at risk, see queues'},
+   {lab:'Median first response',val:23,u:'min',d:'7 min under 30 target',c:'good',sp:SP.frt,col:'#0b6e45',href:'#',aria:'First response, open report'},
+   {lab:'CSAT, last 7 days',val:'91.2',u:'%',d:'0.8 pt under 92 target',c:'warn',sp:SP.csat,col:'#8f5200',href:'#',aria:'CSAT, open report'}];
+  el.innerHTML=K.map(k=>`<div class="card kpi"><div class="lab">${k.lab}</div><div class="val num">${k.val}<small>${k.u}</small></div><div class="row"><span class="delta ${k.c}">${k.d}</span>${spark(k.sp,k.col)}</div><a class="drill" href="${k.href}" aria-label="${k.aria}"></a></div>`).join('');
+}
+
+function visibleQueues(){
+  let l=QUEUES.filter(q=>(!S.q||q.name.toLowerCase().includes(S.q.toLowerCase())));
+  if(S.filter==='short')l=l.filter(q=>gap(q)<0);
+  if(S.filter==='ok')l=l.filter(q=>gap(q)>=0);
+  const key={name:q=>q.name,backlog:q=>q.b,f:q=>q.f,oldest:q=>q.oldest,atRisk:q=>q.atRisk,gap:q=>gap(q)}[S.sort];
+  const m=S.dir==='asc'?1:-1;
+  return l.sort((a,b)=>{const x=key(a),y=key(b);return (x>y?1:x<y?-1:0)*m||(b.atRisk-a.atRisk)});
+}
+function status(q){const g=gap(q);return g<=-2?['bad',`Short ${-g}`]:g===-1?['warn','Short 1']:g===0?['good','Covered']:['info',`Surplus ${g}`]}
+function renderTable(){
+  const chips=$('chips');
+  const nShort=QUEUES.filter(q=>gap(q)<0).length;
+  const C=[['all','All',QUEUES.length],['short','Needs agents',nShort],['ok','Covered or surplus',QUEUES.length-nShort]];
+  chips.innerHTML=C.map(c=>`<button class="chip" data-f="${c[0]}" aria-pressed="${S.filter===c[0]}">${c[1]} <span class="n">${c[2]}</span></button>`).join('');
+  chips.querySelectorAll('button').forEach(b=>b.onclick=()=>{S.filter=b.dataset.f;syncURL();renderTable()});
+  const el=$('tbl');
+  if(S.state==='loading'){el.innerHTML=[0,1,2,3,4].map(()=>`<div style="padding:10px 0">${skel(30)}</div>`).join('');return}
+  if(S.state==='error'){el.innerHTML=errBlock('queue data');return}
+  const L=visibleQueues();
+  const cols=[['name','Queue'],['backlog','Open','r'],['f','Inbound today','r'],['oldest','Oldest waiting','r'],['atRisk','Breach risk (4h)','r'],['gap','Agents: assigned / needed']];
+  const th=cols.map(c=>{const on=S.sort===c[0];return `<th class="${c[2]||''}" scope="col" ${on?`aria-sort="${S.dir==='asc'?'ascending':'descending'}"`:''}><button data-s="${c[0]}">${c[1]}${on?(S.dir==='asc'?' ↑':' ↓'):''}</button></th>`}).join('')+'<th scope="col">Status</th><th scope="col"><span class="sr">Actions</span></th>';
+  const body=L.map(q=>{const n=need(q),a=assign[q.id],[sc,sl]=status(q),over=q.oldest>q.target;
+    return `<tr><th scope="row" style="font-size:14px;color:var(--ink)"><div class="qn">${esc(q.name)}<small>${esc(q.note)}</small></div></th>
+    <td class="r num">${q.b} <small style="color:${q.db>0?'var(--bad)':'var(--good)'}">${q.db>0?'▲':'▼'}${Math.abs(q.db)}</small></td>
+    <td class="r num">${q.f}</td>
+    <td class="r num">${fmtMin(q.oldest)}${over?' <span class="flag">over target</span>':''}</td>
+    <td class="r num">${q.atRisk}</td>
+    <td><div class="mini"><span class="num" style="min-width:48px;font-weight:600">${a} / ${n}</span><span class="bar ${a<n?'short':''}" aria-hidden="true"><i style="width:${Math.min(100,a/n*100)}%"></i></span></div></td>
+    <td><span class="st ${sc}">${sl}</span></td>
+    <td><a class="link" href="#queue/${q.id}" aria-label="View ${esc(q.name)} tickets">View tickets →</a></td></tr>`}).join('');
+  el.innerHTML=L.length?`<div class="tw"><table><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table></div>`:`<div class="empty"><b>No queues match</b>${S.q?`Nothing named “${esc(S.q)}”. `:''}<button class="pill-btn" id="clr" style="margin-top:10px">Clear filters</button></div>`;
+  el.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{const k=b.dataset.s;if(S.sort===k)S.dir=S.dir==='asc'?'desc':'asc';else{S.sort=k;S.dir=k==='name'||k==='gap'?'asc':'desc'}syncURL();renderTable()});
+  const c=$('clr');if(c)c.onclick=()=>{S.filter='all';S.q='';$('q').value='';syncURL();renderTable()};
+}
+
+function renderChart(){
+  const el=$('chart');
+  if(S.state==='loading'){el.innerHTML=`${skel(16,'40%')}<div style="height:16px"></div>${skel(240)}`;return}
+  if(S.state==='error'){el.innerHTML=`<h2 id="ct">Inbound vs. capacity, by hour</h2>${errBlock('the hourly forecast')}`;return}
+  const tot=QUEUES.reduce((s,q)=>s+q.f,0), sw=W.reduce((a,b)=>a+b,0);
+  const inb=W.map(w=>Math.round(tot*w/sw)), cap=SHIFT.map(s=>Math.round(s*TPH));
+  const util=inb.map((v,i)=>v/cap[i]);
+  const tight=util.map((u,i)=>u>=.9?i:-1).filter(i=>i>=0);
+  const head=`<div class="card-h"><div><h2 id="ct">Inbound vs. capacity, by hour</h2><p class="sub">${tot} tickets forecast today · capacity = agents on shift × ${TPH} tickets/hr</p></div><div class="seg" role="group" aria-label="View"><button data-v="chart" aria-pressed="${S.chartView==='chart'}">Chart</button><button data-v="table" aria-pressed="${S.chartView==='table'}">Table</button></div></div>`;
+  const call=tight.length?`<div class="callout"><b>Peak is ${HOURS[tight[0]].replace('a',':00')}–${HOURS[tight.at(-1)+1].replace('a',':00')}</b>, running at ${Math.round(util[tight[0]]*100)}–${Math.round(Math.max(...tight.map(i=>util[i]))*100)}% of capacity. Hold breaks and training until after 12:00; the lull from 12:00 to 14:00 is where lunches fit.</div>`:'';
+  let body;
+  if(S.chartView==='table'){
+    body=`<div class="tw"><table class="mini-t"><thead><tr><th scope="col">Hour</th><th class="r" scope="col">Inbound</th><th class="r" scope="col">Agents on shift</th><th class="r" scope="col">Capacity</th><th class="r" scope="col">Load</th></tr></thead><tbody>${HOURS.map((h,i)=>`<tr><th scope="row">${h}</th><td class="r num">${inb[i]}</td><td class="r num">${SHIFT[i]}</td><td class="r num">${cap[i]}</td><td class="r num">${Math.round(util[i]*100)}%${util[i]>=.9?' · tight':''}</td></tr>`).join('')}</tbody></table></div>`;
+  }else{
+    const Wd=640,H=250,L=34,R=8,T=14,B=28,iw=Wd-L-R,ih=H-T-B,mx=140,bw=iw/10;
+    const y=v=>T+ih-v/mx*ih;
+    let g='';for(const t of [0,35,70,105,140])g+=`<line x1="${L}" x2="${Wd-R}" y1="${y(t)}" y2="${y(t)}" stroke="#e4e6ef"/><text x="${L-8}" y="${y(t)+4}" text-anchor="end" font-size="11" fill="#6b6e85">${t}</text>`;
+    const bars=inb.map((v,i)=>{const x=L+i*bw+bw*.2,w=bw*.6,t=util[i]>=.9;return `<path d="M${x},${y(0)} V${y(v)+5} a5,5 0 0 1 5,-5 h${w-10} a5,5 0 0 1 5,5 V${y(0)} Z" fill="${t?'var(--bar-tight)':'var(--bar)'}"/>${t?`<text x="${x+w/2}" y="${y(v)-6}" text-anchor="middle" font-size="11" font-weight="700" fill="#8f5200">${Math.round(util[i]*100)}%</text>`:''}`}).join('');
+    const pts=cap.map((v,i)=>[L+i*bw+bw/2,y(v)]);
+    const line=`<polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#12122a" stroke-width="2" stroke-linejoin="round"/>`+pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="#12122a" stroke="#fff" stroke-width="2"/>`).join('');
+    const xl=HOURS.map((h,i)=>`<text x="${L+i*bw+bw/2}" y="${H-8}" text-anchor="middle" font-size="11" fill="#6b6e85">${h}</text>`).join('');
+    const hit=HOURS.map((h,i)=>`<rect class="hit" data-i="${i}" tabindex="0" x="${L+i*bw}" y="${T}" width="${bw}" height="${ih}" fill="transparent" aria-label="${h}: ${inb[i]} inbound, ${cap[i]} capacity, ${Math.round(util[i]*100)}% load"/>`).join('');
+    body=`<div class="legend" style="margin-bottom:8px"><span><i class="sw" style="background:var(--bar)"></i>Inbound tickets</span><span><i class="sw" style="background:var(--bar-tight)"></i>Inbound at 90%+ of capacity</span><span><i class="sw ln"></i>Capacity</span></div><div class="chart-wrap"><svg viewBox="0 0 ${Wd} ${H}" role="img" aria-label="Hourly inbound tickets versus capacity. Peak load 10 to 12 at 95 to 97 percent. Full values in the table view.">${g}${bars}${line}${xl}${hit}</svg><div class="tip" id="tip"></div></div>`;
+    setTimeout(()=>{
+      const tip=$('tip'),wrap=el.querySelector('.chart-wrap');if(!tip)return;
+      const show=(i,ev)=>{tip.innerHTML=`<b>${HOURS[i]} hour</b>Inbound: ${inb[i]}<br>Capacity: ${cap[i]} (${SHIFT[i]} agents)<br>Load: ${Math.round(util[i]*100)}%${util[i]>=.9?' · tight':''}`;tip.classList.add('on');const r=wrap.getBoundingClientRect();const cx=L+i*bw+bw/2,sx=r.width/Wd;let left=cx*sx+14;if(left+180>r.width)left=cx*sx-190;tip.style.left=left+'px';tip.style.top=Math.max(0,y(Math.max(inb[i],cap[i]))*sx-10)+'px'};
+      el.querySelectorAll('.hit').forEach(h=>{const i=+h.dataset.i;h.onmouseenter=h.onfocus=e=>show(i,e);h.onmouseleave=h.onblur=()=>tip.classList.remove('on')});
+    });
+  }
+  el.innerHTML=head+body+call;
+  el.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{S.chartView=b.dataset.v;renderChart()});
+}
+
+function renderAgents(){
+  const el=$('agents');
+  if(S.state==='loading'){el.innerHTML=skel(16,'40%')+'<div style="height:16px"></div>'+skel(80);return}
+  if(S.state==='error'){el.innerHTML=`<h2 id="at">Who's working today</h2>${errBlock('the roster')}`;return}
+  const segs=[['Working',WORKING,'var(--accent)'],...OUT.map(o=>[o[0],o[1],o[2]])];
+  el.innerHTML=`<div class="card-h" style="margin-bottom:6px"><div><h2 id="at">Who's working today</h2><p class="sub">${ROSTER} agents on the roster</p></div></div>
+  <div class="stack" role="img" aria-label="${segs.map(s=>s[0]+' '+s[1]).join(', ')}">${segs.map(s=>`<i style="flex:${s[1]};background:${s[2]}"></i>`).join('')}</div>
+  <ul class="alist">${segs.map(s=>`<li><span class="k" style="background:${s[2]}"></span>${s[0]}<span class="v num">${s[1]}</span></li>`).join('')}
+  <li><span class="m">One more agent returns from training at 11:00. Send them to Integrations & API (certified API L1).</span></li></ul>`;
+}
+function renderEsc(){
+  const el=$('esc');
+  if(S.state==='loading'){el.innerHTML=skel(16,'50%')+[0,1,2].map(()=>`<div style="margin-top:14px">${skel(40)}</div>`).join('');return}
+  if(S.state==='error'){el.innerHTML=`<h2 id="et">Escalated accounts</h2>${errBlock('escalations')}`;return}
+  const tot=ESC.reduce((s,e)=>s+e.arr,0);
+  el.innerHTML=`<div class="card-h"><div><h2 id="et">Escalated accounts</h2><p class="sub">$${tot}k ARR with an open exec or P1/P2 escalation</p></div><a class="link" href="#">All ${ESC.length+4} →</a></div>
+  <ul class="esc">${ESC.map(e=>`<li><div class="b"><a class="n" href="#account">${esc(e.acct)}</a> <span class="num" style="color:var(--ink-3);font-size:12px">$${e.arr}k ARR</span><div class="d">${esc(e.issue)}</div><div class="d" style="color:var(--ink-3)">${esc(e.q)} · ${e.owner==='Unassigned'?'<b style="color:var(--bad)">Unassigned</b>':esc(e.owner)}</div></div><div class="age num">${e.age}<small>open</small></div></li>`).join('')}</ul>`;
+}
+function renderBanner(){
+  $('banner').innerHTML=S.state==='error'?`<div class="banner" role="alert"><span><b>Data is unavailable.</b> Helpdesk sync timed out at 07:52 PT. Nothing below is current.</span><span class="sp"></span><button data-retry>Retry</button></div>`:'';
+}
+function render(){
+  $('stateSel').value=S.state;
+  renderBanner();renderHero();renderKpis();renderTable();renderChart();renderAgents();renderEsc();
+  document.querySelectorAll('[data-retry]').forEach(b=>b.onclick=()=>setState('loading',true));
+}
+function setState(s,auto){S.state=s;syncURL();render();if(auto)setTimeout(()=>{S.state='ready';syncURL();stamp();render()},700)}
+function stamp(){const d=new Date();$('upd').textContent='Updated '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+
+/* ---------- wiring ---------- */
+$('stateSel').onchange=e=>setState(e.target.value);
+$('refresh').onclick=()=>setState('loading',true);
+$('q').value=S.q;
+$('q').oninput=e=>{S.q=e.target.value;syncURL();renderTable()};
+document.addEventListener('keydown',e=>{
+  if((e.key==='/'||(e.key==='k'&&(e.metaKey||e.ctrlKey)))&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();$('q').focus()}
+});
+render();
+</script>
+</body>
+</html>

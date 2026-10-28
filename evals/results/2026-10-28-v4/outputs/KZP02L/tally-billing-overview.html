@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Billing overview · Tally</title>
+<style>
+:root{
+  --canvas:#f6f8fb; --card:#ffffff; --border:#e3e8ee; --border-strong:#cfd7e2;
+  --text:#0a2540; --muted:#5b6b80; --faint:#eef2f7;
+  --accent:#533afd; --accent-ink:#ffffff; --accent-soft:#eeebff;
+  --good:#0e7a4d; --good-bg:#e4f6ec; --warn:#8a5208; --warn-bg:#fdf1d9; --bad:#b3261e; --bad-bg:#fde8e6;
+  --hero-bg:#0a2540; --hero-fg:#ffffff; --hero-mut:#b3c0d4; --hero-line:#9a93ff; --hero-grid:rgba(255,255,255,.14); --hero-chip:rgba(255,255,255,.10);
+  --shadow:0 1px 2px rgba(10,37,64,.04);
+  --focus:#533afd;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --canvas:#0b1220; --card:#121b2e; --border:#24314a; --border-strong:#34456a;
+    --text:#e6ebf4; --muted:#9aa9c0; --faint:#1a2540;
+    --accent:#8b83ff; --accent-ink:#0b1220; --accent-soft:#222a56;
+    --good:#4cd08f; --good-bg:#12301f; --warn:#f0b44c; --warn-bg:#38280c; --bad:#ff8a80; --bad-bg:#3d1816;
+    --hero-bg:#18234a; --hero-fg:#ffffff; --hero-mut:#aab8d2; --hero-line:#aaa4ff; --hero-grid:rgba(255,255,255,.12); --hero-chip:rgba(255,255,255,.10);
+    --shadow:none; --focus:#aaa4ff;
+  }
+}
+:root[data-theme="dark"]{
+  --canvas:#0b1220; --card:#121b2e; --border:#24314a; --border-strong:#34456a;
+  --text:#e6ebf4; --muted:#9aa9c0; --faint:#1a2540;
+  --accent:#8b83ff; --accent-ink:#0b1220; --accent-soft:#222a56;
+  --good:#4cd08f; --good-bg:#12301f; --warn:#f0b44c; --warn-bg:#38280c; --bad:#ff8a80; --bad-bg:#3d1816;
+  --hero-bg:#18234a; --hero-fg:#ffffff; --hero-mut:#aab8d2; --hero-line:#aaa4ff; --hero-grid:rgba(255,255,255,.12); --hero-chip:rgba(255,255,255,.10);
+  --shadow:none; --focus:#aaa4ff;
+}
+*{box-sizing:border-box}
+html{color-scheme:light dark}
+:root[data-theme="light"]{color-scheme:light}
+:root[data-theme="dark"]{color-scheme:dark}
+body{margin:0;background:var(--canvas);color:var(--text);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:8px;top:-48px;background:var(--card);padding:8px 12px;border-radius:8px;z-index:50}
+.skip:focus{top:8px}
+
+/* shell */
+.shell{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;padding:16px 12px;border-right:1px solid var(--border);background:var(--card);display:flex;flex-direction:column;gap:16px}
+.ws{display:flex;align-items:center;gap:10px;width:100%;padding:8px;border:1px solid var(--border);border-radius:10px;background:transparent;text-align:left}
+.logo{width:28px;height:28px;border-radius:8px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:700;font-size:15px;flex:none}
+.ws b{display:block;font-size:13px;line-height:1.2}.ws span{font-size:12px;color:var(--muted)}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;text-decoration:none;color:var(--muted);font-weight:500;min-height:34px}
+.nav a:hover{background:var(--faint);color:var(--text)}
+.nav a[aria-current="page"]{background:var(--accent-soft);color:var(--text);font-weight:600}
+.nav svg{width:16px;height:16px;flex:none}
+.nav .grp{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:12px 10px 4px}
+.side .foot{margin-top:auto;font-size:12px;color:var(--muted);padding:0 10px}
+
+.main{min-width:0}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:10px 32px;background:color-mix(in srgb,var(--canvas) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.crumbs{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center;min-width:0}
+.crumbs [aria-current]{color:var(--text);font-weight:500}
+.search{margin-left:auto;display:flex;align-items:center;gap:8px;min-width:240px;height:34px;padding:0 10px;border:1px solid var(--border);background:var(--card);border-radius:8px;color:var(--muted)}
+.search kbd{margin-left:auto;font:11px ui-monospace,monospace;border:1px solid var(--border);border-radius:4px;padding:0 5px}
+.ib{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--card);display:grid;place-items:center;position:relative}
+.ib:hover{border-color:var(--border-strong)}
+.ib svg{width:16px;height:16px}
+.ib .dot{position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--bad);border:1.5px solid var(--card)}
+.av{width:34px;height:34px;border-radius:50%;background:var(--accent-soft);color:var(--text);font-weight:600;font-size:12px;border:1px solid var(--border)}
+
+.page{max-width:1280px;margin:0 auto;padding:28px 32px 64px}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+h1{margin:0;font-size:28px;line-height:1.2;letter-spacing:-.02em;font-weight:650}
+.fresh{margin:4px 0 0;color:var(--muted);font-size:13px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.fresh .sep{opacity:.5}
+.btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--border-strong);background:var(--card);font-weight:550;display:inline-flex;align-items:center;gap:6px;text-decoration:none;white-space:nowrap}
+.btn:hover{background:var(--faint)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.pri:hover{filter:brightness(1.07);background:var(--accent)}
+.btn.sm{height:28px;padding:0 10px;font-size:13px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+
+/* bento */
+.bento{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;box-shadow:var(--shadow);min-width:0;position:relative}
+.card h2{margin:0;font-size:13px;font-weight:550;color:var(--muted);display:flex;align-items:center;gap:6px}
+.card h2 a{color:inherit;text-decoration:none}
+.card.link{display:flex;flex-direction:column}
+.card.link:hover{border-color:var(--border-strong)}
+.card.link .stretch::after{content:"";position:absolute;inset:0;border-radius:16px}
+.stretch{color:inherit;text-decoration:none}
+.stretch:focus-visible{outline:none}
+.card.link:has(.stretch:focus-visible){outline:2px solid var(--focus);outline-offset:2px}
+.hero{grid-column:span 6;grid-row:span 2;background:var(--hero-bg);color:var(--hero-fg);border-color:transparent;padding:28px;display:flex;flex-direction:column}
+:root[data-theme="dark"] .hero{border-color:var(--border)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hero{border-color:var(--border)}}
+.hero h2{color:var(--hero-mut)}
+.tile{grid-column:span 3}
+.big{font-size:64px;line-height:1;letter-spacing:-.035em;font-weight:620;margin:14px 0 0}
+.big small{font-size:32px;letter-spacing:0;font-weight:500;color:var(--hero-mut);margin-right:2px;vertical-align:.55em}
+.kpi{font-size:36px;line-height:1.1;letter-spacing:-.025em;font-weight:620;margin:12px 0 0}
+.kpi small{font-size:18px;font-weight:500;color:var(--muted);margin-right:1px;vertical-align:.35em}
+.sub{margin:8px 0 0;color:var(--muted);font-size:13px}
+.hero .sub{color:var(--hero-mut)}
+.delta{display:inline-flex;align-items:center;gap:4px;font-weight:600;font-size:12px;padding:2px 8px;border-radius:999px}
+.delta.good{background:var(--good-bg);color:var(--good)}.delta.bad{background:var(--bad-bg);color:var(--bad)}.delta.flat{background:var(--faint);color:var(--muted)}
+.hero .delta.good{background:rgba(76,208,143,.16);color:#6fe0a8}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:22px 0 18px;padding-top:18px;border-top:1px solid var(--hero-grid)}
+.stats dt{font-size:12px;color:var(--hero-mut)}.stats dd{margin:2px 0 0;font-size:18px;font-weight:600}
+.stats a{color:inherit;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--hero-grid)}
+.bar{height:6px;border-radius:99px;background:var(--faint);overflow:hidden;margin-top:14px}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:550;padding:2px 9px;border-radius:999px;background:var(--faint);color:var(--muted);white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.good{background:var(--good-bg);color:var(--good)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.bad{background:var(--bad-bg);color:var(--bad)}
+.tile .pill{position:absolute;top:18px;right:18px}
+
+/* chart */
+.chartwrap{position:relative;margin-top:auto}
+.seg{display:inline-flex;background:var(--hero-chip);border-radius:8px;padding:2px}
+.seg button{border:0;background:transparent;color:var(--hero-mut);height:26px;padding:0 10px;border-radius:6px;font-size:12px;font-weight:550}
+.seg button[aria-pressed="true"]{background:var(--hero-fg);color:var(--hero-bg)}
+.chart-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.chart-head .tools{display:flex;gap:8px;align-items:center}
+.linkbtn{background:none;border:0;color:var(--hero-mut);text-decoration:underline;text-underline-offset:3px;font-size:12px;padding:4px}
+svg.chart{display:block;width:100%;height:auto;overflow:visible;touch-action:pan-y}
+svg.chart text{font-size:11px;fill:var(--hero-mut)}
+.tip{position:absolute;pointer-events:none;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;box-shadow:0 6px 20px rgba(0,0,0,.25);transform:translate(-50%,-110%);white-space:nowrap;z-index:5}
+.tip b{display:block;font-size:14px}
+.tbl-alt{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;color:var(--hero-fg)}
+.tbl-alt th,.tbl-alt td{text-align:left;padding:3px 0;border-bottom:1px solid var(--hero-grid)}
+.tbl-alt td:last-child,.tbl-alt th:last-child{text-align:right}
+
+/* lower section */
+.work{grid-column:span 8;padding:0}
+.wh{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px 12px;flex-wrap:wrap}
+.wh h2{font-size:16px;color:var(--text);font-weight:620}
+.tabs{display:flex;gap:4px;padding:0 20px;border-bottom:1px solid var(--border)}
+.tabs button{border:0;background:none;padding:8px 10px;color:var(--muted);font-weight:550;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--text);border-color:var(--accent)}
+.tabs .c{margin-left:4px;font-size:12px;background:var(--faint);border-radius:99px;padding:0 7px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:12px;font-weight:550;color:var(--muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:0 12px;height:48px;border-bottom:1px solid var(--border);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--faint)}
+tr[aria-selected="true"]{background:var(--accent-soft)}
+th.r,td.r{text-align:right}
+th:first-child,td:first-child{padding-left:20px;width:40px}
+td .who{display:block;font-weight:550;max-width:210px;overflow:hidden;text-overflow:ellipsis}
+td .inv{display:block;font-size:12px;color:var(--muted)}
+input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent)}
+.bulk{display:flex;align-items:center;gap:12px;padding:10px 20px;background:var(--accent-soft);font-size:13px;flex-wrap:wrap}
+.bulk[hidden]{display:none}
+.wf{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;color:var(--muted);font-size:13px;gap:8px;flex-wrap:wrap}
+.side-col{grid-column:span 4;display:flex;flex-direction:column;gap:16px}
+.aging{display:flex;height:10px;gap:2px;margin:16px 0 14px}
+.aging i{display:block;border-radius:4px;min-width:4px}
+.leg{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.leg li{display:grid;grid-template-columns:12px 1fr auto;gap:8px;align-items:center;font-size:13px}
+.leg .sw{width:10px;height:10px;border-radius:3px}
+.leg .v{font-weight:600}
+.leg .p{color:var(--muted);margin-left:8px;font-weight:400}
+
+/* states */
+.skel{display:block;border-radius:8px;background:linear-gradient(90deg,var(--faint),var(--border),var(--faint));background-size:200% 100%;animation:sh 1.3s infinite linear}
+.hero .skel{background:linear-gradient(90deg,var(--hero-chip),rgba(255,255,255,.2),var(--hero-chip));background-size:200% 100%}
+@keyframes sh{to{background-position:-200% 0}}
+.err{display:flex;flex-direction:column;gap:8px;align-items:flex-start;margin-top:12px;color:var(--muted);font-size:13px}
+.hero .err{color:var(--hero-mut)}
+.err b{color:var(--bad);display:flex;gap:6px;align-items:center}
+.hero .err b{color:#ff9d94}
+.hero .btn{background:transparent;color:var(--hero-fg);border-color:var(--hero-grid)}
+.empty{padding:40px 20px;text-align:center;color:var(--muted)}
+.empty h3{margin:0 0 4px;color:var(--text);font-size:15px}
+.banner{display:flex;gap:10px;align-items:center;padding:10px 14px;margin-bottom:16px;background:var(--warn-bg);color:var(--warn);border-radius:12px;font-size:13px;flex-wrap:wrap}
+.banner a{font-weight:600}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0a2540;color:#fff;border-radius:999px;padding:8px 8px 8px 18px;display:flex;gap:14px;align-items:center;z-index:60;box-shadow:0 8px 28px rgba(0,0,0,.3);max-width:calc(100vw - 32px)}
+:root[data-theme="dark"] .toast{background:#e6ebf4;color:#0b1220}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .toast{background:#e6ebf4;color:#0b1220}}
+.toast button{border:0;background:rgba(255,255,255,.16);color:inherit;border-radius:999px;height:28px;padding:0 14px;font-weight:600}
+:root[data-theme="dark"] .toast button{background:rgba(0,0,0,.12)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .toast button{background:rgba(0,0,0,.12)}}
+.toast[hidden]{display:none}
+
+/* responsive */
+@media (max-width:1180px){
+  .hero{grid-column:span 12;grid-row:auto}
+  .tile{grid-column:span 6}
+  .work,.side-col{grid-column:span 12}
+}
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr}
+  .side{position:static;height:auto;flex-direction:row;align-items:center;overflow-x:auto;border-right:0;border-bottom:1px solid var(--border);padding:8px 12px;gap:8px}
+  .ws{width:auto;flex:none}.ws span{display:none}
+  .nav{flex-direction:row;flex:none}.nav .grp,.side .foot{display:none}
+  .nav a{white-space:nowrap}
+  .top{padding:10px 16px}.page{padding:20px 16px 56px}
+  .search{min-width:0;flex:1}.search span,.search kbd{display:none}
+}
+@media (max-width:560px){
+  .tile{grid-column:span 12}
+  .big{font-size:48px}.hero{padding:20px}
+  .stats{grid-template-columns:1fr 1fr}
+  .crumbs span.hide{display:none}
+}
+@media (prefers-reduced-motion:reduce){.skel{animation:none}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="shell">
+  <aside class="side">
+    <button class="ws" aria-haspopup="menu" aria-label="Switch workspace, current: Northwind Labs">
+      <span class="logo" aria-hidden="true">T</span>
+      <span><b>Northwind Labs</b><span>Tally · Production</span></span>
+    </button>
+    <nav class="nav" aria-label="Primary">
+      <a href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>Home</a>
+      <span class="grp">Revenue</span>
+      <a href="#" aria-current="page"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M2 6.5h12"/></svg>Billing</a>
+      <a href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2h6l3 3v9H4z"/><path d="M6 8h5M6 11h5"/></svg>Invoices</a>
+      <a href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8a6 6 0 0 1 10.5-4M14 8a6 6 0 0 1-10.5 4"/><path d="M12.5 1v3h-3M3.5 15v-3h3"/></svg>Subscriptions</a>
+      <a href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="5.5" r="2.5"/><path d="M1.5 13c.4-2.4 2.2-3.5 4.5-3.5s4.1 1.1 4.5 3.5M11 3.5a2.5 2.5 0 0 1 0 4.8M12.5 10c1 .5 1.800 1.500 2 3"/></svg>Customers</a>
+      <span class="grp">Insights</span>
+      <a href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14V2M2 14h12M5 11V8M8 11V5M11 11V7"/></svg>Reports</a>
+      <a href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.500v2M8 12.500v2M1.500 8h2M12.500 8h2M3.400 3.400l1.400 1.400M11.200 11.200l1.400 1.400M3.400 12.600l1.400-1.400M11.200 4.800l1.400-1.400"/></svg>Settings</a>
+    </nav>
+    <div class="foot">Finance manager<br>Billing admin access</div>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <nav class="crumbs" aria-label="Breadcrumb"><span class="hide">Northwind Labs</span><span class="hide" aria-hidden="true">/</span><span class="hide">Revenue</span><span class="hide" aria-hidden="true">/</span><span aria-current="page">Billing</span></nav>
+      <button class="search" aria-label="Search, press Command K"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.500 10.500 3.500 3.500"/></svg><span>Search customers, invoices…</span><kbd>⌘K</kbd></button>
+      <button class="ib" id="theme" aria-label="Switch to dark mode" title="Toggle theme"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M13.500 9.500A5.500 5.500 0 0 1 6.500 2.500a5.500 5.500 0 1 0 7 7z"/></svg></button>
+      <button class="ib" aria-label="Notifications, 2 unread"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 11V7a4 4 0 0 1 8 0v4l1 1.500H3zM6.500 14h3"/></svg><span class="dot" aria-hidden="true"></span></button>
+      <button class="av" aria-label="Account menu, Maya Chen">MC</button>
+    </header>
+
+    <main class="page" id="main">
+      <div class="head">
+        <div>
+          <h1>Billing overview</h1>
+          <p class="fresh"><span>October 2026</span><span class="sep" aria-hidden="true">·</span><span>USD</span><span class="sep" aria-hidden="true">·</span><span id="fresh">Updated 08:10 UTC</span></p>
+        </div>
+        <div class="btns">
+          <button class="btn" id="export">Export CSV</button>
+          <a class="btn pri" href="#">Create invoice</a>
+        </div>
+      </div>
+
+      <div id="banner"></div>
+
+      <section class="bento" aria-label="Key billing metrics" id="bento"></section>
+
+      <section class="bento" style="margin-top:16px" aria-label="Work queue and receivables">
+        <div class="card work">
+          <div class="wh">
+            <h2>Needs attention</h2>
+            <a class="btn sm" href="#">Open in Invoices</a>
+          </div>
+          <div class="tabs" role="tablist" aria-label="Filter by issue" id="tabs"></div>
+          <div class="bulk" id="bulk" hidden></div>
+          <div id="tableArea"></div>
+        </div>
+        <div class="side-col" id="sidecol"></div>
+      </section>
+    </main>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+/* ---------- data (demo) ---------- */
+const MONTHS=["Nov","Dec","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct"];
+const YEARS=[2025,2025,2026,2026,2026,2026,2026,2026,2026,2026,2026,2026];
+const MRR=[412000,418400,424900,431200,438700,441900,447300,452800,458600,460100,462770,482310];
+const ROWS=[
+ {id:"INV-20418",who:"Halvorsen Logistics GmbH",amt:18240,kind:"overdue",note:"21 days overdue"},
+ {id:"INV-20391",who:"Brightpath Education",amt:6400,kind:"overdue",note:"14 days overdue"},
+ {id:"INV-20377",who:"Kestrel & Moss Architects",amt:3120,kind:"overdue",note:"9 days overdue"},
+ {id:"INV-20402",who:"Orbit Freight Co.",amt:2840,kind:"overdue",note:"6 days overdue"},
+ {id:"INV-20433",who:"Lumen Health Partners",amt:1960,kind:"overdue",note:"2 days overdue"},
+ {id:"INV-20440",who:"Pinecrest Ventures",amt:2450,kind:"failed",note:"Card declined · retry Oct 29"},
+ {id:"INV-20437",who:"Saffron Table Restaurants",amt:1890,kind:"failed",note:"Insufficient funds · retry Oct 29"},
+ {id:"INV-20429",who:"Delta Mercantile",amt:1320,kind:"failed",note:"Card expired · needs new card"},
+ {id:"INV-20425",who:"Quill & Ink Studio",amt:760,kind:"failed",note:"Bank declined · retry Oct 30"},
+ {id:"INV-20421",who:"Nordlys Analytics AS",amt:610,kind:"failed",note:"Card expired · needs new card"},
+];
+const TOTALS={all:19,overdue:7,failed:12};
+const AGING=[
+ {k:"Current",v:38400,c:"var(--accent)"},
+ {k:"1–30 days",v:15180,c:"#7f8ba0"},
+ {k:"31–60 days",v:7240,c:"var(--warn)"},
+ {k:"61–90 days",v:2600,c:"#d9822b"},
+ {k:"90+ days",v:1400,c:"var(--bad)"},
+];
+const fmt=n=>"$"+n.toLocaleString("en-US");
+const fmtK=n=>"$"+Math.round(n/1000)+"k";
+
+/* ---------- URL state ---------- */
+const qs=new URLSearchParams(location.search);
+const S={state:qs.get("state")||"ready",tab:qs.get("tab")||"all",range:qs.get("range")||"12",sel:new Set(),table:false,hidden:new Set()};
+if(!["all","overdue","failed"].includes(S.tab))S.tab="all";
+if(!["6","12"].includes(S.range))S.range="12";
+function sync(){
+  const p=new URLSearchParams(location.search);
+  S.tab==="all"?p.delete("tab"):p.set("tab",S.tab);
+  S.range==="12"?p.delete("range"):p.set("range",S.range);
+  history.replaceState(null,"",location.pathname+(p.toString()?"?"+p:""));
+}
+
+/* ---------- helpers ---------- */
+const skel=(w,h,mt=12)=>`<span class="skel" style="width:${w};height:${h}px;margin-top:${mt}px" aria-hidden="true"></span>`;
+const errBlock=(what)=>`<div class="err" role="alert"><b>⚠ Couldn’t load ${what}</b><span>This is a temporary problem on our side. Other cards are unaffected.</span><button class="btn sm" data-retry>Try again</button></div>`;
+const arrow=d=>d>0?"▲":d<0?"▼":"–";
+
+/* ---------- KPI tiles ---------- */
+function heroCard(){
+  const n=S.range==="6"?6:12, data=MRR.slice(-n);
+  let body;
+  if(S.state==="loading")body=skel("60%",64,16)+skel("40%",20,14)+skel("100%",56,26)+skel("100%",170,18);
+  else if(S.state==="error")body=errBlock("recurring revenue");
+  else body=`
+    <div class="big num" aria-label="${fmt(MRR[11])}"><small>$</small>${MRR[11].toLocaleString("en-US")}</div>
+    <div class="row" style="margin-top:14px">
+      <span class="delta good num"><span aria-hidden="true">▲</span> +4.2%<span class="sr"> increase</span></span>
+      <span class="sub num" style="margin:0">+$19,540 vs September</span>
+    </div>
+    <dl class="stats">
+      <div><dt>Annualized (ARR)</dt><dd class="num">$5.79M</dd></div>
+      <div><dt><a href="#" aria-label="Active subscriptions, view list">Active subscriptions</a></dt><dd class="num">1,284</dd></div>
+      <div><dt>Net revenue retention</dt><dd class="num">108%</dd></div>
+    </dl>
+    <div class="chartwrap" id="chartwrap">
+      <div class="chart-head">
+        <span class="sub" style="margin:0">MRR, last ${n} months</span>
+        <div class="tools">
+          <button class="linkbtn" id="tblToggle" aria-pressed="${S.table}">${S.table?"Hide table":"View as table"}</button>
+          <div class="seg" role="group" aria-label="Chart range">
+            <button data-range="6" aria-pressed="${S.range==="6"}">6M</button>
+            <button data-range="12" aria-pressed="${S.range==="12"}">12M</button>
+          </div>
+        </div>
+      </div>
+      ${S.table?tableAlt(n):chartSVG(data,n)}
+      <div class="tip" id="tip" hidden></div>
+    </div>`;
+  return `<article class="card hero" aria-labelledby="h-mrr"><h2 id="h-mrr">Monthly recurring revenue</h2>${body}</article>`;
+}
+function tableAlt(n){
+  const rows=MRR.slice(-n).map((v,i)=>{const j=12-n+i;return `<tr><td>${MONTHS[j]} ${YEARS[j]}</td><td class="num">${fmt(v)}</td></tr>`}).join("");
+  return `<table class="tbl-alt"><thead><tr><th>Month</th><th>MRR</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+const W=600,H=190,PL=40,PR=14,PT=14,PB=24;
+function chartSVG(data,n){
+  const min=400000,max=500000;
+  const x=i=>PL+i*(W-PL-PR)/(n-1), y=v=>PT+(1-(v-min)/(max-min))*(H-PT-PB);
+  const grid=[400000,433000,466000,500000].map(v=>`<line x1="${PL}" x2="${W-PR}" y1="${y(v)}" y2="${y(v)}" stroke="var(--hero-grid)"/><text x="${PL-8}" y="${y(v)+4}" text-anchor="end" class="num">${fmtK(v)}</text>`).join("");
+  const pts=data.map((v,i)=>`${i?"L":"M"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
+  const labelEvery=n===12?2:1;
+  const xl=data.map((_,i)=>{const j=12-n+i;return (n-1-i)%labelEvery===0?`<text x="${x(i)}" y="${H-6}" text-anchor="middle">${MONTHS[j]}</text>`:""}).join("");
+  const last=data.length-1;
+  const alt=`Line chart of monthly recurring revenue for the last ${n} months, rising from ${fmt(data[0])} to ${fmt(data[last])}. Axis starts at $400k.`;
+  return `<svg class="chart" id="chart" viewBox="0 0 ${W} ${H}" role="img" tabindex="0" aria-label="${alt} Use arrow keys to inspect each month.">
+    ${grid}${xl}
+    <path d="${pts}" fill="none" stroke="var(--hero-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <line id="cx" y1="${PT}" y2="${H-PB}" stroke="var(--hero-mut)" stroke-dasharray="3 3" visibility="hidden"/>
+    <circle id="cd" r="5" fill="var(--hero-line)" stroke="var(--hero-bg)" stroke-width="2" cx="${x(last)}" cy="${y(data[last])}"/>
+  </svg>`;
+}
+function wireChart(){
+  const svg=document.getElementById("chart"); if(!svg)return;
+  const n=S.range==="6"?6:12, data=MRR.slice(-n);
+  const min=400000,max=500000;
+  const x=i=>PL+i*(W-PL-PR)/(n-1), y=v=>PT+(1-(v-min)/(max-min))*(H-PT-PB);
+  const tip=document.getElementById("tip"), cx=document.getElementById("cx"), cd=document.getElementById("cd");
+  function show(i){
+    const j=12-n+i, px=x(i), py=y(data[i]);
+    cx.setAttribute("x1",px);cx.setAttribute("x2",px);cx.setAttribute("visibility","visible");
+    cd.setAttribute("cx",px);cd.setAttribute("cy",py);
+    const prev=i>0?data[i]-data[i-1]:null;
+    tip.innerHTML=`<span>${MONTHS[j]} ${YEARS[j]}</span><b class="num">${fmt(data[i])}</b>${prev!==null?`<span class="num">${prev>=0?"+":"−"}${fmt(Math.abs(prev))} vs prior month</span>`:""}`;
+    const r=svg.getBoundingClientRect(), wr=svg.parentElement.getBoundingClientRect();
+    tip.style.left=(r.left-wr.left+px/W*r.width)+"px";
+    tip.style.top=(r.top-wr.top+py/H*r.height)+"px";
+    tip.hidden=false;
+  }
+  function reset(){cx.setAttribute("visibility","hidden");tip.hidden=true;cd.setAttribute("cx",x(n-1));cd.setAttribute("cy",y(data[n-1]))}
+  svg.addEventListener("pointermove",e=>{
+    const r=svg.getBoundingClientRect(), px=(e.clientX-r.left)/r.width*W;
+    show(Math.max(0,Math.min(n-1,Math.round((px-PL)/((W-PL-PR)/(n-1))))));
+  });
+  svg.addEventListener("pointerleave",reset);
+  let k=n-1;
+  svg.addEventListener("keydown",e=>{
+    if(e.key==="ArrowLeft"){k=Math.max(0,k-1);show(k);e.preventDefault()}
+    else if(e.key==="ArrowRight"){k=Math.min(n-1,k+1);show(k);e.preventDefault()}
+    else if(e.key==="Escape")reset();
+  });
+  svg.addEventListener("blur",reset);
+}
+
+function tile({id,label,value,sub,deltaHtml,pill,extra,href,what}){
+  let body;
+  if(S.state==="loading")body=skel("55%",36,14)+skel("75%",14,12);
+  else if(S.state==="error")body=errBlock(what);
+  else body=`<div class="kpi num">${value}</div>${deltaHtml?`<div class="row" style="margin-top:10px">${deltaHtml}</div>`:""}<p class="sub num">${sub}</p>${extra||""}`;
+  const head=S.state==="ready"?`<h2 id="${id}"><a class="stretch" href="${href}">${label}<span aria-hidden="true"> →</span></a></h2>`:`<h2 id="${id}">${label}</h2>`;
+  return `<article class="card tile ${S.state==="ready"?"link":""}" aria-labelledby="${id}">${head}${S.state==="ready"&&pill?pill:""}${body}</article>`;
+}
+function tiles(){
+  const d=(cls,txt,sr)=>`<span class="delta ${cls} num"><span aria-hidden="true">${txt.a}</span> ${txt.t}<span class="sr"> ${sr}</span></span>`;
+  return [
+    tile({id:"h-col",label:"Collected this month",value:"<small>$</small>391,070",href:"#",what:"collections",
+      deltaHtml:d("good",{a:"▲",t:"+6.1%"},"increase, favorable")+`<span class="sub" style="margin:0">vs September</span>`,
+      sub:"85.8% of $455,890 invoiced",extra:`<div class="bar" role="img" aria-label="85.8% collected"><i style="width:85.8%"></i></div>`}),
+    tile({id:"h-out",label:"Outstanding",value:"<small>$</small>64,820",href:"#",what:"outstanding invoices",
+      deltaHtml:d("good",{a:"▼",t:"−2.4%"},"decrease, favorable")+`<span class="sub" style="margin:0">vs September</span>`,
+      sub:"23 open invoices · avg. 11 days to pay"}),
+    tile({id:"h-over",label:"Overdue",value:"<small>$</small>18,240",href:"#",what:"overdue invoices",pill:`<span class="pill warn">Needs attention</span>`,
+      deltaHtml:d("bad",{a:"▲",t:"+$3,100"},"increase, unfavorable")+`<span class="sub" style="margin:0">vs September</span>`,
+      sub:"7 invoices · oldest 21 days"}),
+    tile({id:"h-fail",label:"Failed payments",value:"12",href:"#",what:"failed payments",pill:`<span class="pill bad">Action needed</span>`,
+      deltaHtml:`<span class="sub" style="margin:0">$9,430 at risk</span>`,
+      sub:"8 auto-retry scheduled · 4 need a new card"}),
+  ].join("");
+}
+
+/* ---------- table ---------- */
+function visibleRows(){return ROWS.filter(r=>S.tab==="all"||r.kind===S.tab)}
+function renderTabs(){
+  const t=document.getElementById("tabs");
+  const defs=[["all","All"],["overdue","Overdue"],["failed","Failed payments"]];
+  t.innerHTML=defs.map(([k,l])=>`<button role="tab" id="tab-${k}" aria-selected="${S.tab===k}" tabindex="${S.tab===k?0:-1}" data-tab="${k}">${l}${S.state==="ready"?`<span class="c num">${TOTALS[k]}</span>`:""}</button>`).join("");
+}
+function renderTable(){
+  const area=document.getElementById("tableArea");
+  area.setAttribute("role","tabpanel");area.setAttribute("aria-labelledby","tab-"+S.tab);
+  if(S.state==="loading"){area.innerHTML=Array.from({length:5},()=>`<div style="padding:14px 20px;border-bottom:1px solid var(--border)">${skel("100%",20,0)}</div>`).join("");renderBulk();return}
+  if(S.state==="error"){area.innerHTML=`<div style="padding:20px">${errBlock("invoices")}</div>`;renderBulk();return}
+  const rows=visibleRows();
+  if(S.state==="empty"||!rows.length){
+    area.innerHTML=S.state==="empty"
+      ?`<div class="empty"><h3>No billing activity yet</h3><p>Overdue invoices and failed payments will appear here once you send your first invoice.</p><a class="btn pri" href="#">Create invoice</a></div>`
+      :`<div class="empty"><h3>Nothing needs attention</h3><p>No ${S.tab==="failed"?"failed payments":"overdue invoices"} right now.</p></div>`;
+    renderBulk();return;
+  }
+  const allSel=rows.every(r=>S.sel.has(r.id));
+  const total=TOTALS[S.tab];
+  area.innerHTML=`<div class="tw"><table>
+    <caption class="sr">Invoices needing attention, ${S.tab}</caption>
+    <thead><tr><th><input type="checkbox" id="all" aria-label="Select all ${rows.length} shown" ${allSel?"checked":""}></th><th>Customer</th><th class="r">Amount</th><th>Issue</th><th>Status</th><th><span class="sr">Action</span></th></tr></thead>
+    <tbody>${rows.map(r=>`<tr aria-selected="${S.sel.has(r.id)}">
+      <td><input type="checkbox" data-id="${r.id}" aria-label="Select ${r.who}, ${r.id}" ${S.sel.has(r.id)?"checked":""}></td>
+      <td><span class="who" title="${r.who}">${r.who}</span><a class="inv" href="#">${r.id}</a></td>
+      <td class="r num"><b>${fmt(r.amt)}</b></td>
+      <td>${r.note}</td>
+      <td><span class="pill ${r.kind==="overdue"?"warn":"bad"}">${r.kind==="overdue"?"Overdue":"Payment failed"}</span></td>
+      <td class="r"><button class="btn sm" data-act="${r.kind}" data-id="${r.id}" aria-label="${r.kind==="overdue"?"Send reminder":"Retry payment"} for ${r.who}">${r.kind==="overdue"?"Remind":"Retry"}</button></td>
+    </tr>`).join("")}</tbody></table></div>
+    <div class="wf"><span>Showing ${rows.length} of ${total}, largest first</span><a href="#">View all ${total} in Invoices →</a></div>`;
+  renderBulk();
+}
+function renderBulk(){
+  const b=document.getElementById("bulk"), n=S.sel.size;
+  if(!n||S.state!=="ready"){b.hidden=true;return}
+  const rows=visibleRows(), total=TOTALS[S.tab];
+  const allShown=rows.every(r=>S.sel.has(r.id));
+  const kinds=new Set(rows.filter(r=>S.sel.has(r.id)).map(r=>r.kind));
+  const label=kinds.size>1?"Send reminders / retry":kinds.has("failed")?"Retry payments":"Send reminders";
+  b.hidden=false;
+  b.innerHTML=`<b class="num">${n} selected</b>${allShown&&total>rows.length?`<button class="btn sm" id="selAll">Select all ${total} matching</button>`:""}<button class="btn sm pri" id="bulkGo">${label} (${n})</button><button class="btn sm" id="clear">Clear</button>`;
+}
+
+/* ---------- side column ---------- */
+function side(){
+  const tot=AGING.reduce((a,b)=>a+b.v,0);
+  let aging;
+  if(S.state==="loading")aging=skel("100%",10,16)+skel("100%",100,14);
+  else if(S.state==="error")aging=errBlock("receivables aging");
+  else aging=`<div class="aging" role="img" aria-label="Receivables by age: ${AGING.map(a=>a.k+" "+fmt(a.v)).join(", ")}">${AGING.map(a=>`<i style="flex:${a.v};background:${a.c}"></i>`).join("")}</div>
+    <ul class="leg">${AGING.map(a=>`<li><span class="sw" style="background:${a.c}"></span><span>${a.k}</span><span class="v num">${fmt(a.v)}<span class="p">${Math.round(a.v/tot*100)}%</span></span></li>`).join("")}</ul>`;
+  let payout;
+  if(S.state==="loading")payout=skel("50%",30,14)+skel("70%",14,10);
+  else if(S.state==="error")payout=errBlock("payout");
+  else payout=`<div class="kpi num" style="font-size:28px">$112,430</div><p class="sub">Arrives Fri, Oct 30 · Chase ••4821</p><p class="sub" style="margin-top:4px"><a href="#">View payout schedule</a></p>`;
+  return `<article class="card" aria-labelledby="h-age"><h2 id="h-age">Receivables by age</h2>${aging}</article>
+  <article class="card" aria-labelledby="h-pay"><h2 id="h-pay">Next payout</h2>${payout}</article>`;
+}
+
+/* ---------- render ---------- */
+function render(){
+  document.getElementById("bento").innerHTML=heroCard()+tiles();
+  document.getElementById("sidecol").innerHTML=side();
+  document.getElementById("fresh").textContent=S.state==="ready"?"Updated 08:10 UTC":S.state==="loading"?"Refreshing…":"Last updated 08:10 UTC · refresh failed";
+  document.getElementById("banner").innerHTML=S.state==="error"?`<div class="banner" role="status"><span>Some billing data couldn’t be loaded. Figures shown may be out of date.</span><a href="#" data-retry>Try again</a></div>`:"";
+  renderTabs();renderTable();wireChart();
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button,a");if(!t)return;
+  if(t.hasAttribute("data-retry")){e.preventDefault();S.state="loading";render();setTimeout(()=>{S.state="ready";render()},700);return}
+  if(t.dataset.range){S.range=t.dataset.range;sync();render();return}
+  if(t.id==="tblToggle"){S.table=!S.table;render();document.getElementById("tblToggle").focus();return}
+  if(t.dataset.tab){S.tab=t.dataset.tab;S.sel.clear();sync();renderTabs();renderTable();document.getElementById("tab-"+S.tab).focus();return}
+  if(t.id==="clear"){S.sel.clear();renderTable();return}
+  if(t.id==="selAll"){toast(`All ${TOTALS[S.tab]} matching items selected`);return}
+  if(t.id==="bulkGo"){const n=S.sel.size;const ids=[...S.sel];S.sel.clear();renderTable();toast(`Queued ${n} action${n>1?"s":""}. Customers are notified in 1 min.`,"Undo",()=>{ids.forEach(i=>S.sel.add(i));renderTable()});return}
+  if(t.dataset.act){const r=ROWS.find(x=>x.id===t.dataset.id);toast(`${t.dataset.act==="overdue"?"Reminder queued":"Retry queued"} for ${r.who}`,"Undo");return}
+  if(t.id==="export"){toast("Preparing CSV of October billing… we’ll email it when it’s ready.");return}
+  if(t.tagName==="A"&&t.getAttribute("href")==="#")e.preventDefault();
+});
+document.addEventListener("change",e=>{
+  const c=e.target;
+  if(c.id==="all"){visibleRows().forEach(r=>c.checked?S.sel.add(r.id):S.sel.delete(r.id));renderTable()}
+  else if(c.dataset&&c.dataset.id&&c.type==="checkbox"){c.checked?S.sel.add(c.dataset.id):S.sel.delete(c.dataset.id);renderTable();const el=document.querySelector(`input[data-id="${c.dataset.id}"]`);el&&el.focus()}
+});
+document.getElementById("tabs").addEventListener("keydown",e=>{
+  const ks=["all","overdue","failed"],i=ks.indexOf(S.tab);
+  if(e.key==="ArrowRight"||e.key==="ArrowLeft"){
+    S.tab=ks[(i+(e.key==="ArrowRight"?1:2))%3];S.sel.clear();sync();renderTabs();renderTable();document.getElementById("tab-"+S.tab).focus();
+  }
+});
+let tt;
+function toast(msg,action,fn){
+  const el=document.getElementById("toast");
+  el.innerHTML=`<span>${msg}</span>${action?`<button>${action}</button>`:""}`;
+  el.hidden=false;
+  const b=el.querySelector("button");
+  if(b)b.onclick=()=>{fn&&fn();el.hidden=true};
+  clearTimeout(tt);tt=setTimeout(()=>el.hidden=true,8000);
+}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")document.getElementById("toast").hidden=true});
+
+/* theme */
+const root=document.documentElement, tb=document.getElementById("theme");
+function isDark(){return root.dataset.theme?root.dataset.theme==="dark":matchMedia("(prefers-color-scheme: dark)").matches}
+function paintTheme(){tb.setAttribute("aria-label",isDark()?"Switch to light mode":"Switch to dark mode")}
+try{const s=localStorage.getItem("tally-theme");if(s)root.dataset.theme=s}catch(_){}
+tb.onclick=()=>{const n=isDark()?"light":"dark";root.dataset.theme=n;try{localStorage.setItem("tally-theme",n)}catch(_){}paintTheme()};
+paintTheme();
+
+render();
+if(S.state==="loading")setTimeout(()=>{S.state="ready";render()},1200);
+</script>
+</body>
+</html>

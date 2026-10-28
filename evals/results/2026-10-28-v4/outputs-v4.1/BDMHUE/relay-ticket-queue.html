@@ -1,0 +1,954 @@
+<!doctype html>
+<!--
+  Relay — agent ticket queue
+  Assumed: daily power users (all-day) · process a queue · ~140 tickets in this demo, thousands at p95 in prod (server paging assumed) · roles: agent + viewer
+  Direction: Data-dense utility (lead; no design system found, ops/queue context) · borrow list-detail 2-pane composition (D8) · light + dark · one accent (indigo), status colours only for status/priority/SLA
+  Review controls (bottom bar) switch loading / empty / error states and the viewer role; the same are reachable via ?state=loading|empty|error and ?role=viewer.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tickets · Relay</title>
+<style>
+:root{
+  --bg:#f3f4f7; --surface:#ffffff; --surface2:#f8f9fb; --line:#e2e5ea; --line2:#c9ced8;
+  --ink:#13161d; --ink2:#454c5b; --ink3:#5a6270;
+  --accent:#3343c7; --accent-ink:#ffffff; --accent-soft:#e7eafb; --hover:#eef0f5; --sel:#eef1fd;
+  --bad:#a8200f; --bad-bg:#fdeae7; --warn:#7a4a00; --warn-bg:#fff1d0; --ok:#0f6636; --ok-bg:#e1f4e8; --info:#1f4fa3; --info-bg:#e5eefb;
+  --note-bg:#fff8e1; --toast:#15171d; --toast-ink:#f2f3f6;
+  --row:32px; --r:4px;
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1015; --surface:#161920; --surface2:#1b1e27; --line:#262a35; --line2:#3a4050;
+  --ink:#eceef3; --ink2:#b6bccb; --ink3:#9aa1b2;
+  --accent:#7d8bff; --accent-ink:#0b0d16; --accent-soft:#222850; --hover:#1e222c; --sel:#1f2542;
+  --bad:#ff9a8f; --bad-bg:#3b1a17; --warn:#f3c56e; --warn-bg:#392b0c; --ok:#82dba4; --ok-bg:#12301f; --info:#8db4ff; --info-bg:#172742;
+  --note-bg:#2e2810; --toast:#eceef3; --toast-ink:#13161d; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0e1015; --surface:#161920; --surface2:#1b1e27; --line:#262a35; --line2:#3a4050;
+  --ink:#eceef3; --ink2:#b6bccb; --ink3:#9aa1b2;
+  --accent:#7d8bff; --accent-ink:#0b0d16; --accent-soft:#222850; --hover:#1e222c; --sel:#1f2542;
+  --bad:#ff9a8f; --bad-bg:#3b1a17; --warn:#f3c56e; --warn-bg:#392b0c; --ok:#82dba4; --ok-bg:#12301f; --info:#8db4ff; --info-bg:#172742;
+  --note-bg:#2e2810; --toast:#eceef3; --toast-ink:#13161d; color-scheme:dark;}
+:root[data-density="cozy"]{--row:44px}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 var(--font);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono);font-size:12px}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* shell */
+.app{display:grid;grid-template-columns:64px 1fr;grid-template-rows:48px 1fr 36px;height:100vh;min-height:0}
+.skip{position:absolute;left:8px;top:-40px;background:var(--accent);color:var(--accent-ink);padding:6px 10px;border-radius:var(--r);z-index:100}
+.skip:focus{top:8px}
+.top{grid-column:1/3;display:flex;align-items:center;gap:12px;padding:0 12px;background:var(--surface);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;letter-spacing:-.01em;width:40px}
+.brand b{display:grid;place-items:center;width:28px;height:28px;border-radius:6px;background:var(--ink);color:var(--surface);font-size:15px}
+.ws{display:flex;flex-direction:column;line-height:1.15;margin-left:-4px}
+.ws small{color:var(--ink3);font-size:11px}
+.gsearch{flex:1;max-width:520px;margin:0 auto 0 24px;position:relative}
+.gsearch input{width:100%;height:30px;padding:0 64px 0 30px;border:1px solid var(--line2);border-radius:var(--r);background:var(--surface2)}
+.gsearch .i{position:absolute;left:9px;top:7px;color:var(--ink3)}
+.kbd{font:11px var(--mono);border:1px solid var(--line2);border-bottom-width:2px;border-radius:3px;padding:0 5px;color:var(--ink2);background:var(--surface);white-space:nowrap}
+.gsearch .kbd{position:absolute;right:7px;top:5px}
+.tools{display:flex;align-items:center;gap:6px}
+.iconbtn{position:relative;display:grid;place-items:center;width:32px;height:32px;border:1px solid transparent;background:none;border-radius:var(--r);color:var(--ink2);list-style:none}
+.iconbtn:hover{background:var(--hover)}
+summary.iconbtn::-webkit-details-marker{display:none}
+.badge{position:absolute;top:1px;right:0;min-width:16px;height:16px;border-radius:8px;background:var(--bad);color:var(--surface);font-size:10px;line-height:16px;text-align:center;padding:0 4px;font-weight:700}
+.pop{position:relative}
+.pop .panel{position:absolute;right:0;top:38px;width:300px;background:var(--surface);border:1px solid var(--line2);border-radius:6px;box-shadow:0 8px 24px rgb(0 0 0 / .16);z-index:50;padding:8px}
+.pop .panel h3{margin:4px 6px 6px;font-size:12px;color:var(--ink3);font-weight:600}
+.pop .panel a{display:block;padding:6px;border-radius:var(--r);color:var(--ink);text-decoration:none}
+.pop .panel a:hover{background:var(--hover)}
+.pop .panel small{color:var(--ink3)}
+.avatar{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--hover);border:1px solid var(--line2);font-size:10px;font-weight:700;color:var(--ink2);flex:none}
+.avatar.me{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.avatar.lg{width:28px;height:28px;font-size:11px}
+.avatar.none{background:none;border-style:dashed;color:var(--ink3)}
+
+.rail{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:stretch;padding:6px 4px;gap:2px}
+.rail a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 0 5px;border-radius:var(--r);color:var(--ink2);text-decoration:none;font-size:11px;position:relative}
+.rail a:hover{background:var(--hover)}
+.rail a[aria-current="page"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.rail a[aria-current="page"]::before{content:"";position:absolute;left:-4px;top:7px;bottom:7px;width:3px;background:var(--accent);border-radius:0 3px 3px 0}
+.rail .grow{flex:1}
+
+main{min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.pagehead{display:flex;align-items:center;gap:16px;padding:12px 16px 0}
+.pagehead h1{margin:0;font-size:20px;line-height:1.2;letter-spacing:-.01em}
+.fresh{color:var(--ink3);font-size:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.live{display:inline-flex;align-items:center;gap:5px}
+.live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.live.off::before{background:var(--ink3)}
+.spacer{flex:1}
+
+.btn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border:1px solid var(--line2);background:var(--surface);border-radius:var(--r);font-weight:500;white-space:nowrap}
+.btn:hover:not(:disabled){background:var(--hover)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.primary:hover:not(:disabled){filter:brightness(1.08);background:var(--accent)}
+.btn.ghost{border-color:transparent;background:none}
+.btn.sm{height:26px;padding:0 8px}
+.btn:disabled,select:disabled,textarea:disabled{opacity:.55;cursor:not-allowed}
+
+.tabs{display:flex;gap:2px;padding:10px 16px 0;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:thin}
+.tab{display:flex;align-items:center;gap:6px;padding:6px 10px 8px;border:0;background:none;color:var(--ink2);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;text-decoration:none}
+.tab:hover{color:var(--ink)}
+.tab[aria-current="page"]{color:var(--ink);font-weight:600;border-bottom-color:var(--accent)}
+.count{font-size:11px;background:var(--hover);border:1px solid var(--line);border-radius:9px;padding:0 6px;color:var(--ink2);min-width:20px;text-align:center}
+.count.hot{background:var(--bad-bg);color:var(--bad);border-color:transparent;font-weight:700}
+
+.toolbar{display:flex;align-items:center;gap:8px;padding:8px 16px;flex-wrap:wrap;min-height:48px}
+.field{position:relative}
+.field input[type=search]{height:30px;width:240px;padding:0 8px 0 28px;border:1px solid var(--line2);border-radius:var(--r);background:var(--surface)}
+.field .i{position:absolute;left:8px;top:7px;color:var(--ink3);pointer-events:none}
+select{height:30px;padding:0 24px 0 8px;border:1px solid var(--line2);border-radius:var(--r);background:var(--surface)}
+select.sm{height:26px}
+.filter{display:flex;align-items:center;gap:6px;color:var(--ink2)}
+.filter.on select{border-color:var(--accent);background:var(--accent-soft)}
+.bulk{display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--sel);border-bottom:1px solid var(--line2);flex-wrap:wrap;min-height:48px}
+.bulk strong{margin-right:4px}
+.matchbar{padding:6px 16px;background:var(--surface2);border-bottom:1px solid var(--line);color:var(--ink2);display:flex;gap:8px;align-items:center}
+.linkbtn{background:none;border:0;color:var(--accent);text-decoration:underline;padding:0;font-weight:600}
+.banner{display:flex;gap:10px;align-items:center;padding:8px 16px;border-bottom:1px solid var(--line)}
+.banner.info{background:var(--info-bg);color:var(--info)}
+.banner.warn{background:var(--warn-bg);color:var(--warn)}
+.banner .linkbtn{color:inherit}
+
+.split{flex:1;display:flex;min-height:0}
+.listwrap{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;background:var(--surface)}
+.scroller{flex:1;overflow:auto;min-height:0}
+table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed}
+thead th{position:sticky;top:0;z-index:2;background:var(--surface2);text-align:left;font-weight:600;font-size:12px;color:var(--ink2);height:30px;padding:0 8px;border-bottom:1px solid var(--line2);white-space:nowrap}
+th button.sort{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:4px;height:28px}
+th button.sort:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+th[aria-sort="ascending"] button .arr::after{content:"↑"}
+th[aria-sort="descending"] button .arr::after{content:"↓"}
+th[aria-sort]:not([aria-sort="none"]){color:var(--ink)}
+tbody td{height:var(--row);padding:0 8px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+tbody tr:hover td{background:var(--hover)}
+tbody tr.sel td{background:var(--sel)}
+tbody tr.open td{background:var(--accent-soft);box-shadow:none}
+tbody tr.open td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+tbody tr:focus-within td{background:var(--hover)}
+tbody tr.unread .subj-t{font-weight:700}
+.c-chk{width:36px;text-align:center}
+.c-pri{width:96px}.c-sta{width:92px}.c-sla{width:132px}.c-asg{width:150px}.c-upd{width:96px}.c-req{width:190px}
+.has-pane .c-req,.has-pane .c-asg-name,.has-pane .c-upd{display:none}
+.has-pane .c-asg{width:44px}
+input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);margin:0;vertical-align:middle}
+a.subj{display:flex;align-items:center;gap:8px;color:var(--ink);text-decoration:none;min-width:0;height:100%}
+a.subj .subj-t{overflow:hidden;text-overflow:ellipsis}
+a.subj .tid{color:var(--ink3);flex:none}
+a.subj .sn{color:var(--ink3);font-weight:400;overflow:hidden;text-overflow:ellipsis}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
+.dot.none{background:none}
+.cozy-only{display:none}
+:root[data-density="cozy"] .cozy-only{display:block;color:var(--ink3);font-size:12px;overflow:hidden;text-overflow:ellipsis}
+:root[data-density="cozy"] a.subj{flex-direction:column;align-items:flex-start;justify-content:center;gap:0}
+:root[data-density="cozy"] a.subj .row1{display:flex;gap:8px;align-items:center;max-width:100%}
+a.subj .row1{display:flex;gap:8px;align-items:center;max-width:100%;min-width:0}
+.dash{color:var(--ink3)}
+
+.pill{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border-radius:10px;font-size:12px;font-weight:600;background:var(--hover);color:var(--ink2);white-space:nowrap}
+.pill.bad{background:var(--bad-bg);color:var(--bad)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.pill.info{background:var(--info-bg);color:var(--info)}
+.pill.flat{background:none;padding:0;font-weight:500}
+.bars{display:inline-flex;gap:2px;align-items:flex-end;height:12px}
+.bars i{width:3px;background:var(--line2);border-radius:1px}
+.bars i:nth-child(1){height:5px}.bars i:nth-child(2){height:8px}.bars i:nth-child(3){height:12px}
+.bars i.f{background:currentColor}
+.p-urgent{color:var(--bad)}.p-high{color:var(--warn)}.p-normal{color:var(--ink2)}.p-low{color:var(--ink3)}
+.asg{display:flex;align-items:center;gap:7px}
+
+.foot{display:flex;align-items:center;gap:12px;padding:6px 16px;border-top:1px solid var(--line);background:var(--surface2);color:var(--ink2);flex-wrap:wrap}
+.pager{display:flex;align-items:center;gap:6px;margin-left:auto}
+
+/* states */
+.state{display:grid;place-items:center;text-align:center;padding:56px 24px;gap:6px;color:var(--ink2)}
+.state h2{margin:4px 0 0;font-size:16px;color:var(--ink)}
+.state p{margin:0;max-width:46ch}
+.state .ico{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--hover);color:var(--ink2);margin-bottom:4px}
+.state.err .ico{background:var(--bad-bg);color:var(--bad)}
+.state .acts{display:flex;gap:8px;margin-top:10px}
+.skel td{padding:0 8px}
+.sk{display:block;height:10px;border-radius:3px;background:linear-gradient(90deg,var(--hover),var(--line),var(--hover));background-size:200% 100%;animation:sh 1.3s linear infinite}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}*{scroll-behavior:auto!important}}
+
+/* detail pane */
+.pane{width:46%;min-width:440px;max-width:720px;border-left:1px solid var(--line2);background:var(--surface);display:flex;flex-direction:column;min-height:0}
+.pane[hidden]{display:none}
+.ph{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.ph-top{display:flex;align-items:flex-start;gap:8px}
+.ph h2{margin:0;font-size:16px;line-height:1.3;flex:1;letter-spacing:-.005em;overflow-wrap:anywhere}
+.ph h2:focus{outline:none}
+.ph h2:focus-visible{outline:2px solid var(--accent)}
+.meta{color:var(--ink3);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.props{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.props label{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--ink3);font-weight:600;text-transform:none}
+.props select{width:100%}
+.tags{display:flex;gap:4px;flex-wrap:wrap}
+.tag{font-size:11px;border:1px solid var(--line2);border-radius:3px;padding:0 5px;color:var(--ink2)}
+.thread{flex:1;overflow:auto;padding:12px 16px;display:flex;flex-direction:column;gap:12px;min-height:0}
+.msg{border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.msg header{display:flex;gap:8px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--line);background:var(--surface2);border-radius:6px 6px 0 0;color:var(--ink2)}
+.msg header b{color:var(--ink)}
+.msg .body{padding:8px 10px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.note{background:var(--note-bg);border-color:var(--warn)}
+.msg.note header{background:transparent}
+.msg.agent header{background:var(--accent-soft)}
+.composer{border-top:1px solid var(--line2);padding:10px 16px 12px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:var(--r);overflow:hidden}
+.seg label{padding:3px 10px;cursor:pointer;color:var(--ink2);display:flex;gap:5px;align-items:center}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg input:checked+span{font-weight:700;color:var(--ink)}
+.seg label:has(input:checked){background:var(--accent-soft)}
+.seg label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:-2px}
+.composer textarea{width:100%;min-height:88px;max-height:240px;resize:vertical;padding:8px;border:1px solid var(--line2);border-radius:var(--r);background:var(--surface)}
+.composer.note-mode textarea{background:var(--note-bg)}
+.crow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.err-t{color:var(--bad);display:flex;gap:6px;align-items:center;font-weight:500}
+.hint{color:var(--ink3);font-size:12px}
+
+/* overlays */
+.toasts{position:fixed;left:50%;bottom:52px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:90;align-items:center}
+.toast{background:var(--toast);color:var(--toast-ink);padding:9px 12px;border-radius:6px;display:flex;gap:14px;align-items:center;box-shadow:0 8px 24px rgb(0 0 0 / .3);max-width:min(560px,92vw)}
+.toast button{background:none;border:0;color:inherit;font-weight:700;text-decoration:underline;padding:2px 4px}
+dialog{border:1px solid var(--line2);border-radius:8px;background:var(--surface);color:var(--ink);padding:0;width:min(520px,92vw)}
+dialog::backdrop{background:rgb(10 12 18 / .5)}
+dialog .dh{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+dialog .dh h2{margin:0;font-size:15px;flex:1}
+dialog .db{padding:12px 16px 16px}
+dl.keys{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0}
+dl.keys dt{text-align:right}dl.keys dd{margin:0;color:var(--ink2)}
+
+/* review bar */
+.review{grid-column:1/3;display:flex;align-items:center;gap:14px;padding:0 12px;background:var(--surface2);border-top:1px dashed var(--line2);color:var(--ink3);font-size:12px;overflow-x:auto;white-space:nowrap}
+.review select{height:24px;font-size:12px}
+.review label{display:flex;gap:5px;align-items:center}
+
+@media (max-width:1100px){
+  .pane{position:fixed;right:0;top:48px;bottom:36px;width:min(640px,100%);min-width:0;z-index:40;box-shadow:-12px 0 32px rgb(0 0 0 / .25)}
+  .has-pane .c-req,.has-pane .c-upd{display:table-cell}
+  .c-req{display:none}
+}
+@media (max-width:760px){
+  .app{grid-template-columns:1fr}
+  .rail{display:none}.top{grid-column:1}.review{grid-column:1}
+  .c-asg,.c-upd{display:none!important}
+  .gsearch{display:none}
+  .props{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#list">Skip to ticket list</a>
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand" aria-label="Relay"><b>R</b></div>
+    <div class="ws"><strong>Relay</strong><small>Northwind Support</small></div>
+    <form class="gsearch" role="search" onsubmit="return false">
+      <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path id="ic-s" d=""/></svg>
+      <label class="sr" for="gs">Search tickets, customers and articles</label>
+      <input id="gs" type="search" placeholder="Search tickets, customers, articles" autocomplete="off">
+      <span class="kbd" aria-hidden="true">⌘K</span>
+    </form>
+    <div class="tools">
+      <details class="pop" id="notif">
+        <summary class="iconbtn" aria-label="Notifications, 3 unread"><span data-ic="bell"></span><span class="badge" aria-hidden="true">3</span></summary>
+        <div class="panel">
+          <h3>Notifications</h3>
+          <a href="?view=mentions"><b>Tomás Herrera</b> mentioned you on RLY-4388<br><small>Can you confirm the refund policy for EU? · 14 min ago</small></a>
+          <a href="?view=risk"><b>4 tickets</b> are about to breach SLA<br><small>Next breach in 12 min</small></a>
+          <a href="?view=unassigned"><b>Aisha Okafor</b> assigned RLY-4377 to you<br><small>1 h ago</small></a>
+        </div>
+      </details>
+      <details class="pop" id="acct">
+        <summary class="iconbtn" aria-label="Account menu for Priya Raman"><span class="avatar me lg" aria-hidden="true">PR</span></summary>
+        <div class="panel">
+          <h3>Priya Raman · Agent</h3>
+          <label style="display:flex;flex-direction:column;gap:3px;padding:4px 6px;color:var(--ink3);font-weight:600">Availability
+            <select id="avail"><option>Available</option><option>On a call</option><option>Away</option></select></label>
+          <a href="#" id="dens">Toggle row density (currently compact)</a>
+          <a href="#" id="themebtn">Switch theme</a>
+          <a href="#">Sign out</a>
+        </div>
+      </details>
+    </div>
+  </header>
+
+  <nav class="rail" aria-label="Primary">
+    <a href="?" aria-current="page"><span data-ic="inbox"></span>Tickets</a>
+    <a href="#"><span data-ic="users"></span>Customers</a>
+    <a href="#"><span data-ic="chart"></span>Reports</a>
+    <a href="#"><span data-ic="book"></span>Articles</a>
+    <span class="grow"></span>
+    <a href="#"><span data-ic="gear"></span>Settings</a>
+  </nav>
+
+  <main id="main">
+    <div class="pagehead">
+      <h1 id="title">Tickets</h1>
+      <div class="fresh" id="fresh"></div>
+      <span class="spacer"></span>
+      <button class="btn" id="refresh" title="Refresh now"><span data-ic="refresh"></span>Refresh</button>
+      <button class="btn primary" id="next" aria-describedby="next-why">Take next ticket</button>
+      <span class="sr" id="next-why"></span>
+    </div>
+    <div class="tabs" id="tabs" role="navigation" aria-label="Ticket views"></div>
+    <div id="viewonly"></div>
+    <div id="toolbar"></div>
+    <div id="newbanner" aria-live="polite"></div>
+    <div class="split" id="split">
+      <section class="listwrap" aria-label="Ticket list" id="list" tabindex="-1">
+        <div class="scroller" id="scroller"></div>
+        <div class="foot" id="foot"></div>
+      </section>
+      <aside class="pane" id="pane" aria-label="Ticket detail" hidden></aside>
+    </div>
+  </main>
+
+  <div class="review" role="group" aria-label="Review controls (not part of the product)">
+    <strong>Review controls</strong>
+    <label>State <select id="r-state"><option value="ready">Ready</option><option value="loading">Loading</option><option value="empty">Empty (new workspace)</option><option value="error">Error</option></select></label>
+    <label>Role <select id="r-role"><option value="agent">Agent</option><option value="viewer">Viewer (read-only)</option></select></label>
+    <span>Press <span class="kbd">?</span> for keyboard shortcuts</span>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+<div class="sr" id="announce" role="status" aria-live="polite"></div>
+
+<dialog id="help" aria-labelledby="help-t">
+  <div class="dh"><h2 id="help-t">Keyboard shortcuts</h2><button class="btn ghost sm" id="help-x" aria-label="Close">✕</button></div>
+  <div class="db"><dl class="keys">
+    <dt><span class="kbd">J</span> <span class="kbd">K</span></dt><dd>Next / previous ticket</dd>
+    <dt><span class="kbd">Enter</span></dt><dd>Open the focused ticket</dd>
+    <dt><span class="kbd">X</span></dt><dd>Select / deselect the focused ticket</dd>
+    <dt><span class="kbd">A</span></dt><dd>Assign to me</dd>
+    <dt><span class="kbd">E</span></dt><dd>Solve (selected, focused or open ticket)</dd>
+    <dt><span class="kbd">Z</span></dt><dd>Undo the last change</dd>
+    <dt><span class="kbd">/</span> <span class="kbd">⌘K</span></dt><dd>Search</dd>
+    <dt><span class="kbd">R</span></dt><dd>Reply to the open ticket</dd>
+    <dt><span class="kbd">⌘ Enter</span></dt><dd>Send from the reply box</dd>
+    <dt><span class="kbd">Esc</span></dt><dd>Close ticket, clear selection</dd>
+  </dl></div>
+</dialog>
+
+<script>
+"use strict";
+/* ---------- helpers ---------- */
+const $ = (s, r=document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ICONS = {
+  inbox:"M22 12h-6l-2 3h-4l-2-3H2 M5.5 5h13l3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z",
+  users:"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M22 21v-2a4 4 0 0 0-3-3.9 M16 3.1a4 4 0 0 1 0 7.8",
+  chart:"M3 3v18h18 M7 15l4-4 3 3 5-6",
+  book:"M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z M4 19.5V22h16",
+  gear:"M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M12 2v3 M12 19v3 M2 12h3 M19 12h3 M4.9 4.9l2.1 2.1 M17 17l2.1 2.1 M4.9 19.1L7 17 M17 7l2.1-2.1",
+  search:"M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z M21 21l-4.3-4.3",
+  bell:"M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9 M13.7 21a2 2 0 0 1-3.4 0",
+  check:"M20 6L9 17l-5-5",
+  alert:"M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z M12 9v4 M12 17h.01",
+  clock:"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 6v6l4 2",
+  x:"M18 6L6 18 M6 6l12 12",
+  refresh:"M23 4v6h-6 M1 20v-6h6 M3.5 9a9 9 0 0 1 15-3.4L23 10 M1 14l4.5 4.4A9 9 0 0 0 20.5 15",
+  pause:"M6 4h4v16H6z M14 4h4v16h-4z",
+  lock:"M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4",
+  note:"M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z M14 3v6h6",
+  wifi:"M5 12.5a10 10 0 0 1 14 0 M8.5 16a5 5 0 0 1 7 0 M12 20h.01 M2 9a15 15 0 0 1 20 0"
+};
+const ic = (n, cls="") => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[n]}"/></svg>`;
+document.querySelectorAll("[data-ic]").forEach(el => el.innerHTML = ic(el.dataset.ic));
+$("#ic-s").setAttribute("d", ICONS.search);
+
+/* ---------- data ---------- */
+const MIN = 6e4, HR = 36e5;
+const NOW0 = Date.now();
+function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R = rng(20261028);
+const pick = a => a[Math.floor(R()*a.length)];
+
+const AGENTS = [
+  {id:"a1", name:"Priya Raman", ini:"PR", me:true},
+  {id:"a2", name:"Tomás Herrera", ini:"TH"},
+  {id:"a3", name:"Aisha Okafor", ini:"AO"},
+  {id:"a4", name:"Jonas Weber", ini:"JW"},
+  {id:"a5", name:"Mei Lin Chen", ini:"MC"}
+];
+const ME = "a1";
+const agentName = id => id ? AGENTS.find(a=>a.id===id).name : "Unassigned";
+
+const TOPICS = [
+  ["Can't log in after enabling SSO","Since we switched on SAML SSO this morning, none of our team can sign in. We get a redirect loop between Okta and Relay. About 40 people blocked.",["sso","login"]],
+  ["Invoice INV-20418 shows duplicate charge","We were billed twice for September on the Business plan. Please refund the duplicate €1,240.00 and confirm by email.",["billing","refund"]],
+  ["CSV export times out for large date ranges","Exporting 12 months of conversations fails at 90% with a 504. Smaller ranges work. Need this for our audit on Friday.",["export","bug"]],
+  ["How do I add a custom field to the web form?","I looked through the help centre but the screenshots don't match what I see. Where do custom fields live now?",["how-to"]],
+  ["Webhook deliveries failing with 401","Since yesterday every webhook to our endpoint returns 401 on your side. We didn't rotate the signing secret.",["api","webhook"]],
+  ["Request: SLA pause when waiting on customer","We'd like SLA timers to pause automatically for Pending. Is that on the roadmap? Happy to jump on a call.",["feature-request","sla"]],
+  ["Agent seats not updating after upgrade","We upgraded from 10 to 25 seats but the admin page still says 10 of 10 used. New hires can't be invited.",["billing","seats"]],
+  ["Emails from Relay landing in spam","Customers say replies from support@ our domain go to junk since we added the custom domain. SPF/DKIM look fine to us.",["email","deliverability"]],
+  ["Macro variables not rendering","{{ticket.requester.first_name}} appears literally in sent replies for the 'Refund approved' macro.",["macros","bug"]],
+  ["Need to delete a customer under GDPR request","A customer in Berlin has asked us to erase all personal data. What's the process and how long does it take?",["gdpr","privacy"]],
+  ["Mobile app crashes opening attachments","iOS 19.1, app v6.4. Tapping any PDF attachment closes the app immediately. Logs attached.",["mobile","bug"]],
+  ["Please merge duplicate tickets from one customer","Same customer sent the same issue three times via email and chat. Can we merge them without losing history?",["how-to"]],
+  ["Slack integration posts to wrong channel","New ticket alerts for the EMEA queue are going to #support-us. Mapping looks correct in settings.",["integration","slack"]],
+  ["Business hours not respected in reports","Our reports count weekends towards first-response time even though business hours exclude them.",["reports","sla"]],
+  ["Unable to reset 2FA after phone replacement","I got a new phone and lost my authenticator codes. Recovery codes were never saved. Locked out of the admin account.",["security","login"]],
+  ["Refund for annual plan — closed company","We're winding down the business and would like a pro-rated refund for the remaining 7 months of our annual plan.",["billing","refund"]],
+  ["API rate limit 429 on bulk update","Bulk updating 5,000 tickets via API returns 429 after ~600 requests. What's the actual limit?",["api"]],
+  ["Chat widget overlaps cookie banner","On our marketing site the widget covers the 'Accept' button on mobile. Can we offset it?",["widget","how-to"]],
+  ["Ticket stuck in 'New' after triggers","Created via API with status open but it stays 'New' and never runs our assignment trigger.",["triggers","bug"]],
+  ["Question about data residency (EU)","Is our workspace stored in Frankfurt? Our DPA requires EU-only storage. Please confirm in writing.",["privacy","compliance"]]
+];
+const LONG_SUBJECT = ["Intermittent 502 errors when attachments over 25 MB are uploaded through the customer portal on Safari, but only for users behind our corporate proxy, started after last Tuesday's release","Intermittent 502 on attachment upload behind corporate proxy (Safari only)",["bug","portal","attachments"]];
+const PEOPLE = [
+  ["Maria Gonzalez","Acme Corp"],["Daniel Okoye","Brightline Logistics"],["Sofia Lindqvist","Nordhaven AB"],["Raj Patel","Patel & Sons"],
+  ["田中 美咲","Sakura Retail"],["Zoë Müller","Müller Maschinenbau GmbH"],["Liam O'Connor","Harbor Health"],["Fatima Al-Sayed","Dunes Capital"],
+  ["Chris Walker",""],["Anna Kowalska","Vistula Foods"],["Mateus Oliveira","Rio Fintech"],["Hannah Brooks","Brooks & Hale LLP"],
+  ["Omar Haddad","Cedar Telecom"],["Elena Petrova","Lumen Studio"],["Kwame Mensah","Gold Coast Energy"],["Yuki Sato","Kite Robotics"],
+  ["Grace Thompson","Thompson Dental Group"],["Lucas Fernández","Pampa Agro"],["Ingrid Berg","Berg Marine"],["Tariq Aziz","Blue Nile Trading"]
+];
+const CHANNELS = ["Email","Email","Email","Chat","Web form","Phone"];
+const PRI = ["urgent","high","normal","low"];
+const PRI_RANK = {urgent:0,high:1,normal:2,low:3};
+const SLA_H = {urgent:1,high:4,normal:8,low:24};
+
+function makeTicket(i){
+  const solved = i < 28;
+  const status = solved ? "solved" : pick(["new","new","open","open","open","pending","pending"]);
+  const priority = R()<.08 ? "urgent" : R()<.25 ? "high" : R()<.75 ? "normal" : "low";
+  let ageH = ({urgent:R()*1.6, high:R()*5.5, normal:Math.pow(R(),1.4)*14, low:R()*34})[priority];
+  if (solved) ageH = 3 + R()*26;
+  const created = NOW0 - ageH*HR - MIN*3;
+  const topic = i===3 ? LONG_SUBJECT : pick(TOPICS);
+  const [name, org] = pick(PEOPLE);
+  let assignee = null;
+  if (status !== "new" || R() < .3) assignee = R()<.4 ? ME : pick(AGENTS).id;
+  if (status === "new" && R()<.7) assignee = null;
+  const updated = Math.min(NOW0 - MIN*(1+R()*4), created + (NOW0-created)*(R()*.9+.1));
+  const channel = pick(CHANNELS);
+  const msgs = [{from:"cust", name, at:created, text: topic[1], channel}];
+  if (status==="open"||status==="pending"||solved){
+    const ag = assignee || pick(AGENTS).id;
+    if (R()<.8) msgs.push({from:"agent", name:agentName(ag), at:created+MIN*(8+R()*40), text:`Hi ${name.split(" ")[0]}, thanks for flagging this. I'm looking into it now and will update you shortly.`});
+    if (R()<.55) msgs.push({from:"cust", name, at:Math.min(NOW0-MIN*2, created+MIN*(60+R()*90)), text:"Thanks. Any update? This is blocking our team.", channel});
+  }
+  return {
+    subject: topic[0], tags: topic[2], requester:name, org, channel, status, priority, assignee,
+    created, updated, unread: !solved && (status==="new" || R()<.2),
+    due: created + SLA_H[priority]*HR, msgs, mention:false, email: name.toLowerCase().replace(/[^a-z]+/g,".").replace(/^\.|\.$/g,"")+"@example.com"
+  };
+}
+let TICKETS = Array.from({length:140}, (_,i)=>makeTicket(i)).sort((a,b)=>a.created-b.created);
+TICKETS.forEach((t,i)=>{ t.id = "RLY-"+(4251+i); });
+// guarantee a believable shape for "my queue" and mentions
+TICKETS.filter(t=>t.status!=="solved").forEach((t,i)=>{ if(i%23===5){ t.mention=true; t.msgs.push({from:"note", name:"Tomás Herrera", at:NOW0-MIN*(14+i), text:"@Priya can you confirm our policy here before I reply? I'd rather not guess."}); } });
+const drafts = (()=>{ try{ return JSON.parse(sessionStorage.getItem("relay.drafts")||"{}"); }catch{ return {}; } })();
+const saveDrafts = () => { try{ sessionStorage.setItem("relay.drafts", JSON.stringify(drafts)); }catch{} };
+
+/* ---------- state + URL ---------- */
+const VIEWS = [
+  {id:"mine", label:"My open", fn:t=>t.assignee===ME && t.status!=="solved"},
+  {id:"unassigned", label:"Unassigned", fn:t=>!t.assignee && t.status!=="solved"},
+  {id:"mentions", label:"Mentions", fn:t=>t.mention && t.status!=="solved"},
+  {id:"risk", label:"SLA at risk", fn:t=>t.status!=="solved" && t.status!=="pending" && t.due-Date.now() <= HR, hot:true},
+  {id:"all", label:"All open", fn:t=>t.status!=="solved"},
+  {id:"solved", label:"Solved", fn:t=>t.status==="solved"}
+];
+const DEF = {view:"mine", q:"", status:"", priority:"", assignee:"", sort:"sla", dir:"asc", page:1, t:"", state:"ready", role:"agent"};
+const S = {...DEF};
+const PAGE = 50;
+let selected = new Set();
+let incoming = [];
+let lastSync = Date.now();
+let lastUndo = null;
+let booting = true;
+
+function readURL(){
+  const p = new URLSearchParams(location.search);
+  for (const k of Object.keys(DEF)) S[k] = p.get(k) ?? DEF[k];
+  S.page = Math.max(1, parseInt(S.page,10)||1);
+  if (!VIEWS.some(v=>v.id===S.view)) S.view = "mine";
+  if (!["sla","priority","updated"].includes(S.sort)) S.sort = "sla";
+  if (!["asc","desc"].includes(S.dir)) S.dir = "asc";
+}
+function writeURL(push=false){
+  const p = new URLSearchParams();
+  for (const k of Object.keys(DEF)) if (String(S[k]) !== String(DEF[k])) p.set(k, S[k]);
+  const url = location.pathname + (p.toString() ? "?"+p : "");
+  push ? history.pushState(null,"",url) : history.replaceState(null,"",url);
+}
+const hrefFor = over => { const p = new URLSearchParams(); const s={...S,...over}; for (const k of Object.keys(DEF)) if (String(s[k])!==String(DEF[k])) p.set(k,s[k]); return "?"+p; };
+
+/* ---------- formatting ---------- */
+const absFmt = new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"short",timeZoneName:"short"});
+const clockFmt = new Intl.DateTimeFormat(undefined,{hour:"2-digit",minute:"2-digit",timeZoneName:"short"});
+function dur(ms){ const m=Math.round(ms/MIN); if(m<60) return m+"m"; const h=Math.floor(m/60); if(h<24) return h+"h "+(m%60)+"m"; return Math.floor(h/24)+"d "+(h%24)+"h"; }
+function rel(ts){ const d=Date.now()-ts, m=Math.floor(d/MIN); if(m<1) return "just now"; if(m<60) return m+" min ago"; const h=Math.floor(m/60); if(h<24) return h+" h ago"; return Math.floor(h/24)+" d ago"; }
+function sla(t){
+  if (t.status==="solved") return {label:"—", tone:"flat dash", icon:""};
+  if (t.status==="pending") return {label:"Paused", tone:"flat", icon:"pause"};
+  const d = t.due - Date.now();
+  if (d < 0) return {label:"Breached "+dur(-d)+" ago", tone:"bad", icon:"alert"};
+  if (d <= HR) return {label:"Due in "+dur(d), tone:"warn", icon:"clock"};
+  return {label:"Due in "+dur(d), tone:"flat", icon:""};
+}
+const slaHTML = t => { const s=sla(t); return `<span class="pill ${s.tone} num" data-sla="${t.id}">${s.icon?ic(s.icon):""}${esc(s.label)}</span>`; };
+const priHTML = p => `<span class="p-${p}" style="display:inline-flex;gap:6px;align-items:center"><span class="bars" aria-hidden="true">${[0,1,2].map(i=>`<i class="${(p==="urgent"?3:p==="high"?2:p==="normal"?1:0)>i?"f":""}"></i>`).join("")}</span><span style="color:var(--ink)">${p[0].toUpperCase()+p.slice(1)}</span></span>`;
+const STATUS_TONE = {new:"info", open:"", pending:"warn", solved:"ok"};
+const statusHTML = s => `<span class="pill ${STATUS_TONE[s]}">${s[0].toUpperCase()+s.slice(1)}</span>`;
+const avatarHTML = (id, lg="") => id ? `<span class="avatar ${id===ME?"me":""} ${lg}" aria-hidden="true">${AGENTS.find(a=>a.id===id).ini}</span>` : `<span class="avatar none ${lg}" aria-hidden="true">?</span>`;
+const timeEl = ts => `<time datetime="${new Date(ts).toISOString()}" title="${esc(absFmt.format(ts))}" data-rel="${ts}">${rel(ts)}</time>`;
+
+/* ---------- query ---------- */
+function filtered(){
+  const v = VIEWS.find(v=>v.id===S.view);
+  const q = S.q.trim().toLowerCase();
+  let list = TICKETS.filter(v.fn);
+  if (S.status) list = list.filter(t=>t.status===S.status);
+  if (S.priority) list = list.filter(t=>t.priority===S.priority);
+  if (S.assignee) list = list.filter(t=> S.assignee==="none" ? !t.assignee : t.assignee===S.assignee);
+  if (q) list = list.filter(t=>[t.id,t.subject,t.requester,t.org,t.tags.join(" ")].join(" ").toLowerCase().includes(q));
+  const dir = S.dir==="asc" ? 1 : -1;
+  const key = {
+    sla: t => (t.status==="solved"||t.status==="pending") ? Infinity : t.due,
+    priority: t => PRI_RANK[t.priority]*1e15 + t.due,
+    updated: t => t.updated
+  }[S.sort];
+  list.sort((a,b)=>{ const x=key(a), y=key(b); if(x===y) return a.created-b.created; return x===Infinity ? 1 : y===Infinity ? -1 : (x-y)*dir; });
+  return list;
+}
+const byId = id => TICKETS.find(t=>t.id===id);
+const canEdit = () => S.role !== "viewer";
+
+/* ---------- render: chrome ---------- */
+function renderChrome(){
+  const counts = Object.fromEntries(VIEWS.map(v=>[v.id, TICKETS.filter(v.fn).length]));
+  const failed = S.state==="error", empty = S.state==="empty";
+  $("#tabs").innerHTML = VIEWS.map(v=>{
+    const n = failed ? "—" : empty ? 0 : counts[v.id];
+    return `<a class="tab" href="${hrefFor({view:v.id,page:1,t:"",q:S.q})}" data-view="${v.id}" ${v.id===S.view?'aria-current="page"':""}>${v.label}<span class="count num ${v.hot&&n>0&&!failed?"hot":""}">${n}</span></a>`;
+  }).join("");
+  const v = VIEWS.find(v=>v.id===S.view);
+  $("#title").textContent = v.label;
+  document.title = `${v.label} · Tickets · Relay`;
+  renderFresh();
+  const next = $("#next");
+  next.disabled = !canEdit() || failed || empty;
+  $("#next-why").textContent = !canEdit() ? "Disabled: you have view-only access. Ask a workspace admin to change your role." : "";
+  next.title = !canEdit() ? "View-only access — ask a workspace admin to change your role." : "Assign the most urgent unassigned ticket to yourself (N)";
+  $("#viewonly").innerHTML = !canEdit() ? `<div class="banner info">${ic("lock")}<span><strong>View-only access.</strong> You can read tickets but not reply, assign or change them. Ask a workspace admin to give you the Agent role.</span></div>` : "";
+  $("#r-state").value = S.state; $("#r-role").value = S.role;
+}
+function renderFresh(){
+  const offline = S.state==="error";
+  $("#fresh").innerHTML = `<span>Updated <time datetime="${new Date(lastSync).toISOString()}" title="${esc(absFmt.format(lastSync))}">${clockFmt.format(lastSync)}</time></span>
+    <span class="live ${offline?"off":""}">${offline?"Live updates paused":"Live"}</span>`;
+}
+
+function renderToolbar(){
+  const hasFilter = S.q || S.status || S.priority || S.assignee;
+  if (selected.size && canEdit()){
+    const n = selected.size, all = filtered();
+    const pageIds = pageSlice(all).map(t=>t.id);
+    const allMatching = n === all.length && all.length > pageIds.length;
+    $("#toolbar").innerHTML = `<div class="bulk" role="region" aria-label="Bulk actions">
+      <strong class="num">${n} selected</strong>
+      <label class="sr" for="b-asg">Assign selected tickets</label>
+      <select id="b-asg" class="sm"><option value="">Assign to…</option>${AGENTS.map(a=>`<option value="${a.id}">${esc(a.name)}${a.me?" (me)":""}</option>`).join("")}<option value="none">Unassigned</option></select>
+      <label class="sr" for="b-pri">Set priority for selected tickets</label>
+      <select id="b-pri" class="sm"><option value="">Set priority…</option>${PRI.map(p=>`<option value="${p}">${p[0].toUpperCase()+p.slice(1)}</option>`).join("")}</select>
+      <button class="btn sm" id="b-solve">${ic("check")}Solve ${n} ${n===1?"ticket":"tickets"}</button>
+      <button class="btn sm ghost" id="b-clear">Clear selection</button>
+    </div>` + (n >= pageIds.length && all.length > n && !allMatching ? `<div class="matchbar">All ${pageIds.length} tickets on this page are selected. <button class="linkbtn" id="b-all">Select all ${all.length} matching tickets</button></div>` : "")
+      + (allMatching ? `<div class="matchbar">All ${n} matching tickets are selected (across ${Math.ceil(n/PAGE)} pages). <button class="linkbtn" id="b-clear2">Clear selection</button></div>` : "");
+    return;
+  }
+  const sel = (id,label,opts,val) => `<label class="filter ${val?"on":""}">${label}<select id="${id}" aria-label="${label}">${opts}</select></label>`;
+  const o = (arr,val,all) => `<option value="">${all}</option>` + arr.map(([v,l])=>`<option value="${v}" ${val===v?"selected":""}>${l}</option>`).join("");
+  $("#toolbar").innerHTML = `<div class="toolbar">
+    <div class="field"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS.search}"/></svg>
+      <label class="sr" for="q">Filter this list</label><input id="q" type="search" placeholder="Filter by subject, requester, ID" value="${esc(S.q)}" autocomplete="off"></div>
+    ${sel("f-status","Status",o([["new","New"],["open","Open"],["pending","Pending"],["solved","Solved"]],S.status,"Any"),S.status)}
+    ${sel("f-pri","Priority",o(PRI.map(p=>[p,p[0].toUpperCase()+p.slice(1)]),S.priority,"Any"),S.priority)}
+    ${sel("f-asg","Assignee",o([["none","Unassigned"],...AGENTS.map(a=>[a.id,a.name+(a.me?" (me)":"")])],S.assignee,"Anyone"),S.assignee)}
+    ${hasFilter?`<button class="btn ghost sm" id="f-clear">${ic("x")}Clear filters</button>`:""}
+  </div>`;
+}
+
+const pageSlice = list => { const max=Math.max(1,Math.ceil(list.length/PAGE)); if(S.page>max) S.page=max; return list.slice((S.page-1)*PAGE, S.page*PAGE); };
+
+/* ---------- render: list ---------- */
+function thSort(key,label,cls){
+  const on = S.sort===key; const aria = on ? (S.dir==="asc"?"ascending":"descending") : "none";
+  return `<th class="${cls}" aria-sort="${aria}"><button class="sort" data-sort="${key}">${label}<span class="arr" aria-hidden="true"></span></button></th>`;
+}
+function headHTML(rows){
+  const allOn = rows.length && rows.every(t=>selected.has(t.id)), some = rows.some(t=>selected.has(t.id));
+  return `<thead><tr>
+    <th class="c-chk">${canEdit()?`<input type="checkbox" id="selall" aria-label="Select all ${rows.length} tickets on this page" ${allOn?"checked":""} data-ind="${some&&!allOn}">`:""}</th>
+    ${thSort("priority","Priority","c-pri")}
+    <th>Ticket</th>
+    <th class="c-req">Requester</th>
+    <th class="c-sta">Status</th>
+    ${thSort("sla","SLA","c-sla")}
+    <th class="c-asg">Assignee</th>
+    ${thSort("updated","Updated","c-upd")}
+  </tr></thead>`;
+}
+function rowHTML(t){
+  const isSel = selected.has(t.id);
+  return `<tr data-id="${t.id}" class="${isSel?"sel":""} ${t.id===S.t?"open":""} ${t.unread?"unread":""}">
+    <td class="c-chk">${canEdit()?`<input type="checkbox" aria-label="Select ${t.id}: ${esc(t.subject)}" ${isSel?"checked":""}>`:""}</td>
+    <td class="c-pri">${priHTML(t.priority)}</td>
+    <td><a class="subj" href="${hrefFor({t:t.id})}" ${t.id===S.t?'aria-current="true"':""}>
+      <span class="row1"><span class="dot ${t.unread?"":"none"}" aria-hidden="true"></span>${t.unread?'<span class="sr">Unread. </span>':""}<span class="tid mono">${t.id}</span><span class="subj-t">${esc(t.subject)}</span></span>
+      <span class="cozy-only">${esc(t.requester)}${t.org?" · "+esc(t.org):""} · ${esc(t.channel)}</span></a></td>
+    <td class="c-req">${esc(t.requester)}${t.org?`<span style="color:var(--ink3)"> · ${esc(t.org)}</span>`:""}</td>
+    <td class="c-sta">${statusHTML(t.status)}</td>
+    <td class="c-sla">${slaHTML(t)}</td>
+    <td class="c-asg"><span class="asg">${avatarHTML(t.assignee)}<span class="c-asg-name" ${!t.assignee?'style="color:var(--ink3)"':""}>${esc(t.assignee===ME?"Me":agentName(t.assignee))}</span>${t.assignee?`<span class="sr">${esc(agentName(t.assignee))}</span>`:""}</span></td>
+    <td class="c-upd num">${timeEl(t.updated)}</td>
+  </tr>`;
+}
+function skeleton(){
+  return `<table aria-busy="true"><caption class="sr">Loading tickets</caption>${headHTML([])}<tbody>${Array.from({length:10},()=>`<tr class="skel"><td class="c-chk"></td><td><span class="sk" style="width:60%"></span></td><td><span class="sk" style="width:${50+Math.random()*40|0}%"></span></td><td class="c-req"><span class="sk" style="width:70%"></span></td><td><span class="sk" style="width:60%"></span></td><td><span class="sk" style="width:80%"></span></td><td class="c-asg"><span class="sk" style="width:60%"></span></td><td class="c-upd"><span class="sk" style="width:50%"></span></td></tr>`).join("")}</tbody></table>`;
+}
+function renderList(){
+  const sc = $("#scroller"), foot = $("#foot");
+  $("#split").classList.toggle("has-pane", !!S.t);
+  $("#list").classList.toggle("has-pane", !!S.t);
+  sc.closest(".split").classList.toggle("has-pane", !!S.t);
+  document.querySelector(".listwrap").classList.toggle("has-pane", !!S.t);
+  if (S.state==="loading" || booting){
+    sc.innerHTML = skeleton(); foot.innerHTML = `<span class="hint">Loading tickets…</span>`; return;
+  }
+  if (S.state==="error"){
+    sc.innerHTML = `<div class="state err" role="alert"><div class="ico">${ic("wifi")}</div><h2>Couldn't load tickets</h2><p>Relay lost its connection to the server, so this list may be out of date. Your drafts are saved on this device. Check your connection and try again.</p><div class="acts"><button class="btn primary" id="retry">Try again</button></div><p class="hint">Last updated ${esc(absFmt.format(lastSync))}</p></div>`;
+    foot.innerHTML = ""; return;
+  }
+  if (S.state==="empty"){
+    sc.innerHTML = `<div class="state"><div class="ico">${ic("inbox")}</div><h2>No tickets yet</h2><p>Tickets show up here when customers write to your support address or use the chat widget. Connect a channel to start receiving them.</p><div class="acts"><a class="btn primary" href="#">Connect email address</a><a class="btn" href="#">Add chat widget</a></div></div>`;
+    foot.innerHTML = ""; return;
+  }
+  const all = filtered(), rows = pageSlice(all);
+  const hasFilter = S.q || S.status || S.priority || S.assignee;
+  if (!all.length){
+    const v = VIEWS.find(v=>v.id===S.view);
+    if (hasFilter){
+      sc.innerHTML = `<div class="state"><div class="ico">${ic("search")}</div><h2>No tickets match these filters</h2><p>Nothing in “${esc(v.label)}” matches${S.q?` “${esc(S.q)}”`:""}. Try fewer filters, or check that the ID or name is spelled correctly.</p><div class="acts"><button class="btn" id="f-clear2">Clear filters</button></div></div>`;
+    } else if (S.view==="mine"){
+      sc.innerHTML = `<div class="state"><div class="ico">${ic("check")}</div><h2>You're all caught up</h2><p>Nothing is assigned to you right now.${canEdit()?" Pick up the most urgent unassigned ticket, or check mentions.":""}</p><div class="acts">${canEdit()?'<button class="btn primary" id="next2">Take next ticket</button>':""}<a class="btn" href="${hrefFor({view:"unassigned",t:""})}">View unassigned</a></div></div>`;
+    } else {
+      sc.innerHTML = `<div class="state"><div class="ico">${ic("check")}</div><h2>No tickets in “${esc(v.label)}”</h2><p>${v.id==="risk"?"No open ticket is within an hour of its SLA deadline.":v.id==="mentions"?"Nobody has mentioned you on an open ticket.":"Nothing to show here right now."}</p></div>`;
+    }
+    foot.innerHTML = `<span class="num">0 tickets</span>`; return;
+  }
+  sc.innerHTML = `<table id="tbl"><caption class="sr">${esc(VIEWS.find(v=>v.id===S.view).label)}: ${all.length} tickets, sorted by ${S.sort} ${S.dir==="asc"?"ascending":"descending"}</caption>${headHTML(rows)}<tbody>${rows.map(rowHTML).join("")}</tbody></table>`;
+  const sa = $("#selall"); if (sa) sa.indeterminate = sa.dataset.ind==="true";
+  const from=(S.page-1)*PAGE+1, to=Math.min(all.length,S.page*PAGE), pages=Math.ceil(all.length/PAGE);
+  foot.innerHTML = `<span class="num">${from}–${to} of ${all.length} tickets</span>
+    <span class="hint">Sorted by ${{sla:"SLA deadline",priority:"priority",updated:"last update"}[S.sort]}, ${S.dir==="asc"?"soonest/highest first":"latest/lowest first"}</span>
+    <span class="pager"><button class="btn sm" id="prev" ${S.page<=1?"disabled":""}>Previous</button><span class="num">Page ${S.page} of ${pages}</span><button class="btn sm" id="nextp" ${S.page>=pages?"disabled":""}>Next</button></span>`;
+}
+
+/* ---------- render: detail ---------- */
+function renderPane(keepScroll){
+  const pane = $("#pane"), t = S.t && byId(S.t);
+  if (!t){ pane.hidden = true; pane.innerHTML = ""; return; }
+  pane.hidden = false;
+  const edit = canEdit();
+  const draftKey = t.id;
+  const mode = (drafts[draftKey]||{}).mode || "reply";
+  const text = (drafts[draftKey]||{})[mode] || "";
+  const opts = (arr,val) => arr.map(([v,l])=>`<option value="${v}" ${val===v?"selected":""}>${l}</option>`).join("");
+  const sl = sla(t);
+  pane.innerHTML = `
+  <div class="ph">
+    <div class="ph-top"><h2 id="ph-t" tabindex="-1">${esc(t.subject)}</h2>
+      <button class="btn ghost sm" id="pane-x" aria-label="Close ticket ${t.id}">${ic("x")}</button></div>
+    <div class="meta"><span class="mono">${t.id}</span><span aria-hidden="true">·</span><span>${esc(t.requester)}${t.org?`, ${esc(t.org)}`:""}</span><span aria-hidden="true">·</span><span>${esc(t.email)}</span><span aria-hidden="true">·</span><span>via ${esc(t.channel)}</span><span aria-hidden="true">·</span>${timeEl(t.created)}</div>
+    <div class="props">
+      <label>Status<select id="p-status" ${edit?"":"disabled"}>${opts([["new","New"],["open","Open"],["pending","Pending"],["solved","Solved"]],t.status)}</select></label>
+      <label>Priority<select id="p-pri" ${edit?"":"disabled"}>${opts(PRI.map(p=>[p,p[0].toUpperCase()+p.slice(1)]),t.priority)}</select></label>
+      <label>Assignee<select id="p-asg" ${edit?"":"disabled"}>${opts([["none","Unassigned"],...AGENTS.map(a=>[a.id,a.name+(a.me?" (me)":"")])],t.assignee||"none")}</select></label>
+    </div>
+    <div class="meta"><span>SLA</span>${slaHTML(t)}<span class="spacer"></span><span class="tags">${t.tags.map(x=>`<span class="tag">${esc(x)}</span>`).join("")}</span></div>
+  </div>
+  <div class="thread" id="thread" tabindex="0" role="region" aria-label="Conversation, ${t.msgs.length} messages">
+    ${t.msgs.map(m=>`<article class="msg ${m.from==="agent"?"agent":m.from==="note"?"note":""}">
+      <header><b>${esc(m.name)}</b>${m.from==="note"?`<span class="pill warn" style="height:18px">${ic("lock")}Internal note</span>`:m.from==="agent"?'<span class="hint">Agent</span>':`<span class="hint">${esc(m.channel||t.channel)}</span>`}<span class="spacer"></span>${timeEl(m.at)}</header>
+      <div class="body">${esc(m.text)}</div></article>`).join("")}
+  </div>
+  <form class="composer ${mode==="note"?"note-mode":""}" id="composer" novalidate>
+    ${edit?`
+    <div class="crow"><fieldset style="border:0;margin:0;padding:0"><legend class="sr">Message type</legend>
+      <div class="seg"><label><input type="radio" name="mode" value="reply" ${mode==="reply"?"checked":""}><span>Reply to customer</span></label><label><input type="radio" name="mode" value="note" ${mode==="note"?"checked":""}><span>Internal note</span></label></div></fieldset>
+      <span class="spacer"></span>
+      <label class="sr" for="macro">Insert macro</label>
+      <select id="macro" class="sm"><option value="">Insert macro…</option><option value="ack">Acknowledge &amp; investigating</option><option value="refund">Refund approved</option><option value="info">Request more information</option></select>
+    </div>
+    <label class="sr" for="reply">${mode==="note"?"Internal note":"Reply to "+esc(t.requester)}</label>
+    <textarea id="reply" placeholder="${mode==="note"?"Only your team can see this note. Use @ to mention a teammate.":"Write a reply to "+esc(t.requester.split(" ")[0])+"…"}" aria-describedby="reply-hint">${esc(text)}</textarea>
+    <div id="reply-err" aria-live="assertive"></div>
+    <div class="crow">
+      ${mode==="reply"?`<label class="hint" for="after">After sending, set status to</label><select id="after" class="sm"><option value="pending">Pending (waiting on customer)</option><option value="open">Open</option><option value="solved">Solved</option></select>`:""}
+      <span class="spacer"></span>
+      <span class="hint" id="reply-hint">${text?"Draft saved on this device":"⌘ Enter to send"}</span>
+      <button class="btn primary" type="submit">${mode==="note"?"Add note":"Send reply"}</button>
+    </div>`
+    :`<div class="banner info" style="border:0;padding:0;background:none">${ic("lock")}<span>You can't reply with view-only access. Ask a workspace admin to give you the Agent role.</span></div>`}
+  </form>`;
+  const th = $("#thread"); th.scrollTop = th.scrollHeight;
+}
+
+/* ---------- toast / announce ---------- */
+let toastTimer;
+function toast(msg, undo){
+  const box = $("#toasts"); box.innerHTML = "";
+  const el = document.createElement("div"); el.className = "toast";
+  el.innerHTML = `<span>${esc(msg)}</span>${undo?'<button type="button">Undo</button>':""}<button type="button" aria-label="Dismiss" style="text-decoration:none">✕</button>`;
+  const [b1,b2] = el.querySelectorAll("button");
+  if (undo){ b1.onclick = () => { undo(); box.innerHTML=""; }; b2.onclick = () => box.innerHTML=""; } else { b1.onclick = () => box.innerHTML=""; }
+  box.appendChild(el);
+  clearTimeout(toastTimer);
+  const arm = () => { clearTimeout(toastTimer); toastTimer = setTimeout(()=>box.innerHTML="", undo ? 10000 : 6000); };
+  el.onmouseenter = () => clearTimeout(toastTimer); el.onmouseleave = arm; el.onfocusin = () => clearTimeout(toastTimer); el.onfocusout = arm;
+  arm();
+}
+
+/* ---------- mutations (all reversible → Undo) ---------- */
+function mutate(ids, patch, msgFn){
+  const touched = [], skipped = [];
+  const before = [];
+  ids.forEach(id=>{
+    const t = byId(id); if(!t) return;
+    const same = Object.entries(patch).every(([k,v])=>t[k]===v);
+    if (same){ skipped.push(id); return; }
+    before.push({id, snap:{status:t.status, priority:t.priority, assignee:t.assignee, updated:t.updated, unread:t.unread}});
+    Object.assign(t, patch, {updated:Date.now()});
+    touched.push(id);
+  });
+  selected = new Set();
+  const undo = () => {
+    before.forEach(({id,snap})=>Object.assign(byId(id), snap));
+    toast(`Undone: ${touched.length} ${touched.length===1?"ticket":"tickets"} restored`);
+    renderAll();
+  };
+  lastUndo = touched.length ? undo : null;
+  if (!touched.length) toast(skipped.length===1 ? "No change — already set." : `No change — all ${skipped.length} tickets were already set.`);
+  else toast(msgFn(touched.length) + (skipped.length ? ` · ${skipped.length} already set, skipped` : ""), undo);
+  renderAll();
+}
+const plural = (n,w) => `${n} ${w}${n===1?"":"s"}`;
+function solve(ids){ mutate(ids, {status:"solved"}, n=>`Solved ${plural(n,"ticket")}`); }
+function assign(ids, who){ mutate(ids, {assignee: who==="none"?null:who, ...(who!=="none"?{status:"open"}:{})}, n=> who==="none" ? `Unassigned ${plural(n,"ticket")}` : `Assigned ${plural(n,"ticket")} to ${who===ME?"you":agentName(who)}`); }
+
+function takeNext(){
+  if (!canEdit()) return;
+  const cand = TICKETS.filter(t=>!t.assignee && (t.status==="new"||t.status==="open"))
+    .sort((a,b)=>PRI_RANK[a.priority]-PRI_RANK[b.priority] || a.due-b.due)[0];
+  if (!cand){ toast("No unassigned tickets right now."); return; }
+  mutate([cand.id], {assignee:ME, status:"open"}, ()=>`${cand.id} assigned to you`);
+  openTicket(cand.id);
+}
+
+/* ---------- navigation ---------- */
+function openTicket(id, focusPane=true){
+  S.t = id; const t = byId(id); if (t) t.unread = false;
+  writeURL(true); renderList(); renderPane();
+  if (focusPane) $("#ph-t")?.focus({preventScroll:true});
+}
+function closeTicket(){
+  const id = S.t; S.t = ""; writeURL(true); renderList(); renderPane();
+  const a = id && document.querySelector(`tr[data-id="${id}"] a.subj`); (a || $("#list")).focus();
+}
+function renderAll(){ renderChrome(); renderToolbar(); renderList(); renderPane(); updateBanner(); }
+function setFilter(k,v){ S[k]=v; S.page=1; selected=new Set(); writeURL(); renderChrome(); renderToolbar(); renderList(); }
+function updateBanner(){
+  const n = incoming.length;
+  $("#newbanner").innerHTML = n && S.state==="ready" ? `<div class="banner info">${ic("inbox")}<span><strong>${plural(n,"new ticket")}</strong> arrived.</span><button class="linkbtn" id="showNew">Show</button><span class="hint" style="color:inherit">The list won't reorder until you do.</span></div>` : "";
+}
+function sync(){
+  incoming.forEach(t=>TICKETS.push(t)); incoming = []; lastSync = Date.now();
+  if (S.state==="error") S.state="ready";
+  renderAll(); $("#announce").textContent = "List refreshed";
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click", e => {
+  const el = e.target;
+  const tab = el.closest("a.tab");
+  if (tab){ e.preventDefault(); S.view = tab.dataset.view; S.page=1; S.t=""; selected=new Set(); writeURL(true); renderAll(); return; }
+  const rowLink = el.closest("a.subj");
+  if (rowLink && !e.metaKey && !e.ctrlKey){ e.preventDefault(); openTicket(rowLink.closest("tr").dataset.id); return; }
+  const rail = el.closest(".pop .panel a[href^='?']");
+  if (rail){ e.preventDefault(); const p=new URLSearchParams(rail.getAttribute("href")); S.view=p.get("view")||"mine"; S.t=""; S.page=1; writeURL(true); document.querySelectorAll(".pop").forEach(d=>d.open=false); renderAll(); return; }
+  const sortB = el.closest("button.sort");
+  if (sortB){ const k=sortB.dataset.sort; if(S.sort===k) S.dir = S.dir==="asc"?"desc":"asc"; else { S.sort=k; S.dir = k==="updated"?"desc":"asc"; } S.page=1; selected=new Set(); writeURL(); renderToolbar(); renderList(); $(`button.sort[data-sort="${k}"]`)?.focus(); return; }
+  const id = el.closest("button,[id]")?.id;
+  switch(id){
+    case "next": case "next2": takeNext(); break;
+    case "refresh": sync(); toast("List refreshed"); break;
+    case "showNew": sync(); break;
+    case "retry": S.state="ready"; booting=true; renderAll(); setTimeout(()=>{booting=false; lastSync=Date.now(); renderAll();},500); break;
+    case "f-clear": case "f-clear2": S.q=S.status=S.priority=S.assignee=""; S.page=1; writeURL(); renderToolbar(); renderList(); break;
+    case "pane-x": closeTicket(); break;
+    case "b-clear": case "b-clear2": selected=new Set(); renderToolbar(); renderList(); break;
+    case "b-all": filtered().forEach(t=>selected.add(t.id)); renderToolbar(); renderList(); $("#announce").textContent = `${selected.size} tickets selected`; break;
+    case "b-solve": solve([...selected]); break;
+    case "prev": S.page--; selected=new Set(); writeURL(true); renderToolbar(); renderList(); $("#scroller").scrollTop=0; break;
+    case "nextp": S.page++; selected=new Set(); writeURL(true); renderToolbar(); renderList(); $("#scroller").scrollTop=0; break;
+    case "dens": e.preventDefault(); toggleDensity(); break;
+    case "themebtn": e.preventDefault(); toggleTheme(); break;
+    case "help-x": $("#help").close(); break;
+  }
+  if (!el.closest(".pop")) document.querySelectorAll(".pop[open]").forEach(d=>d.open=false);
+});
+
+document.addEventListener("change", e => {
+  const el = e.target;
+  if (el.id==="selall"){
+    const rows = pageSlice(filtered()); rows.forEach(t=> el.checked ? selected.add(t.id) : selected.delete(t.id));
+    renderToolbar(); renderList(); $("#selall")?.focus(); return;
+  }
+  if (el.matches("tbody input[type=checkbox]")){
+    const id = el.closest("tr").dataset.id; el.checked ? selected.add(id) : selected.delete(id);
+    el.closest("tr").classList.toggle("sel", el.checked);
+    const sa = $("#selall"); const rows=pageSlice(filtered());
+    if (sa){ sa.checked = rows.every(t=>selected.has(t.id)); sa.indeterminate = !sa.checked && rows.some(t=>selected.has(t.id)); }
+    renderToolbar(); return;
+  }
+  switch(el.id){
+    case "f-status": setFilter("status", el.value); break;
+    case "f-pri": setFilter("priority", el.value); break;
+    case "f-asg": setFilter("assignee", el.value); break;
+    case "b-asg": if(el.value) assign([...selected], el.value); break;
+    case "b-pri": if(el.value) mutate([...selected], {priority:el.value}, n=>`Set ${plural(n,"ticket")} to ${el.value}`); break;
+    case "p-status": mutate([S.t], {status:el.value}, ()=>`${S.t} set to ${el.value}`); break;
+    case "p-pri": mutate([S.t], {priority:el.value}, ()=>`${S.t} priority set to ${el.value}`); break;
+    case "p-asg": assign([S.t], el.value); break;
+    case "r-state": S.state = el.value; selected=new Set(); writeURL(); renderAll(); break;
+    case "r-role": S.role = el.value; selected=new Set(); writeURL(); renderAll(); break;
+    case "macro": {
+      const M = {ack:"Hi {first}, thanks for flagging this. I'm investigating now and will update you within the hour.", refund:"Hi {first}, I've approved the refund. It will reach your original payment method in 5–10 business days.", info:"Hi {first}, could you share a screenshot or the exact time this happened (with your time zone)? That will help me trace it."};
+      const t = byId(S.t), ta = $("#reply"); if(!el.value||!ta) break;
+      ta.value = (ta.value ? ta.value+"\n\n" : "") + M[el.value].replace("{first}", t.requester.split(" ")[0]);
+      ta.dispatchEvent(new Event("input",{bubbles:true})); el.value=""; ta.focus(); break;
+    }
+  }
+  if (el.name==="mode"){ drafts[S.t] = {...(drafts[S.t]||{}), mode:el.value}; saveDrafts(); const keep=$("#reply")?.value; renderPane(); $("#reply")?.focus(); }
+});
+
+let qTimer;
+document.addEventListener("input", e => {
+  const el = e.target;
+  if (el.id==="q"){ clearTimeout(qTimer); qTimer = setTimeout(()=>{ S.q = el.value; S.page=1; selected=new Set(); writeURL(); renderChrome(); const pos=el.selectionStart; renderToolbar(); renderList(); const n=$("#q"); n.focus(); n.setSelectionRange(pos,pos); }, 150); }
+  if (el.id==="reply"){
+    const d = drafts[S.t] = drafts[S.t] || {}; const mode = d.mode||"reply"; d[mode] = el.value; saveDrafts();
+    $("#reply-hint").textContent = el.value ? "Draft saved on this device" : "⌘ Enter to send";
+    if (el.value) $("#reply-err").innerHTML = "";
+  }
+});
+
+document.addEventListener("submit", e => {
+  if (e.target.id !== "composer") return; e.preventDefault();
+  const t = byId(S.t), ta = $("#reply"), v = ta.value.trim(), d = drafts[S.t]||{}, mode = d.mode||"reply";
+  if (!v){ $("#reply-err").innerHTML = `<div class="err-t" role="alert">${ic("alert")}Write ${mode==="note"?"a note":"a reply"} before sending.</div>`; ta.focus(); return; }
+  const before = {status:t.status, updated:t.updated, assignee:t.assignee, unread:t.unread}, len = t.msgs.length;
+  t.msgs.push({from: mode==="note"?"note":"agent", name: "Priya Raman", at: Date.now(), text: v});
+  let msg = mode==="note" ? `Note added to ${t.id}` : `Reply sent to ${t.requester.split(" ")[0]}`;
+  if (mode==="reply"){ const after=$("#after").value; t.status = after; msg += ` · set to ${after}`; }
+  if (!t.assignee){ t.assignee = ME; }
+  t.updated = Date.now();
+  delete d[mode]; saveDrafts();
+  const undoable = mode==="reply" ? ()=>{ /* a sent email can't be recalled; only the status change reverts */ Object.assign(t,before); renderAll(); toast("Status restored. The reply was already sent."); } : null;
+  toast(msg, undoable);
+  renderAll(); $("#reply")?.focus();
+});
+
+document.addEventListener("keydown", e => {
+  const tag = (e.target.tagName||"").toLowerCase(), typing = ["input","textarea","select"].includes(tag);
+  if ((e.metaKey||e.ctrlKey) && e.key==="Enter" && e.target.id==="reply"){ e.preventDefault(); $("#composer").requestSubmit(); return; }
+  if ((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==="k"){ e.preventDefault(); $("#gs").focus(); $("#gs").select(); return; }
+  if (e.key==="Escape"){
+    if ($("#help").open) return;
+    if (document.querySelector(".pop[open]")){ document.querySelectorAll(".pop").forEach(d=>d.open=false); return; }
+    if (selected.size){ selected=new Set(); renderToolbar(); renderList(); return; }
+    if (S.t){ closeTicket(); return; }
+  }
+  if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+  const rowsEls = [...document.querySelectorAll("tbody tr[data-id]")];
+  const cur = document.activeElement.closest?.("tr[data-id]");
+  const idx = cur ? rowsEls.indexOf(cur) : -1;
+  const target = () => selected.size ? [...selected] : cur ? [cur.dataset.id] : S.t ? [S.t] : [];
+  switch(e.key){
+    case "j": case "k": { if(!rowsEls.length) break; e.preventDefault(); const n = Math.min(rowsEls.length-1, Math.max(0, idx + (e.key==="j"?1:-1))); const a = rowsEls[idx<0?0:n].querySelector("a.subj"); a.focus(); a.scrollIntoView({block:"nearest"}); break; }
+    case "x": if(cur && canEdit()){ const cb=cur.querySelector("input[type=checkbox]"); cb.checked=!cb.checked; cb.dispatchEvent(new Event("change",{bubbles:true})); } break;
+    case "e": if(canEdit() && target().length){ e.preventDefault(); solve(target()); } break;
+    case "a": if(canEdit() && target().length){ e.preventDefault(); assign(target(), ME); } break;
+    case "n": takeNext(); break;
+    case "r": if(S.t && canEdit()){ e.preventDefault(); $("#reply")?.focus(); } break;
+    case "z": if(lastUndo){ lastUndo(); lastUndo=null; $("#toasts").innerHTML=""; } break;
+    case "/": e.preventDefault(); ($("#q")||$("#gs")).focus(); break;
+    case "?": $("#help").showModal(); break;
+  }
+});
+window.addEventListener("popstate", () => { readURL(); renderAll(); });
+window.addEventListener("beforeunload", e => { const dirty = Object.values(drafts).some(d=>d.reply||d.note); /* drafts persist in sessionStorage, so no prompt needed */ });
+
+function toggleDensity(){
+  const cozy = document.documentElement.dataset.density==="cozy";
+  document.documentElement.dataset.density = cozy ? "compact" : "cozy";
+  try{ localStorage.setItem("relay.density", cozy?"compact":"cozy"); }catch{}
+  $("#dens").textContent = `Toggle row density (currently ${cozy?"compact":"cozy"})`;
+  document.querySelectorAll(".pop").forEach(d=>d.open=false);
+}
+function toggleTheme(){
+  const dark = getComputedStyle(document.documentElement).colorScheme==="dark";
+  document.documentElement.dataset.theme = dark ? "light" : "dark";
+  try{ localStorage.setItem("relay.theme", dark?"light":"dark"); }catch{}
+}
+try{
+  const d = localStorage.getItem("relay.density"); if (d) { document.documentElement.dataset.density = d; $("#dens").textContent = `Toggle row density (currently ${d})`; }
+  const th = localStorage.getItem("relay.theme"); if (th) document.documentElement.dataset.theme = th;
+}catch{}
+
+/* live feed: new tickets queue up behind a banner; the list never reorders under the cursor */
+const FEED = [["Password reset email never arrives","Tried five times, checked spam. Need access today.","urgent"],["Question about annual plan pricing","Do you offer a nonprofit discount?","low"],["Chat transcripts missing for yesterday","Yesterday's chats from 14:00–17:00 aren't in the inbox.","high"]];
+let feedN = 0;
+setInterval(()=>{
+  if (S.state!=="ready" || booting || feedN>=FEED.length) return;
+  const f = FEED[feedN++], [name,org] = pick(PEOPLE), now = Date.now();
+  incoming.push({id:"RLY-"+(4251+TICKETS.length+incoming.length), subject:f[0], tags:["new"], requester:name, org, channel:"Email", status:"new", priority:f[2], assignee:null, created:now, updated:now, unread:true, due:now+SLA_H[f[2]]*HR, msgs:[{from:"cust",name,at:now,text:f[1],channel:"Email"}], mention:false, email:"customer@example.com"});
+  updateBanner();
+}, 45000);
+
+/* keep relative times and SLA countdowns current without re-rendering rows (preserves focus) */
+setInterval(()=>{
+  document.querySelectorAll("time[data-rel]").forEach(el=>el.textContent = rel(+el.dataset.rel));
+  document.querySelectorAll("[data-sla]").forEach(el=>{ const t=byId(el.dataset.sla); if(!t) return; const s=sla(t); el.className=`pill ${s.tone} num`; el.innerHTML=(s.icon?ic(s.icon):"")+esc(s.label); });
+}, 30000);
+
+/* ---------- boot ---------- */
+readURL();
+if (S.t && !byId(S.t)) S.t = "";
+renderChrome(); renderToolbar(); renderList();
+setTimeout(()=>{ booting=false; lastSync=Date.now(); renderAll(); if (S.t) renderPane(); }, 450);
+</script>
+</body>
+</html>

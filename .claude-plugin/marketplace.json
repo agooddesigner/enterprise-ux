@@ -1,0 +1,19 @@
+{
+  "name": "enterprise-ux",
+  "owner": {
+    "name": "Ankit Pareek",
+    "url": "https://agooddesigner.in"
+  },
+  "metadata": {
+    "description": "UX judgment for enterprise SaaS, built by a Lead UX Designer."
+  },
+  "plugins": [
+    {
+      "name": "enterprise-ux",
+      "source": "./plugins/enterprise-ux",
+      "description": "Plan, grill, design and audit enterprise SaaS UX: tables, filters, forms, states, permissions, onboarding, billing, notifications, AI features and WCAG 2.2 AA \u2014 distilled from 12 design systems, NN/g and W3C.",
+      "version": "4.0.0",
+      "category": "design"
+    }
+  ]
+}

@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Invoices · Accounts Payable</title>
+<style>
+:root{
+  --bg:#f6f7f9; --surface:#fff; --surface-2:#f1f3f6; --border:#dfe3e8; --border-strong:#c5ccd5;
+  --text:#1a2029; --muted:#5a6573; --accent:#1f5fd1; --accent-hover:#1a50b0; --accent-soft:#e6eefb;
+  --ok:#14663a; --ok-bg:#e0f3e8; --warn:#8a5200; --warn-bg:#fdf0d5; --bad:#a3231b; --bad-bg:#fbe5e3; --off:#4a5563; --off-bg:#e8ebef;
+  --row-h:44px; --focus:#1f5fd1;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#12161b; --surface:#1a2027; --surface-2:#222a33; --border:#2c3641; --border-strong:#3b4856;
+  --text:#e8ecf1; --muted:#9aa6b4; --accent:#6ea3ff; --accent-hover:#8bb6ff; --accent-soft:#1d2b45;
+  --ok:#6fdc9c; --ok-bg:#16301f; --warn:#f2c46b; --warn-bg:#3a2d12; --bad:#ff9d94; --bad-bg:#401b18; --off:#b3bdc9; --off-bg:#2a323c;
+}}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Sans JP",sans-serif}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.app{display:flex;flex-direction:column;height:100vh;min-width:0}
+header.page{padding:16px 24px 0;background:var(--surface);border-bottom:1px solid var(--border)}
+.titlebar{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+h1{font-size:18px;margin:0;font-weight:650}
+.sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+.tabs{display:flex;gap:4px;margin-top:12px;overflow-x:auto}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;cursor:pointer;color:var(--muted);font-weight:550;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab[aria-selected=true]{color:var(--text);border-color:var(--accent)}
+.tab .n{font-variant-numeric:tabular-nums;background:var(--surface-2);border-radius:10px;padding:0 7px;margin-left:6px;font-size:12px}
+.tab[aria-selected=true] .n{background:var(--accent-soft);color:var(--accent)}
+.controls{display:flex;align-items:center;gap:8px;padding:10px 24px;background:var(--surface);border-bottom:1px solid var(--border);min-height:56px;flex-wrap:wrap}
+.controls .grow{flex:1}
+input[type=search],select,textarea,.btn{height:32px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);padding:0 10px}
+input[type=search]{width:280px;max-width:100%}
+textarea{height:72px;padding:8px 10px;width:100%;resize:vertical}
+.btn{cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-weight:550;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn[aria-disabled=true],.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.danger.solid{background:#b42318;border-color:#b42318;color:#fff}
+.btn.danger.solid:hover{background:#912018}
+.btn.sm{height:26px;padding:0 8px;font-size:12.5px}
+.btn.ghost{border-color:transparent;background:none}
+.btn.ghost:hover{background:var(--surface-2)}
+.bulk{background:var(--accent-soft);}
+.bulk b{font-variant-numeric:tabular-nums}
+kbd{font:11px ui-monospace,monospace;border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:4px;padding:0 4px;background:var(--surface);color:var(--muted)}
+.btn kbd{margin-left:2px}
+.banner{padding:6px 24px;background:var(--surface-2);border-bottom:1px solid var(--border);font-size:13px;text-align:center}
+.banner button{background:none;border:0;color:var(--accent);cursor:pointer;font-weight:600;padding:0 4px}
+.tablewrap{flex:1;overflow:auto;position:relative;background:var(--surface)}
+.tablewrap.busy tbody{opacity:.5;transition:opacity .15s}
+.progress{position:absolute;left:0;right:0;top:0;height:2px;background:var(--accent);z-index:5;animation:prog 1s infinite linear;transform-origin:left}
+@keyframes prog{0%{transform:scaleX(0)}100%{transform:scaleX(1)}}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:1080px}
+thead th{position:sticky;top:0;z-index:3;background:var(--surface-2);border-bottom:1px solid var(--border-strong);text-align:left;font-size:12px;font-weight:650;color:var(--muted);padding:0 12px;height:36px;white-space:nowrap}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+th button.sort{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center;height:100%;width:100%}
+th.num button.sort{justify-content:flex-end}
+th button.sort:focus-visible{outline:2px solid var(--focus)}
+th button.sort:hover{color:var(--text)}
+td{padding:0 12px;height:var(--row-h);border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0}
+body.compact{--row-h:34px}
+tbody tr:hover td{background:var(--surface-2)}
+tbody tr.sel td{background:var(--accent-soft)}
+tbody tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+tbody tr.cur td{background:color-mix(in srgb,var(--accent-soft) 60%,var(--surface))}
+th.chk,td.chk{width:44px;padding:0 0 0 16px;max-width:none}
+th.c-inv{width:180px}th.c-ven{width:auto}th.c-po{width:120px}th.c-amt{width:120px}th.c-due{width:170px}th.c-rec{width:110px}th.c-st{width:120px}th.c-act{width:210px}
+td.c-inv{position:sticky;left:0;background:var(--surface);z-index:1}
+tbody tr:hover td.c-inv{background:var(--surface-2)}tbody tr.sel td.c-inv{background:var(--accent-soft)}
+td.c-act{text-align:right;overflow:visible}
+.inv{all:unset;cursor:pointer;color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums}
+.inv:hover{text-decoration:underline}.inv:focus-visible{outline:2px solid var(--focus)}
+.dup{margin-left:6px;font-size:11px;font-weight:600;color:var(--warn);background:var(--warn-bg);border-radius:4px;padding:1px 5px}
+.muted{color:var(--muted)}
+.late{color:var(--bad);font-size:12px;margin-left:6px;font-weight:600}
+.neg{color:var(--bad)}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:10px}
+.badge i{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
+.b-pending{color:var(--warn);background:var(--warn-bg)}
+.b-approved{color:var(--ok);background:var(--ok-bg)}
+.b-rejected{color:var(--bad);background:var(--bad-bg)}
+.b-deleted{color:var(--off);background:var(--off-bg)}
+.b-rejected i{border-radius:1px;transform:rotate(45deg)}.b-deleted i{border-radius:0}.b-approved i{border-radius:2px}
+.acts{display:inline-flex;gap:6px;align-items:center}
+.skel{height:12px;border-radius:4px;background:linear-gradient(90deg,var(--surface-2),var(--border),var(--surface-2));background-size:200% 100%;animation:sh 1.2s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.empty{padding:72px 24px;text-align:center;max-width:460px;margin:0 auto}
+.empty h2{font-size:16px;margin:0 0 6px}
+.empty p{color:var(--muted);margin:0 0 16px}
+.empty .ref{font:12px ui-monospace,monospace;color:var(--muted)}
+footer.pager{display:flex;align-items:center;gap:16px;padding:8px 24px;border-top:1px solid var(--border);background:var(--surface);flex-wrap:wrap;font-size:13px}
+.pager .grow{flex:1}
+.pager .pg{display:flex;gap:4px;align-items:center}
+.hints{color:var(--muted);font-size:12px;display:flex;gap:12px;flex-wrap:wrap}
+.proto{display:flex;gap:8px;align-items:center;padding:4px 24px;background:#2b3340;color:#d8dee8;font-size:12px}
+.proto select{height:24px;background:#3a4452;color:#fff;border-color:#55627a;font-size:12px}
+/* side panel */
+aside.panel{position:fixed;top:0;right:0;bottom:0;width:440px;max-width:100vw;background:var(--surface);border-left:1px solid var(--border-strong);box-shadow:-8px 0 24px rgba(0,0,0,.12);display:none;flex-direction:column;z-index:20}
+aside.panel.open{display:flex}
+.panel .ph{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:12px}
+.panel .pb{flex:1;overflow:auto;padding:16px 20px}
+.panel .pf{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center}
+.panel h2{margin:0;font-size:16px}
+dl{display:grid;grid-template-columns:130px 1fr;gap:8px 12px;margin:0 0 20px}
+dt{color:var(--muted)}dd{margin:0;overflow-wrap:anywhere}
+.panel h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 8px}
+.li{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--border)}
+.act-log{list-style:none;padding:0;margin:0}.act-log li{padding:6px 0;border-bottom:1px solid var(--border)}
+/* dialog */
+dialog{border:1px solid var(--border-strong);border-radius:10px;padding:0;background:var(--surface);color:var(--text);width:440px;max-width:94vw}
+dialog::backdrop{background:rgba(10,14,20,.5)}
+dialog form{padding:20px}
+dialog h2{margin:0 0 8px;font-size:16px}
+dialog p{margin:0 0 12px;color:var(--muted)}
+dialog label{display:block;font-weight:600;margin:12px 0 4px}
+dialog select{width:100%}
+dialog .foot{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+.err{color:var(--bad);font-size:12.5px;margin-top:4px}
+.warnbox{background:var(--warn-bg);color:var(--warn);border-radius:6px;padding:8px 10px;margin:0 0 12px;font-size:13px}
+/* menu, toast */
+.menu{position:fixed;z-index:30;background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:4px;min-width:190px}
+.menu button{display:block;width:100%;text-align:left;background:none;border:0;padding:7px 10px;border-radius:5px;cursor:pointer}
+.menu button:hover,.menu button:focus-visible{background:var(--surface-2)}
+.menu hr{border:0;border-top:1px solid var(--border);margin:4px 0}
+.menu .d{color:var(--bad)}
+#toasts{position:fixed;bottom:64px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:50;align-items:center}
+.toast{background:#1d2530;color:#fff;border-radius:8px;padding:10px 12px 10px 16px;display:flex;gap:16px;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.3);max-width:90vw}
+.toast button{background:none;border:0;color:#9cc0ff;font-weight:700;cursor:pointer;padding:2px 6px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:760px){header.page,.controls,footer.pager,.proto{padding-left:12px;padding-right:12px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="page">
+    <div class="titlebar">
+      <div>
+        <h1>Invoices</h1>
+        <div class="sub" id="sub"></div>
+      </div>
+      <button class="btn" id="exportBtn"></button>
+    </div>
+    <div class="tabs" role="tablist" id="tabs" aria-label="Invoice status"></div>
+  </header>
+  <div class="controls" id="controls"></div>
+  <div id="banner"></div>
+  <div class="tablewrap" id="wrap">
+    <table id="tbl" aria-label="Vendor invoices">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+    <div id="stateBox"></div>
+  </div>
+  <footer class="pager" id="pager"></footer>
+  <div class="proto">
+    <span>Prototype controls</span>
+    <label>Data <select id="pData"><option value="live">Live (240 invoices)</option><option value="loading">Stuck loading</option><option value="empty">First use (no invoices)</option><option value="error">Service error</option></select></label>
+    <label>Role <select id="pRole"><option value="admin">Finance admin</option><option value="viewer">Viewer (read-only)</option></select></label>
+  </div>
+</div>
+
+<aside class="panel" id="panel" role="dialog" aria-label="Invoice details"></aside>
+<dialog id="dlg"></dialog>
+<div id="menu" class="menu" role="menu" hidden></div>
+<div id="toasts" role="status" aria-live="polite"></div>
+
+<script>
+(()=>{
+'use strict';
+/* ---------- seed data ---------- */
+let seed=42; const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+const pick=a=>a[Math.floor(rnd()*a.length)];
+const VENDORS=['Northwind Industrial Supply','Halvorsen & Beck Logistics LLP','Brightline Office Solutions','株式会社東和商事','Cascadia Cloud Hosting, Inc.','Meridian Facilities Management Group of North America','Orion Freight','Pallas Legal Partners','Sunrise Catering Co.','Tessera Software Licensing','Valdez Electrical Contractors','Zeta Print & Packaging','Åkerström Maskin AB','Lumen Security Services'];
+const NOW=Date.now(), DAY=864e5;
+const INV=[];
+for(let i=0;i<240;i++){
+  const v=pick(VENDORS);
+  const credit=rnd()<.04;
+  let amt=Math.round(Math.pow(rnd(),2.6)*98000*100)/100+12.5;
+  if(rnd()<.03)amt=Math.round(amt*20)/100*100;
+  if(credit)amt=-Math.round(amt/6*100)/100;
+  const r=rnd();
+  const status=r<.62?'pending':r<.82?'approved':r<.93?'rejected':'deleted';
+  const rec=NOW-Math.floor(rnd()*rnd()*40*DAY)-Math.floor(rnd()*3600e3);
+  const due=rnd()<.06?null:startOfDay(NOW+Math.floor((rnd()*60-14)*DAY));
+  INV.push({id:'INV-'+(48120+i*7+Math.floor(rnd()*6)),vendor:v,po:rnd()<.25?null:'PO-'+(70000+Math.floor(rnd()*9000)),amount:amt,due,received:rec,status,
+    reason:status==='rejected'?pick(['Duplicate invoice','Incorrect amount','No matching PO']):null,
+    lines:buildLines(amt),activity:[{t:rec,who:'Vendor portal',what:'Received'}],dup:false});
+}
+// seed a few duplicate pairs
+for(let k=0;k<5;k++){const a=INV[10+k*9];const b=INV[40+k*13];b.vendor=a.vendor;b.amount=a.amount;b.lines=buildLines(a.amount);a.dup=b.dup=true;}
+INV.forEach(x=>{if(x.status==='rejected')x.activity.push({t:x.received+36e5,who:'Priya Raman',what:'Rejected — '+x.reason});
+  if(x.status==='approved')x.activity.push({t:x.received+36e5*3,who:'Priya Raman',what:'Approved'});
+  if(x.status==='deleted')x.activity.push({t:x.received+36e5*5,who:'Priya Raman',what:'Deleted'});});
+function startOfDay(t){const d=new Date(t);d.setHours(0,0,0,0);return d.getTime()}
+function buildLines(total){const n=1+Math.floor(rnd()*3);const out=[];let left=Math.round(total*100);
+  const names=['Services — October','Materials','Freight & handling','Licence renewal','Maintenance call-out','Expedite fee'];
+  for(let i=0;i<n;i++){const c=i===n-1?left:Math.round(left*(.3+rnd()*.4));left-=c;out.push({d:names[(i*2+Math.floor(rnd()*3))%names.length],a:c/100})}return out}
+
+/* ---------- state ---------- */
+const DEFAULTS={s:'pending',q:'',v:'',sort:'due',dir:'asc',p:1,n:50,open:''};
+let Q={...DEFAULTS};
+let sel=new Set(), cursor=null, view={rows:[],total:0,counts:{},all:[]};
+let loading=true, initial=true, errored=false, loadTok=0;
+let mode='live', role='admin';
+const undoStack=[];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>(n<0?'−':'')+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const tz=new Intl.DateTimeFormat('en-US',{timeZoneName:'short'}).formatToParts(0).find(p=>p.type==='timeZoneName').value;
+const fmtDate=t=>new Date(t).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+const fmtAbs=t=>new Date(t).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})+' '+tz;
+function rel(t){const m=Math.round((NOW-t)/6e4);if(m<1)return'just now';if(m<60)return m+' min ago';if(m<1440)return Math.floor(m/60)+' h ago';return new Date(t).toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+const STATUS={pending:'Pending',approved:'Approved',rejected:'Rejected',deleted:'Deleted'};
+const byId=id=>INV.find(x=>x.id===id);
+const canAct=()=>role==='admin';
+const noPerm='Your role is Viewer. Ask a finance admin to change your access.';
+
+/* ---------- URL state ---------- */
+function readHash(){const sp=new URLSearchParams(location.hash.slice(1));Q={...DEFAULTS};
+  for(const k of Object.keys(DEFAULTS)){if(sp.has(k))Q[k]=(k==='p'||k==='n')?(+sp.get(k)||DEFAULTS[k]):sp.get(k)}
+  if(!STATUS[Q.s]&&Q.s!=='all')Q.s='pending'}
+function writeHash(replace){const sp=new URLSearchParams();for(const k of Object.keys(DEFAULTS))if(Q[k]!==DEFAULTS[k])sp.set(k,Q[k]);
+  const h='#'+sp.toString();if(h===location.hash||(h==='#'&&!location.hash))return;
+  if(replace)history.replaceState(null,'',h||location.pathname+location.search);else history.pushState(null,'',h||location.pathname+location.search)}
+function setQ(patch,{replace=false,resetPage=true,clearSel=true}={}){
+  Object.assign(Q,patch);if(resetPage&&!('p' in patch))Q.p=1;if(clearSel)sel.clear();writeHash(replace);fetchView()}
+window.addEventListener('popstate',()=>{readHash();sel.clear();fetchView()});
+window.addEventListener('hashchange',()=>{readHash();fetchView()});
+
+/* ---------- "server" ---------- */
+function query(){
+  const q=Q.q.trim().toLowerCase();
+  const base=INV.filter(x=>(!Q.v||x.vendor===Q.v)&&(!q||(x.id+' '+x.vendor+' '+(x.po||'')+' '+money(x.amount)).toLowerCase().includes(q)));
+  const counts={all:base.filter(x=>x.status!=='deleted').length};for(const s in STATUS)counts[s]=base.filter(x=>x.status===s).length;
+  let rows=base.filter(x=>Q.s==='all'?x.status!=='deleted':x.status===Q.s);
+  const k={invoice:x=>x.id,vendor:x=>x.vendor.toLowerCase(),amount:x=>x.amount,due:x=>x.due,received:x=>x.received,status:x=>x.status}[Q.sort]||(x=>x.due);
+  const d=Q.dir==='asc'?1:-1;
+  rows=rows.slice().sort((a,b)=>{const A=k(a),B=k(b);if(A==null&&B==null)return 0;if(A==null)return 1;if(B==null)return-1;return(A<B?-1:A>B?1:0)*d||a.id.localeCompare(b.id)});
+  return{all:rows,counts};
+}
+function fetchView({quiet=false}={}){
+  const tok=++loadTok;loading=true;errored=false;render();
+  const delay=quiet?0:(initial?700:300);
+  setTimeout(()=>{if(tok!==loadTok)return;
+    if(mode==='loading')return;
+    if(mode==='error'){loading=false;initial=false;errored=true;render();return}
+    compute();loading=false;initial=false;render()},delay);
+}
+function compute(){
+  const src=mode==='empty'?{all:[],counts:{all:0,pending:0,approved:0,rejected:0,deleted:0}}:query();
+  const pages=Math.max(1,Math.ceil(src.all.length/Q.n));if(Q.p>pages)Q.p=pages;
+  view={all:src.all,counts:src.counts,total:src.all.length,rows:src.all.slice((Q.p-1)*Q.n,Q.p*Q.n)};
+  const ids=new Set(src.all.map(x=>x.id));sel.forEach(i=>{if(!ids.has(i))sel.delete(i)});
+  if(!view.rows.find(x=>x.id===cursor))cursor=view.rows[0]?.id||null;
+}
+
+/* ---------- render ---------- */
+function render(){
+  renderHeader();renderControls();renderTable();renderPager();renderPanel();
+}
+function sortLabel(){const n={due:'due date',invoice:'invoice number',vendor:'vendor',amount:'amount',received:'received time',status:'status'}[Q.sort];
+  return 'Sorted by '+n+(Q.sort==='due'||Q.sort==='received'?(Q.dir==='asc'?', oldest first':', newest first'):Q.sort==='amount'?(Q.dir==='asc'?', lowest first':', highest first'):Q.dir==='asc'?', A–Z':', Z–A')}
+function renderHeader(){
+  $('sub').textContent=(Q.sort==='due'&&Q.dir==='asc'?'Sorted by due date, most urgent first':sortLabel())+' · times shown in '+tz;
+  const ex=$('exportBtn');ex.textContent='Export '+(view.total.toLocaleString())+' rows (CSV)';ex.disabled=!view.total||loading;
+  const t=[['pending','Pending'],['approved','Approved'],['rejected','Rejected'],['deleted','Deleted'],['all','All']];
+  $('tabs').innerHTML=t.map(([k,l])=>`<button class="tab" role="tab" aria-selected="${Q.s===k}" data-s="${k}">${l}<span class="n">${errored||(initial&&loading)?'–':(view.counts[k]??0).toLocaleString()}</span></button>`).join('');
+}
+function renderControls(){
+  const c=$('controls');
+  if(sel.size){
+    const rows=[...sel].map(byId);const pend=rows.filter(x=>x.status==='pending').length;
+    c.className='controls bulk';
+    const dis=!canAct()?' aria-disabled="true" title="'+noPerm+'"':'';
+    c.innerHTML=`<span><b>${sel.size.toLocaleString()}</b> selected</span>
+      <button class="btn primary" data-bulk="approve"${dis}>Approve ${pend.toLocaleString()}${pend<sel.size?' pending':''}</button>
+      <button class="btn" data-bulk="reject"${dis}>Reject…</button>
+      <button class="btn danger" data-bulk="delete"${dis}>Delete…</button>
+      <span class="grow"></span>
+      ${pend<sel.size?`<span class="muted">${(sel.size-pend).toLocaleString()} not pending — skipped by Approve and Reject</span>`:''}
+      <button class="btn ghost" data-bulk="clear">Clear selection <kbd>Esc</kbd></button>`;
+    return;
+  }
+  c.className='controls';
+  const keep=document.activeElement&&document.activeElement.id==='search';
+  c.innerHTML=`<input type="search" id="search" placeholder="Search invoice #, vendor, PO or amount  ( / )" aria-label="Search invoices" value="${esc(Q.q)}">
+    <select id="vendorSel" aria-label="Filter by vendor"><option value="">All vendors</option>${VENDORS.slice().sort((a,b)=>a.localeCompare(b)).map(v=>`<option ${Q.v===v?'selected':''} value="${esc(v)}">${esc(v.length>40?v.slice(0,38)+'…':v)}</option>`).join('')}</select>
+    ${(Q.q||Q.v)?'<button class="btn ghost" data-clear="1">Clear filters</button>':''}
+    <span class="grow"></span>
+    <label class="muted">Density <select id="density" aria-label="Row density"><option value="comfortable">Comfortable</option><option value="compact" ${document.body.classList.contains('compact')?'selected':''}>Compact</option></select></label>`;
+  if(keep){const s=$('search');s.focus();s.setSelectionRange(s.value.length,s.value.length)}
+}
+function th(key,label,cls){
+  const act=Q.sort===key;
+  return `<th class="${cls}" aria-sort="${act?(Q.dir==='asc'?'ascending':'descending'):'none'}"><button class="sort" data-sort="${key}">${label}${act?`<span aria-hidden="true">${Q.dir==='asc'?'▲':'▼'}</span>`:''}</button></th>`}
+function renderTable(){
+  const wrap=$('wrap'),head=$('tbl').tHead,body=$('tbl').tBodies[0],box=$('stateBox');
+  const pageIds=view.rows.map(x=>x.id),allOn=pageIds.length&&pageIds.every(i=>sel.has(i)),some=pageIds.some(i=>sel.has(i));
+  head.innerHTML=`<tr><th class="chk"><input type="checkbox" id="selPage" aria-label="Select all ${pageIds.length} invoices on this page" ${allOn?'checked':''}></th>
+    ${th('invoice','Invoice #','c-inv')}${th('vendor','Vendor','c-ven')}<th class="c-po">PO number</th>${th('amount','Amount (USD)','c-amt num')}${th('due','Due date','c-due')}${th('received','Received','c-rec')}${th('status','Status','c-st')}<th class="c-act"><span class="sr">Actions</span></th></tr>`;
+  const selPage=$('selPage');if(selPage)selPage.indeterminate=!allOn&&some;
+  wrap.classList.toggle('busy',loading&&!initial);
+  wrap.querySelectorAll('.progress').forEach(e=>e.remove());
+  if(loading&&!initial){const p=document.createElement('div');p.className='progress';wrap.prepend(p)}
+  box.innerHTML='';
+  if(initial&&loading){
+    body.innerHTML=Array.from({length:12},()=>`<tr>${'<td class="chk"></td>'}${[110,220,80,70,100,60,70,150].map(w=>`<td><div class="skel" style="width:${w}px;max-width:90%"></div></td>`).join('')}</tr>`).join('');
+    box.innerHTML='<span class="sr">Loading invoices…</span>';return}
+  if(errored){body.innerHTML='';
+    box.innerHTML=`<div class="empty"><h2>Couldn't load invoices</h2><p>The invoice service didn't respond in time. Nothing you've done is lost, and your filters are unchanged.</p><button class="btn primary" data-retry="1">Retry</button><p class="ref" style="margin-top:16px">If this keeps happening, contact IT and quote reference req_8f3a2c91.</p></div>`;return}
+  if(!view.rows.length){body.innerHTML='';
+    const filtered=Q.q||Q.v;
+    if(mode==='empty')box.innerHTML=`<div class="empty"><h2>No invoices yet</h2><p>Vendor invoices arrive through the vendor portal or by email to ap-inbox@example.com. They'll appear here for review.</p></div>`;
+    else if(filtered)box.innerHTML=`<div class="empty"><h2>No ${Q.s==='all'?'':STATUS[Q.s].toLowerCase()+' '}invoices match your filters</h2><p>${Q.q?`Nothing found for “${esc(Q.q)}”${Q.v?' from '+esc(Q.v):''}. `:''}Try a different search or check other statuses.</p><button class="btn" data-clear="1">Clear filters</button></div>`;
+    else if(Q.s==='pending')box.innerHTML=`<div class="empty"><h2>You're all caught up</h2><p>No invoices are waiting for review. New ones will appear here as vendors submit them.</p><button class="btn" data-s="approved">View approved invoices</button></div>`;
+    else box.innerHTML=`<div class="empty"><h2>No ${STATUS[Q.s]?.toLowerCase()||''} invoices</h2><p>${Q.s==='deleted'?'Deleted invoices stay here for 30 days so they can be restored.':'Nothing to show for this status.'}</p></div>`;
+    return}
+  body.innerHTML=view.rows.map(x=>{
+    const late=x.due&&x.status==='pending'&&x.due<startOfDay(NOW)?Math.round((startOfDay(NOW)-x.due)/DAY):0;
+    const dis=!canAct()?' aria-disabled="true" title="'+noPerm+'"':'';
+    let acts='';
+    if(x.status==='pending')acts=`<button class="btn sm" data-act="approve" data-id="${x.id}"${dis||` title="Approve (A)"`}>Approve</button><button class="btn sm" data-act="reject" data-id="${x.id}"${dis||` title="Reject (R)"`}>Reject</button>`;
+    else if(x.status==='deleted')acts=`<button class="btn sm" data-act="restore" data-id="${x.id}"${dis}>Restore</button>`;
+    else acts=`<button class="btn sm" data-act="reopen" data-id="${x.id}"${dis||` title="Move back to Pending"`}>Reopen</button>`;
+    return `<tr data-id="${x.id}" class="${sel.has(x.id)?'sel':''} ${cursor===x.id?'cur':''}">
+      <td class="chk"><input type="checkbox" data-sel="${x.id}" aria-label="Select ${x.id}" ${sel.has(x.id)?'checked':''}></td>
+      <td class="c-inv"><button class="inv" data-open="${x.id}">${x.id}</button>${x.dup?'<span class="dup" title="Another invoice from this vendor has the same amount">Possible duplicate</span>':''}</td>
+      <td title="${esc(x.vendor)}">${esc(x.vendor)}</td>
+      <td class="${x.po?'':'muted'}">${x.po||'—'}</td>
+      <td class="num ${x.amount<0?'neg':''}">${money(x.amount)}${x.amount<0?'<span class="sr"> credit</span>':''}</td>
+      <td>${x.due?fmtDate(x.due):'<span class="muted">—</span>'}${late?`<span class="late">${late}d overdue</span>`:''}</td>
+      <td title="${fmtAbs(x.received)}">${rel(x.received)}</td>
+      <td><span class="badge b-${x.status}"><i></i>${STATUS[x.status]}</span></td>
+      <td class="c-act"><span class="acts">${acts}<button class="btn sm ghost" data-menu="${x.id}" aria-label="More actions for ${x.id}" aria-haspopup="menu">⋯</button></span></td></tr>`}).join('');
+  // select-all-matching banner
+  const ban=$('banner');ban.innerHTML='';
+  if(allOn&&view.total>view.rows.length){
+    ban.innerHTML=sel.size<view.total?`<div class="banner">All ${view.rows.length} invoices on this page are selected. <button data-selall="1">Select all ${view.total.toLocaleString()} matching invoices</button></div>`
+      :`<div class="banner">All ${view.total.toLocaleString()} matching invoices are selected. <button data-bulk="clear">Clear selection</button></div>`}
+}
+function renderPager(){
+  const pages=Math.max(1,Math.ceil(view.total/Q.n)),from=view.total?(Q.p-1)*Q.n+1:0,to=Math.min(view.total,Q.p*Q.n);
+  $('pager').innerHTML=`<span>${view.total?`<b>${from}–${to}</b> of <b>${view.total.toLocaleString()}</b>`:'0 invoices'}</span>
+    <span class="hints"><span><kbd>J</kbd> <kbd>K</kbd> move</span><span><kbd>A</kbd> approve</span><span><kbd>R</kbd> reject</span><span><kbd>Del</kbd> delete</span><span><kbd>X</kbd> select</span><span><kbd>Enter</kbd> details</span><span><kbd>Z</kbd> undo</span></span>
+    <span class="grow"></span>
+    <label>Rows <select id="size" aria-label="Rows per page">${[25,50,100].map(n=>`<option ${Q.n===n?'selected':''}>${n}</option>`).join('')}</select></label>
+    <span class="pg"><button class="btn sm" data-p="1" ${Q.p<=1?'disabled':''} aria-label="First page">«</button><button class="btn sm" data-p="${Q.p-1}" ${Q.p<=1?'disabled':''}>Previous</button>
+    <span style="padding:0 6px">Page ${Q.p} of ${pages}</span>
+    <button class="btn sm" data-p="${Q.p+1}" ${Q.p>=pages?'disabled':''}>Next</button><button class="btn sm" data-p="${pages}" ${Q.p>=pages?'disabled':''} aria-label="Last page">»</button></span>`;
+}
+function renderPanel(){
+  const p=$('panel'),x=Q.open&&byId(Q.open);
+  if(!x){p.classList.remove('open');p.innerHTML='';return}
+  const idx=view.all.findIndex(r=>r.id===x.id);
+  const dis=!canAct()?' aria-disabled="true" title="'+noPerm+'"':'';
+  const wasOpen=p.classList.contains('open');
+  p.classList.add('open');
+  p.innerHTML=`<div class="ph"><div><h2>${x.id}</h2><div class="muted" style="margin-top:2px">${esc(x.vendor)}</div></div>
+    <div style="display:flex;gap:4px;align-items:flex-start">
+      <button class="btn sm ghost" data-nav="-1" aria-label="Previous invoice" ${idx<=0?'disabled':''}>↑</button>
+      <button class="btn sm ghost" data-nav="1" aria-label="Next invoice" ${idx<0||idx>=view.all.length-1?'disabled':''}>↓</button>
+      <button class="btn sm ghost" data-closepanel="1" aria-label="Close details">✕</button></div></div>
+    <div class="pb"><dl>
+      <dt>Status</dt><dd><span class="badge b-${x.status}"><i></i>${STATUS[x.status]}</span>${x.reason?' · '+esc(x.reason):''}</dd>
+      <dt>Amount (USD)</dt><dd style="font-variant-numeric:tabular-nums;font-weight:650">${money(x.amount)}</dd>
+      <dt>Due date</dt><dd>${x.due?fmtDate(x.due):'—'}</dd>
+      <dt>PO number</dt><dd>${x.po||'—'}</dd>
+      <dt>Received</dt><dd>${fmtAbs(x.received)}</dd>
+      ${x.dup?'<dt>Warning</dt><dd><span class="dup" style="margin:0">Possible duplicate</span> Same vendor and amount as another invoice.</dd>':''}</dl>
+      <h3>Line items</h3><div style="margin-bottom:20px">${x.lines.map(l=>`<div class="li"><span>${esc(l.d)}</span><span style="font-variant-numeric:tabular-nums">${money(l.a)}</span></div>`).join('')}</div>
+      <h3>Activity</h3><ul class="act-log">${x.activity.slice().reverse().map(a=>`<li>${esc(a.what)}<div class="muted">${esc(a.who)} · ${fmtAbs(a.t)}</div></li>`).join('')}</ul></div>
+    <div class="pf">${x.status==='deleted'?'':`<button class="btn danger" data-act="delete" data-id="${x.id}"${dis}>Delete</button>`}<span class="grow" style="flex:1"></span>
+      ${x.status==='pending'?`<button class="btn" data-act="reject" data-id="${x.id}"${dis}>Reject…</button><button class="btn primary" data-act="approve" data-id="${x.id}"${dis}>Approve</button>`
+        :x.status==='deleted'?`<button class="btn" data-act="restore" data-id="${x.id}"${dis}>Restore</button>`:`<button class="btn" data-act="reopen" data-id="${x.id}"${dis}>Reopen</button>`}</div>`;
+  if(!wasOpen)p.querySelector('[data-closepanel]').focus();
+}
+
+/* ---------- actions ---------- */
+function snapshot(ids){return ids.map(i=>JSON.parse(JSON.stringify(byId(i))))}
+function applyChange(ids,fn,what,reasonText){
+  const prev=snapshot(ids);const t=Date.now();
+  ids.forEach(i=>{const x=byId(i);fn(x);x.activity.push({t,who:'You',what:reasonText||what})});
+  return prev;
+}
+function afterChange(){
+  const idx=Math.max(0,view.rows.findIndex(x=>x.id===cursor));
+  compute();
+  if(!view.rows.find(x=>x.id===cursor))cursor=view.rows[Math.min(idx,view.rows.length-1)]?.id||null;
+  if(Q.open&&!view.all.find(x=>x.id===Q.open)){ // triage flow: move panel to the next row
+    const nxt=cursor&&view.rows.find(x=>x.id===cursor);Q.open=nxt?nxt.id:'';writeHash(true)}
+  render();
+}
+function guard(){if(!canAct()){toast(noPerm);return false}return true}
+function targets(kind,ids){
+  const all=ids.map(byId);
+  const ok=all.filter(x=>kind==='approve'||kind==='reject'?x.status==='pending':kind==='delete'?x.status!=='deleted':kind==='restore'?x.status==='deleted':x.status==='approved'||x.status==='rejected');
+  return{ok,skipped:all.length-ok.length};
+}
+function plural(n,w){return n.toLocaleString()+' '+w+(n===1?'':'s')}
+function doApprove(ids){
+  if(!guard())return;const{ok,skipped}=targets('approve',ids);if(!ok.length){toast('Nothing to approve — selected invoices are not pending.');return}
+  const prev=applyChange(ok.map(x=>x.id),x=>x.status='approved','Approved');ids.forEach(i=>sel.delete(i));
+  pushUndo(`Approved ${ok.length===1?ok[0].id:plural(ok.length,'invoice')}${skipped?` · ${skipped} skipped (not pending)`:''}`,prev);afterChange();
+}
+function doReject(ids,reason){
+  const{ok}=targets('reject',ids);
+  const prev=applyChange(ok.map(x=>x.id),x=>{x.status='rejected';x.reason=reason},'Rejected','Rejected — '+reason);ids.forEach(i=>sel.delete(i));
+  pushUndo(`Rejected ${ok.length===1?ok[0].id:plural(ok.length,'invoice')} · ${reason}`,prev);afterChange();
+}
+function doDelete(ids){
+  const{ok}=targets('delete',ids);
+  const prev=applyChange(ok.map(x=>x.id),x=>{x.prevStatus=x.status;x.status='deleted'},'Deleted');ids.forEach(i=>sel.delete(i));
+  pushUndo(`Deleted ${ok.length===1?ok[0].id:plural(ok.length,'invoice')}. Restorable for 30 days`,prev);afterChange();
+}
+function doSimple(kind,ids){
+  if(!guard())return;const{ok}=targets(kind,ids);if(!ok.length)return;
+  const to=kind==='restore'?null:'pending';
+  const prev=applyChange(ok.map(x=>x.id),x=>{x.status=kind==='restore'?(x.prevStatus||'pending'):'pending';if(kind==='reopen')x.reason=null},kind==='restore'?'Restored':'Reopened for review');
+  pushUndo((kind==='restore'?'Restored ':'Reopened ')+(ok.length===1?ok[0].id:plural(ok.length,'invoice')),prev);afterChange();
+}
+function pushUndo(label,prev){const entry={label,prev};undoStack.push(entry);toast(label,entry)}
+function undo(entry){
+  entry=entry||undoStack[undoStack.length-1];if(!entry)return;
+  const i=undoStack.indexOf(entry);if(i<0)return;undoStack.splice(i,1);
+  entry.prev.forEach(p=>{const k=INV.findIndex(x=>x.id===p.id);INV[k]=p});
+  entry.prev.forEach(p=>sel.delete(p.id));
+  compute();render();toast('Undone: '+entry.label);
+}
+function toast(msg,entry){
+  const el=document.createElement('div');el.className='toast';
+  el.innerHTML=`<span>${esc(msg)}</span>${entry?'<button>Undo</button>':''}`;
+  if(entry)el.querySelector('button').onclick=()=>{undo(entry);el.remove()};
+  $('toasts').append(el);while($('toasts').children.length>3)$('toasts').firstChild.remove();
+  setTimeout(()=>el.remove(),entry?9000:4500);
+}
+
+/* ---------- dialogs ---------- */
+const dlg=$('dlg');let dlgReturn=null;
+function openDialog(html,onSubmit){
+  dlgReturn=document.activeElement;dlg.innerHTML=`<form method="dialog">${html}</form>`;
+  const f=dlg.querySelector('form');
+  f.addEventListener('submit',e=>{e.preventDefault();if(e.submitter&&e.submitter.value==='cancel'){dlg.close();return}if(onSubmit(f)!==false)dlg.close()});
+  dlg.showModal();
+}
+dlg.addEventListener('close',()=>{if(dlgReturn&&document.contains(dlgReturn))dlgReturn.focus()});
+function rejectDialog(ids){
+  if(!guard())return;const{ok,skipped}=targets('reject',ids);if(!ok.length){toast('Nothing to reject — selected invoices are not pending.');return}
+  const label=ok.length===1?ok[0].id:plural(ok.length,'invoice');
+  openDialog(`<h2>Reject ${label}?</h2><p>The vendor is notified with the reason you choose. You can reopen a rejected invoice later.</p>
+    ${skipped?`<div class="warnbox">${skipped} selected ${skipped===1?'invoice is':'invoices are'} not pending and will be skipped.</div>`:''}
+    <label for="rr">Reason</label><select id="rr"><option value="">Choose a reason…</option><option>Duplicate invoice</option><option>Incorrect amount</option><option>No matching PO</option><option>Missing documentation</option><option>Unrecognised vendor</option><option>Other</option></select>
+    <label for="rn">Note to vendor <span class="muted" style="font-weight:400">(required for “Other”)</span></label><textarea id="rn"></textarea><div class="err" id="re" role="alert"></div>
+    <div class="foot"><button class="btn" value="cancel" formnovalidate>Cancel</button><button class="btn danger solid" value="ok">Reject ${label}</button></div>`,
+    f=>{const r=f.querySelector('#rr').value,n=f.querySelector('#rn').value.trim();
+      if(!r){f.querySelector('#re').textContent='Choose a reason so the vendor knows what to fix.';f.querySelector('#rr').focus();return false}
+      if(r==='Other'&&!n){f.querySelector('#re').textContent='Add a note explaining the rejection.';f.querySelector('#rn').focus();return false}
+      doReject(ids,r==='Other'?'Other: '+n:(n?r+' — '+n:r))});
+  dlg.querySelector('#rr').focus();
+}
+function deleteDialog(ids){
+  if(!guard())return;const{ok,skipped}=targets('delete',ids);if(!ok.length)return;
+  if(ok.length===1&&ok[0].status!=='approved'){doDelete(ids);return} // single, low risk: instant + undo
+  const appr=ok.filter(x=>x.status==='approved').length;
+  const label=ok.length===1?ok[0].id:plural(ok.length,'invoice');
+  openDialog(`<h2>Delete ${label}?</h2><p>${ok.length===1?'It':'They'} will move to Deleted and can be restored for 30 days. After that ${ok.length===1?'it is':'they are'} permanently removed.</p>
+    ${appr?`<div class="warnbox">${appr===1?'1 invoice is':appr+' invoices are'} already approved and may be scheduled for payment. Deleting won't recall a payment already sent.</div>`:''}
+    ${skipped?`<div class="warnbox">${skipped} already deleted — skipped.</div>`:''}
+    <div class="foot"><button class="btn" value="cancel" autofocus>Cancel</button><button class="btn danger solid" value="ok">Delete ${label}</button></div>`,()=>doDelete(ids));
+}
+
+/* ---------- menu ---------- */
+const menu=$('menu');
+function openMenu(id,btn){
+  const x=byId(id),r=btn.getBoundingClientRect();
+  const items=[['Open details','open'],x.status==='pending'?null:(x.status==='deleted'?['Restore invoice','restore']:['Reopen for review','reopen']),x.status==='deleted'?null:'hr',x.status==='deleted'?null:['Delete invoice','delete','d']].filter(Boolean);
+  menu.innerHTML=items.map(i=>i==='hr'?'<hr>':`<button role="menuitem" class="${i[2]||''}" data-m="${i[1]}" data-id="${id}">${i[0]}</button>`).join('');
+  menu.hidden=false;menu.style.top=Math.min(r.bottom+4,innerHeight-menu.offsetHeight-8)+'px';menu.style.left=Math.max(8,r.right-menu.offsetWidth)+'px';
+  menu.querySelector('button').focus();menu._from=btn;
+}
+function closeMenu(){if(!menu.hidden){menu.hidden=true;menu._from&&menu._from.focus()}}
+
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button,input,[data-id]');
+  if(!menu.hidden&&!e.target.closest('#menu')&&!e.target.closest('[data-menu]'))menu.hidden=true;
+  if(!t)return;
+  const d=t.dataset;
+  if(d.s){setQ({s:d.s})}
+  else if(d.sort){setQ(Q.sort===d.sort?{dir:Q.dir==='asc'?'desc':'asc'}:{sort:d.sort,dir:(d.sort==='amount'||d.sort==='received')?'desc':'asc'})}
+  else if(d.clear)setQ({q:'',v:''});
+  else if(d.retry)fetchView();
+  else if(d.p)setQ({p:+d.p},{resetPage:false,clearSel:false});
+  else if(d.open){Q.open=d.open;cursor=d.open;writeHash(false);render()}
+  else if(d.closepanel){closePanel()}
+  else if(d.nav){moveCursor(+d.nav)}
+  else if(d.menu){openMenu(d.menu,t)}
+  else if(d.m){const id=d.id;menu.hidden=true;({open:()=>{Q.open=id;cursor=id;writeHash(false);render()},restore:()=>doSimple('restore',[id]),reopen:()=>doSimple('reopen',[id]),delete:()=>deleteDialog([id])})[d.m]()}
+  else if(d.act){if(t.getAttribute('aria-disabled')){toast(noPerm);return}cursor=d.id;
+    ({approve:()=>doApprove([d.id]),reject:()=>rejectDialog([d.id]),delete:()=>deleteDialog([d.id]),restore:()=>doSimple('restore',[d.id]),reopen:()=>doSimple('reopen',[d.id])})[d.act]()}
+  else if(d.bulk){if(d.bulk==='clear'){sel.clear();render();return}
+    if(t.getAttribute('aria-disabled')){toast(noPerm);return}const ids=[...sel];
+    ({approve:()=>doApprove(ids),reject:()=>rejectDialog(ids),delete:()=>deleteDialog(ids)})[d.bulk]()}
+  else if(d.selall){view.all.forEach(x=>sel.add(x.id));render()}
+  else if(t.id==='exportBtn')exportCsv();
+});
+let lastClicked=null;
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id==='selPage'){view.rows.forEach(x=>t.checked?sel.add(x.id):sel.delete(x.id));render()}
+  else if(t.dataset.sel){
+    const id=t.dataset.sel;
+    if(e.shiftKey||window._shift){ if(lastClicked){const ids=view.rows.map(x=>x.id),a=ids.indexOf(lastClicked),b=ids.indexOf(id);ids.slice(Math.min(a,b),Math.max(a,b)+1).forEach(i=>t.checked?sel.add(i):sel.delete(i))}}
+    else t.checked?sel.add(id):sel.delete(id);
+    lastClicked=id;render();
+    const again=document.querySelector(`[data-sel="${id}"]`);again&&again.focus();
+  }
+  else if(t.id==='vendorSel')setQ({v:t.value});
+  else if(t.id==='size')setQ({n:+t.value});
+  else if(t.id==='density'){document.body.classList.toggle('compact',t.value==='compact');try{localStorage.setItem('inv-density',t.value)}catch(_){}}
+  else if(t.id==='pData'){mode=t.value;initial=true;fetchView()}
+  else if(t.id==='pRole'){role=t.value;render()}
+});
+document.addEventListener('mousedown',e=>{window._shift=e.shiftKey});
+let st;document.addEventListener('input',e=>{if(e.target.id==='search'){clearTimeout(st);const v=e.target.value;st=setTimeout(()=>setQ({q:v},{replace:true}),250)}});
+function closePanel(){Q.open='';writeHash(false);render();const c=document.querySelector(`tr[data-id="${cursor}"] .inv`);c&&c.focus()}
+function moveCursor(d){
+  const ids=view.rows.map(x=>x.id);if(!ids.length)return;
+  let i=ids.indexOf(cursor);i=Math.max(0,Math.min(ids.length-1,(i<0?0:i+d)));cursor=ids[i];
+  if(Q.open){Q.open=cursor;writeHash(true)}
+  render();const r=document.querySelector(`tr[data-id="${cursor}"]`);r&&r.scrollIntoView({block:'nearest'});
+}
+document.addEventListener('keydown',e=>{
+  if(dlg.open)return;
+  if(!menu.hidden){if(e.key==='Escape'){closeMenu()}else if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const b=[...menu.querySelectorAll('button')],i=b.indexOf(document.activeElement);b[(i+(e.key==='ArrowDown'?1:-1)+b.length)%b.length].focus()}return}
+  const tag=e.target.tagName,typing=tag==='INPUT'&&e.target.type!=='checkbox'||tag==='TEXTAREA'||tag==='SELECT';
+  if(e.key==='Escape'){if(typing&&e.target.id==='search'){e.target.blur();return}if(Q.open)closePanel();else if(sel.size){sel.clear();render()}return}
+  if(typing||e.metaKey||e.ctrlKey||e.altKey)return;
+  const acting=()=>sel.size?[...sel]:(cursor?[cursor]:[]);
+  switch(e.key){
+    case'/':e.preventDefault();$('search')?.focus();break;
+    case'j':case'ArrowDown':if(tag==='BUTTON'&&e.key==='ArrowDown')return;e.preventDefault();moveCursor(1);break;
+    case'k':case'ArrowUp':if(tag==='BUTTON'&&e.key==='ArrowUp')return;e.preventDefault();moveCursor(-1);break;
+    case'x':if(cursor){sel.has(cursor)?sel.delete(cursor):sel.add(cursor);render()}break;
+    case'Enter':if(tag==='BUTTON'||tag==='INPUT')return;if(cursor){Q.open=cursor;writeHash(false);render()}break;
+    case'a':if(acting().length)doApprove(acting());break;
+    case'r':if(acting().length){e.preventDefault();rejectDialog(acting())}break;
+    case'Delete':case'#':if(acting().length)deleteDialog(acting());break;
+    case'z':undo();break;
+  }
+});
+function exportCsv(){
+  const rows=[['Invoice #','Vendor','PO number','Amount (USD)','Due date','Received','Status']].concat(view.all.map(x=>[x.id,x.vendor,x.po||'',x.amount.toFixed(2),x.due?new Date(x.due).toISOString().slice(0,10):'',new Date(x.received).toISOString(),x.status]));
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'}));a.download='invoices.csv';a.click();
+  toast(`Exported ${view.total.toLocaleString()} rows matching current filters`);
+}
+window.addEventListener('beforeunload',()=>{});
+try{if(localStorage.getItem('inv-density')==='compact')document.body.classList.add('compact')}catch(_){}
+readHash();fetchView();
+})();
+</script>
+</body>
+</html>

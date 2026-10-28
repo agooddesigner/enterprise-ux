@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Invoices – Accounts Payable</title>
+<style>
+:root{
+  --bg:#f5f6f8; --surface:#fff; --surface-2:#f0f2f5; --border:#d9dde3; --border-strong:#aab1bc;
+  --text:#1b2330; --muted:#566070; --primary:#1856c4; --primary-hover:#1246a3; --on-primary:#fff;
+  --ok-bg:#e3f4e8; --ok:#14602c; --bad-bg:#fde8e8; --bad:#a1161b; --warn-bg:#fff2d6; --warn:#7a4a00;
+  --pend-bg:#e6edfb; --pend:#1a3f8f; --danger:#b3261e; --danger-hover:#8f1d17;
+  --row-hover:#f6f8fc; --row-sel:#e9f0fd; --focus:#0b57d0; --shadow:0 8px 28px rgba(15,25,45,.22);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#11151c; --surface:#181e28; --surface-2:#212835; --border:#2e3745; --border-strong:#5a6678;
+    --text:#e8ecf2; --muted:#a2adbd; --primary:#6ea0ff; --primary-hover:#8ab3ff; --on-primary:#0a1530;
+    --ok-bg:#16301f; --ok:#7fdc9a; --bad-bg:#3a1a1c; --bad:#ff9a9d; --warn-bg:#3a2b0d; --warn:#f5c565;
+    --pend-bg:#1c2a4a; --pend:#9dbcff; --danger:#ff7b73; --danger-hover:#ff9a94;
+    --row-hover:#1c2330; --row-sel:#1f2d4a; --focus:#8ab3ff; --shadow:0 8px 28px rgba(0,0,0,.6);
+  }
+}
+*{box-sizing:border-box}
+html{color-scheme:light dark}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+button,input,select,textarea{font:inherit;color:inherit}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:8px;top:-60px;background:var(--surface);padding:8px 12px;border-radius:6px;z-index:100}
+.skip:focus{top:8px}
+
+main{max-width:1360px;margin:0 auto;padding:20px 24px 110px}
+header.page{display:flex;gap:16px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
+h1{font-size:22px;margin:0;line-height:1.2}
+.sub{color:var(--muted);margin:4px 0 0}
+.limit{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--muted);font-size:13px}
+.limit b{color:var(--text)}
+
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:12px;overflow-x:auto}
+.tab{background:none;border:0;border-bottom:3px solid transparent;padding:9px 14px;cursor:pointer;color:var(--muted);font-weight:600;white-space:nowrap;min-height:40px}
+.tab:hover{color:var(--text)}
+.tab[aria-selected=true]{color:var(--text);border-bottom-color:var(--primary)}
+.tab .n{font-weight:500;background:var(--surface-2);border-radius:10px;padding:1px 8px;margin-left:6px;font-size:12px;font-variant-numeric:tabular-nums}
+
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.field{position:relative}
+.toolbar input[type=search]{width:290px;max-width:100%;padding:0 10px;height:34px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface)}
+.toolbar select{height:34px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);padding:0 8px;max-width:210px}
+.check-inline{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 6px;cursor:pointer}
+.spacer{flex:1}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 14px;border-radius:6px;border:1px solid var(--border-strong);background:var(--surface);cursor:pointer;font-weight:600;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+.btn.primary:hover{background:var(--primary-hover)}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn.danger:hover{background:var(--danger-hover)}
+.btn.sm{height:28px;padding:0 10px;font-size:13px}
+.btn.quiet{border-color:transparent;background:none;color:var(--primary)}
+.btn.quiet:hover{background:var(--surface-2)}
+.btn[aria-disabled=true],.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn[aria-disabled=true]:hover{background:var(--surface)}
+.btn.primary[aria-disabled=true]:hover{background:var(--primary)}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px;min-height:0}
+.chip{display:inline-flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:2px 4px 2px 10px;font-size:13px}
+.chip button{border:0;background:none;cursor:pointer;width:22px;height:22px;border-radius:50%;line-height:1;color:var(--muted)}
+.chip button:hover{background:var(--surface-2);color:var(--text)}
+
+.summary{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);margin:4px 2px 8px;font-size:13px}
+.summary b{color:var(--text);font-variant-numeric:tabular-nums}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px}
+.tablewrap{overflow-x:auto;border-radius:8px}
+table{width:100%;border-collapse:separate;border-spacing:0;min-width:1040px}
+thead th{position:sticky;top:0;z-index:2;background:var(--surface-2);text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border);padding:0;white-space:nowrap}
+thead th>.h{padding:8px 10px;display:block}
+thead th button.sort{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:4px;width:100%;padding:8px 10px;cursor:pointer;text-transform:inherit;letter-spacing:inherit}
+thead th button.sort:hover{color:var(--text)}
+thead th button.sort:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+th.num button.sort{justify-content:flex-end}
+tbody td{padding:0 10px;height:46px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--row-hover)}
+tbody tr[aria-selected=true]{background:var(--row-sel)}
+td.chk,th.chk{width:40px;padding-left:12px}
+input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:var(--primary)}
+.rowlink{all:unset;box-sizing:border-box;cursor:pointer;color:var(--primary);font-weight:700;font-variant-numeric:tabular-nums;border-radius:3px}
+.rowlink:hover{text-decoration:underline}
+.rowlink:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.vendor{max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.po{color:var(--muted);font-size:12px}
+.dim{color:var(--muted);font-size:12px}
+.late{color:var(--bad);font-weight:600;font-size:12px}
+.neg{color:var(--ok)}
+.badge{display:inline-flex;align-items:center;gap:5px;border-radius:4px;padding:2px 8px;font-size:12px;font-weight:700;white-space:nowrap}
+.badge.pending{background:var(--pend-bg);color:var(--pend)}
+.badge.approved{background:var(--ok-bg);color:var(--ok)}
+.badge.rejected{background:var(--bad-bg);color:var(--bad)}
+.flag{display:inline-block;background:var(--warn-bg);color:var(--warn);border-radius:4px;padding:1px 7px;font-size:12px;font-weight:600;margin-right:4px;white-space:nowrap}
+td.acts{text-align:right;white-space:nowrap;width:1%}
+td.acts .btn{margin-left:4px}
+.menu{position:relative;display:inline-block}
+.menu ul{position:absolute;right:0;top:100%;z-index:20;margin:2px 0 0;padding:4px;list-style:none;background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;box-shadow:var(--shadow);min-width:190px;text-align:left}
+.menu li button{all:unset;box-sizing:border-box;display:block;width:100%;padding:7px 10px;border-radius:5px;cursor:pointer}
+.menu li button:hover,.menu li button:focus-visible{background:var(--surface-2)}
+.menu li button.d{color:var(--danger)}
+.menu li hr{border:0;border-top:1px solid var(--border);margin:4px 0}
+
+.selbanner{background:var(--row-sel);border-bottom:1px solid var(--border);padding:7px 14px;text-align:center;font-size:13px}
+.selbanner .btn{height:auto;padding:0 4px;display:inline;border:0;background:none;color:var(--primary);text-decoration:underline}
+
+.pager{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 4px;color:var(--muted);font-size:13px}
+.pager .grp{display:flex;gap:8px;align-items:center}
+.pager select{height:30px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);padding:0 6px}
+.hint{color:var(--muted);font-size:12px;margin-top:6px}
+kbd{background:var(--surface);border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:4px;padding:0 5px;font:12px ui-monospace,monospace}
+
+/* states */
+.state{padding:56px 24px;text-align:center}
+.state h2{margin:0 0 6px;font-size:17px}
+.state p{margin:0 auto 16px;color:var(--muted);max-width:460px}
+.skel td{height:46px}
+.bar{display:block;height:12px;border-radius:6px;background:linear-gradient(90deg,var(--surface-2),var(--border),var(--surface-2));background-size:200% 100%;animation:sh 1.2s infinite linear}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.bar{animation:none}}
+
+/* bulk bar */
+.bulk{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:30;background:var(--text);color:var(--bg);border-radius:10px;box-shadow:var(--shadow);display:flex;gap:10px;align-items:center;padding:8px 10px 8px 16px;max-width:calc(100vw - 24px);flex-wrap:wrap}
+.bulk[hidden]{display:none}
+.bulk .btn{border-color:transparent}
+.bulk .btn.quiet{color:var(--bg);text-decoration:underline}
+.bulk .btn.quiet:hover{background:rgba(128,128,128,.3)}
+.bulk .btn.neutral{background:var(--bg);color:var(--text)}
+.bulk .btn.reddish{background:transparent;border:1px solid currentColor;color:var(--bg)}
+.bulk .btn.reddish:hover{background:rgba(255,120,110,.3)}
+.bulk .info{font-weight:600;font-variant-numeric:tabular-nums}
+
+/* toast */
+#toasts{position:fixed;left:20px;bottom:20px;z-index:60;display:flex;flex-direction:column;gap:8px;max-width:calc(100vw - 40px)}
+.toast{background:var(--text);color:var(--bg);border-radius:8px;box-shadow:var(--shadow);padding:10px 12px 10px 16px;display:flex;gap:14px;align-items:center}
+.toast .btn{background:transparent;color:var(--bg);border:1px solid currentColor;height:28px}
+.toast .btn:hover{background:rgba(128,128,128,.3)}
+body.bulkon #toasts{bottom:84px}
+
+/* dialogs */
+dialog{border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);color:var(--text);padding:0;box-shadow:var(--shadow);max-width:calc(100vw - 24px)}
+dialog::backdrop{background:rgba(10,15,25,.5)}
+.dlg{width:460px;max-width:100%}
+.dlg h2{margin:0;padding:18px 20px 4px;font-size:17px}
+.dlg .body{padding:6px 20px 14px;color:var(--text)}
+.dlg .body p{margin:0 0 10px}
+.dlg label{display:block;font-weight:600;margin:10px 0 4px}
+.dlg select,.dlg textarea,.dlg input[type=text]{width:100%;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);padding:7px 9px}
+.dlg textarea{min-height:76px;resize:vertical}
+.dlg .foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px 16px;border-top:1px solid var(--border)}
+.err{color:var(--danger);font-size:13px;margin-top:4px}
+.err:empty{display:none}
+.req{color:var(--danger)}
+
+dialog.drawer{margin:0 0 0 auto;height:100vh;max-height:100vh;width:480px;border-radius:0;border-width:0 0 0 1px;display:none;flex-direction:column}
+dialog.drawer[open]{display:flex}
+.drawer header{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.drawer h2{margin:0;font-size:18px}
+.drawer .scroll{padding:14px 20px;overflow:auto;flex:1}
+.drawer dl{display:grid;grid-template-columns:130px 1fr;gap:8px 12px;margin:0 0 16px}
+.drawer dt{color:var(--muted)}
+.drawer dd{margin:0;word-break:break-word}
+.drawer h3{font-size:13px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);margin:16px 0 6px}
+.drawer ul.log{margin:0;padding:0;list-style:none}
+.drawer ul.log li{padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.drawer .alert{background:var(--warn-bg);color:var(--warn);border-radius:6px;padding:8px 12px;margin-bottom:8px;font-size:13px}
+.drawer footer{border-top:1px solid var(--border);padding:12px 20px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.drawer footer .grow{flex:1}
+.xbtn{border:0;background:none;cursor:pointer;font-size:20px;width:32px;height:32px;border-radius:6px;line-height:1}
+.xbtn:hover{background:var(--surface-2)}
+.note{font-size:12px;color:var(--muted)}
+
+@media (max-width:760px){
+  main{padding:14px 12px 110px}
+  .toolbar input[type=search]{width:100%}
+  dialog.drawer{width:100vw}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#list">Skip to invoice list</a>
+<main>
+  <header class="page">
+    <div>
+      <h1>Invoices</h1>
+      <p class="sub" id="sub">Vendor invoices awaiting your review.</p>
+    </div>
+    <div class="limit" id="limit">Your approval limit: <b>$25,000.00</b> per invoice</div>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Invoice status" id="tabs"></div>
+
+  <div class="toolbar" role="search">
+    <div class="field">
+      <label class="sr" for="q">Search invoices</label>
+      <input id="q" type="search" placeholder="Search invoice #, vendor or PO  ( / )" autocomplete="off">
+    </div>
+    <label class="sr" for="fVendor">Vendor</label>
+    <select id="fVendor"></select>
+    <label class="sr" for="fDue">Due date</label>
+    <select id="fDue">
+      <option value="">Any due date</option>
+      <option value="overdue">Overdue</option>
+      <option value="week">Due in next 7 days</option>
+      <option value="later">Due later</option>
+    </select>
+    <label class="sr" for="fAmt">Amount</label>
+    <select id="fAmt">
+      <option value="">Any amount</option>
+      <option value="credit">Credit notes (negative)</option>
+      <option value="lt1k">Under $1,000</option>
+      <option value="1k10k">$1,000 – $9,999</option>
+      <option value="10k25k">$10,000 – $25,000</option>
+      <option value="gt25k">Over $25,000 (above your limit)</option>
+    </select>
+    <label class="check-inline"><input type="checkbox" id="fFlag"> Flagged only</label>
+    <span class="spacer"></span>
+  </div>
+  <div class="chips" id="chips" aria-label="Active filters"></div>
+
+  <div class="summary" id="summary" aria-live="polite"></div>
+
+  <section class="card" id="list" aria-label="Invoice list" tabindex="-1">
+    <div id="selbanner"></div>
+    <div class="tablewrap" id="tablewrap"></div>
+  </section>
+
+  <div class="pager" id="pager"></div>
+  <p class="hint">Shortcuts: <kbd>J</kbd>/<kbd>K</kbd> next/previous row · <kbd>X</kbd> select · <kbd>A</kbd> approve · <kbd>R</kbd> reject · <kbd>Enter</kbd> open · <kbd>/</kbd> search · <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo</p>
+</main>
+
+<div class="bulk" id="bulk" role="region" aria-label="Bulk actions" hidden>
+  <span class="info" id="bulkinfo"></span>
+  <button class="btn primary sm" id="bApprove">Approve</button>
+  <button class="btn neutral sm" id="bReject">Reject…</button>
+  <button class="btn reddish sm" id="bDelete">Delete…</button>
+  <button class="btn quiet sm" id="bClear">Clear</button>
+</div>
+
+<div id="toasts" role="status" aria-live="polite"></div>
+<div class="sr" id="live" role="status" aria-live="polite"></div>
+
+<dialog id="dReject" class="dlg" aria-labelledby="dRejectT">
+  <form method="dialog" id="fReject" novalidate>
+    <h2 id="dRejectT">Reject invoice</h2>
+    <div class="body">
+      <p id="dRejectP"></p>
+      <label for="rReason">Reason <span class="req" aria-hidden="true">*</span></label>
+      <select id="rReason" aria-describedby="rErr" required>
+        <option value="">Select a reason…</option>
+        <option>Duplicate invoice</option>
+        <option>Amount doesn't match PO</option>
+        <option>No matching PO or receipt</option>
+        <option>Missing or illegible documentation</option>
+        <option>Wrong entity or billing address</option>
+        <option>Other</option>
+      </select>
+      <label for="rNote">Note to vendor <span class="note" id="rNoteOpt">(optional)</span></label>
+      <textarea id="rNote" aria-describedby="rErr"></textarea>
+      <div class="err" id="rErr"></div>
+    </div>
+    <div class="foot">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="submit" class="btn danger" id="rGo">Reject</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dDelete" class="dlg" aria-labelledby="dDeleteT">
+  <form method="dialog" id="fDelete" novalidate>
+    <h2 id="dDeleteT">Delete invoices</h2>
+    <div class="body">
+      <p id="dDeleteP"></p>
+      <p class="note">Deleted invoices are removed from the queue and audit-logged. You can undo for a few seconds afterwards; after that only an administrator can restore them.</p>
+      <div id="typed" hidden>
+        <label for="dType">Type <b>DELETE</b> to confirm</label>
+        <input type="text" id="dType" autocomplete="off">
+      </div>
+      <div class="err" id="dErr"></div>
+    </div>
+    <div class="foot">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="submit" class="btn danger" id="dGo">Delete</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="drawer" class="drawer" aria-labelledby="drT"></dialog>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- constants & helpers ---------- */
+const LIMIT = 25000;
+const DAY = 86400000;
+const today = new Date(); today.setHours(0,0,0,0);
+const usd = new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'});
+const fmtDate = d => new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const plural = (n,w) => `${n.toLocaleString()} ${w}${n===1?'':'s'}`;
+const daysUntil = t => Math.round((t - today.getTime())/DAY);
+
+/* ---------- realistic seed data (deterministic) ---------- */
+let seed = 20261027;
+const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed>>>15, 1|seed); t = t + Math.imul(t ^ t>>>7, 61|t) ^ t; return ((t ^ t>>>14)>>>0)/4294967296; };
+const pick = a => a[Math.floor(rnd()*a.length)];
+const VENDORS = ['Acme Industrial Supply','Northwind Logistics','Globex Office Solutions','Initech Software Licensing','Umbrella Facilities Management','Stark Fabrication Ltd.','Wayne Enterprises Catering','Soylent Packaging Co.','Hooli Cloud Services','Pied Piper Data Storage','Vandelay Import/Export','Cyberdyne Hardware','Oscorp Laboratory Equipment','Tyrell Security Services','Massive Dynamic Consulting','Wonka Confectionery Wholesale','Dunder Mifflin Paper','Aperture Science Instruments','Bluth Property Maintenance','Prestige Worldwide Freight','Gringotts Insurance Brokers','Los Pollos Hermanos Catering','株式会社 東和商事','Müller & Söhne Maschinenbau GmbH','International Association of Municipal Wastewater and Environmental Services Contractors'];
+const notes = ['Received via email','Received via supplier portal','Received via EDI','Scanned from mail'];
+const invoices = [];
+let n = 0;
+for (let i=0;i<212;i++){
+  const v = pick(VENDORS);
+  const r = rnd();
+  let amount = Math.round((Math.exp(4.8 + rnd()*6.1))*100)/100;
+  if (amount > 60000) amount = Math.round(amount/ 3);
+  const credit = rnd() < .04;
+  const received = -Math.floor(rnd()*6);
+  const invDate = received - Math.floor(rnd()*20) - 1;
+  const terms = pick([15,30,30,30,45,60]);
+  const st = rnd();
+  const inv = {
+    id:'i'+(++n), no:'INV-'+(40000+Math.floor(rnd()*9000)+i*3), vendor:v,
+    po: rnd()<.9 ? 'PO-'+(70000+Math.floor(rnd()*9000)) : '',
+    amount: credit ? -Math.min(amount,4200) : amount,
+    invDate: today.getTime()+invDate*DAY, due: today.getTime()+(invDate+terms)*DAY,
+    received: today.getTime()+received*DAY, source: pick(notes),
+    status: i<165 ? 'pending' : st<.8 ? 'approved' : 'rejected',
+    gl: pick(['6100 · Office & supplies','6210 · Software & licences','6400 · Facilities','5100 · Cost of goods','6600 · Professional services','6800 · Freight & logistics']),
+    flags:[], log:[]
+  };
+  if (!inv.po && inv.amount>0) inv.flags.push('No PO');
+  else if (rnd()<.05) inv.flags.push('Over PO amount');
+  inv.log.push({t:inv.received, text:`${inv.source}; matched to vendor`});
+  if (inv.status!=='pending') inv.log.push({t:today.getTime()-DAY*Math.floor(rnd()*3), text:`${inv.status==='approved'?'Approved':'Rejected'} by M. Okafor`});
+  invoices.push(inv);
+}
+// plant possible duplicates (same vendor + amount, different number)
+for (let k=0;k<6;k++){
+  const src = invoices[Math.floor(rnd()*100)+5];
+  const twin = invoices[165-1-k*2];
+  if (src===twin || twin.amount<0) continue;
+  twin.vendor = src.vendor; twin.amount = src.amount; twin.po = src.po;
+  twin.flags = twin.flags.filter(f=>f!=='No PO'); twin.flags.push('Possible duplicate');
+  twin.dupOf = src.no;
+}
+
+/* ---------- state (mirrored into the URL) ---------- */
+const DEFAULTS = {tab:'pending', q:'', vendor:'', due:'', amt:'', flag:'', sort:'due', dir:'asc', page:1, size:50};
+const S = Object.assign({}, DEFAULTS, {sel:new Set(), loading:true, error:false});
+(function readURL(){
+  const p = new URLSearchParams(location.search);
+  for (const k of Object.keys(DEFAULTS)) if (p.has(k)) S[k] = ['page','size'].includes(k) ? (+p.get(k)||DEFAULTS[k]) : p.get(k);
+  if (!['pending','approved','rejected','all'].includes(S.tab)) S.tab='pending';
+  if (![25,50,100].includes(S.size)) S.size=50;
+})();
+function writeURL(){
+  const p = new URLSearchParams();
+  for (const k of Object.keys(DEFAULTS)) if (S[k]!==DEFAULTS[k] && S[k]!=='') p.set(k,S[k]);
+  history.replaceState(null,'', p.toString() ? '?'+p : location.pathname);
+}
+
+/* ---------- derived data ---------- */
+const COLS = {
+  no:(a,b)=>a.no.localeCompare(b.no,undefined,{numeric:true}),
+  vendor:(a,b)=>a.vendor.localeCompare(b.vendor),
+  amount:(a,b)=>a.amount-b.amount,
+  invDate:(a,b)=>a.invDate-b.invDate,
+  due:(a,b)=>a.due-b.due,
+  status:(a,b)=>a.status.localeCompare(b.status)
+};
+const matchAmt = (a,k)=> ({credit:a<0, lt1k:a>=0&&a<1000, '1k10k':a>=1000&&a<10000, '10k25k':a>=10000&&a<=LIMIT, gt25k:a>LIMIT})[k];
+function matchDue(inv,k){
+  const d = daysUntil(inv.due);
+  return k==='overdue' ? d<0 : k==='week' ? d>=0&&d<=7 : d>7;
+}
+function filtered(ignoreTab){
+  const q = S.q.trim().toLowerCase();
+  return invoices.filter(i =>
+    (ignoreTab || S.tab==='all' || i.status===S.tab) &&
+    (!q || i.no.toLowerCase().includes(q) || i.vendor.toLowerCase().includes(q) || i.po.toLowerCase().includes(q)) &&
+    (!S.vendor || i.vendor===S.vendor) &&
+    (!S.due || matchDue(i,S.due)) &&
+    (!S.amt || matchAmt(i.amount,S.amt)) &&
+    (!S.flag || i.flags.length));
+}
+function view(){
+  const f = filtered(), cmp = COLS[S.sort]||COLS.due, m = S.dir==='asc'?1:-1;
+  return f.sort((a,b)=> m*cmp(a,b) || a.no.localeCompare(b.no));
+}
+const byId = id => invoices.find(i=>i.id===id);
+const total = list => list.reduce((s,i)=>s+i.amount,0);
+const canApprove = i => i.amount <= LIMIT;
+
+/* ---------- focus preservation across re-render ---------- */
+function withFocus(fn){
+  const k = document.activeElement && document.activeElement.dataset && document.activeElement.dataset.fk;
+  fn();
+  if (k){ const el = document.querySelector(`[data-fk="${CSS.escape(k)}"]`); if (el) el.focus({preventScroll:true}); }
+}
+
+/* ---------- render ---------- */
+function render(){
+  withFocus(() => { writeURL(); renderTabs(); renderToolbar(); renderTable(); renderPager(); renderBulk(); });
+}
+
+function renderTabs(){
+  const base = filtered(true);
+  const c = {pending:0,approved:0,rejected:0};
+  base.forEach(i=>c[i.status]++);
+  const defs = [['pending','Needs review',c.pending],['approved','Approved',c.approved],['rejected','Rejected',c.rejected],['all','All',base.length]];
+  $('#tabs').innerHTML = defs.map(([k,l,n])=>
+    `<button class="tab" role="tab" id="tab-${k}" aria-selected="${S.tab===k}" tabindex="${S.tab===k?0:-1}" data-tab="${k}" data-fk="tab-${k}">${l}<span class="n">${S.loading?'–':n.toLocaleString()}</span></button>`).join('');
+}
+
+function renderToolbar(){
+  const vs = [...new Set(invoices.map(i=>i.vendor))].sort((a,b)=>a.localeCompare(b));
+  const sel = $('#fVendor');
+  if (!sel.options.length) sel.innerHTML = '<option value="">All vendors</option>'+vs.map(v=>`<option>${esc(v)}</option>`).join('');
+  sel.value = S.vendor; $('#fDue').value=S.due; $('#fAmt').value=S.amt; $('#fFlag').checked=!!S.flag;
+  if (document.activeElement!==$('#q')) $('#q').value = S.q;
+  const chips = [];
+  if (S.q) chips.push(['q',`Search: “${S.q}”`]);
+  if (S.vendor) chips.push(['vendor',`Vendor: ${S.vendor}`]);
+  if (S.due) chips.push(['due',`Due: ${$('#fDue').selectedOptions[0].text}`]);
+  if (S.amt) chips.push(['amt',`Amount: ${$('#fAmt').selectedOptions[0].text}`]);
+  if (S.flag) chips.push(['flag','Flagged only']);
+  $('#chips').innerHTML = chips.map(([k,t])=>`<span class="chip">${esc(t)}<button data-clear="${k}" aria-label="Remove filter: ${esc(t)}">✕</button></span>`).join('')
+    + (chips.length>1 ? `<button class="btn quiet sm" data-clear="all">Clear all filters</button>`:'');
+}
+
+function sortHead(key,label,cls=''){
+  const act = S.sort===key, dir = act ? (S.dir==='asc'?'ascending':'descending') : 'none';
+  return `<th class="${cls}" scope="col" aria-sort="${dir}"><button class="sort" data-sort="${key}" data-fk="sort-${key}">${label}<span aria-hidden="true">${act?(S.dir==='asc'?'▲':'▼'):''}</span></button></th>`;
+}
+
+function skeleton(){
+  const row = `<tr class="skel" aria-hidden="true">${'<td><span class="bar"></span></td>'.repeat(9)}</tr>`;
+  return `<table aria-busy="true"><caption class="sr">Loading invoices…</caption><tbody>${row.repeat(8)}</tbody></table>`;
+}
+
+function renderTable(){
+  const wrap = $('#tablewrap'), sub = $('#sub'), sum = $('#summary'), banner = $('#selbanner');
+  banner.innerHTML = '';
+  if (S.loading){ wrap.innerHTML = skeleton(); sum.textContent='Loading invoices…'; return; }
+  if (S.error){
+    wrap.innerHTML = `<div class="state" role="alert"><h2>Couldn’t load invoices</h2><p>The invoice service didn’t respond, so this list may be out of date. Your selections and filters are kept. Nothing was approved, rejected or deleted.</p><button class="btn primary" id="retry">Try again</button></div>`;
+    sum.textContent=''; return;
+  }
+  const v = view(), pages = Math.max(1,Math.ceil(v.length/S.size));
+  if (S.page>pages) S.page=pages;
+  const rows = v.slice((S.page-1)*S.size, S.page*S.size);
+  const pendingAll = invoices.filter(i=>i.status==='pending');
+  sub.textContent = pendingAll.length ? `${plural(pendingAll.length,'invoice')} awaiting review · ${usd.format(total(pendingAll))}` : 'Nothing is waiting for your review.';
+  sum.innerHTML = v.length ? `<span><b>${v.length.toLocaleString()}</b> ${v.length===1?'invoice':'invoices'} · <b>${usd.format(total(v))}</b> total</span><span>Sorted by ${{no:'invoice #',vendor:'vendor',amount:'amount',invDate:'invoice date',due:'due date',status:'status'}[S.sort]}, ${S.dir==='asc'?'ascending':'descending'}</span>` : '';
+
+  if (!rows.length){
+    const filteredOut = S.q||S.vendor||S.due||S.amt||S.flag;
+    wrap.innerHTML = filteredOut
+      ? `<div class="state"><h2>No invoices match these filters</h2><p>Try a different search term, or remove a filter. ${S.tab!=='all'?'You’re only looking at the “'+({pending:'Needs review',approved:'Approved',rejected:'Rejected'}[S.tab])+'” tab.':''}</p><button class="btn" data-clear="all">Clear all filters</button></div>`
+      : S.tab==='pending'
+      ? `<div class="state"><h2>You’re all caught up</h2><p>There are no invoices waiting for review. New invoices appear here as vendors send them.</p><button class="btn" data-tab="all">View all invoices</button></div>`
+      : `<div class="state"><h2>No ${S.tab} invoices</h2><p>Invoices you ${S.tab==='approved'?'approve':'reject'} will be listed here.</p></div>`;
+    return;
+  }
+
+  const pageIds = rows.map(r=>r.id), nSel = pageIds.filter(id=>S.sel.has(id)).length;
+  const allOn = nSel===rows.length;
+  if (allOn && v.length>rows.length && ![...v].every(r=>S.sel.has(r.id)))
+    banner.innerHTML = `<div class="selbanner">All ${rows.length} invoices on this page are selected. <button class="btn" id="selAll">Select all ${v.length.toLocaleString()} matching invoices</button></div>`;
+  else if (v.length>rows.length && v.every(r=>S.sel.has(r.id)))
+    banner.innerHTML = `<div class="selbanner">All ${v.length.toLocaleString()} matching invoices are selected. <button class="btn" id="selNone">Clear selection</button></div>`;
+
+  wrap.innerHTML = `<table>
+    <caption class="sr">Vendor invoices, ${v.length} results. Column headers are buttons that sort the list.</caption>
+    <thead><tr>
+      <th class="chk" scope="col"><span class="h"><input type="checkbox" id="chkAll" data-fk="chkAll" aria-label="Select all ${rows.length} invoices on this page" ${allOn?'checked':''}></span></th>
+      ${sortHead('no','Invoice #')}${sortHead('vendor','Vendor')}${sortHead('amount','Amount','num')}${sortHead('invDate','Invoice date')}${sortHead('due','Due date')}${sortHead('status','Status')}
+      <th scope="col"><span class="h">Flags</span></th>
+      <th scope="col" class="num"><span class="h">Actions</span></th>
+    </tr></thead>
+    <tbody>${rows.map(rowHTML).join('')}</tbody></table>`;
+  const all = $('#chkAll'); if (all) all.indeterminate = nSel>0 && !allOn;
+}
+
+function dueCell(i){
+  const d = daysUntil(i.due);
+  let hint = '';
+  if (i.status==='pending') hint = d<0 ? `<div class="late">${-d}d overdue</div>` : d===0 ? `<div class="late">Due today</div>` : d<=7 ? `<div class="dim">in ${d}d</div>` : '';
+  return `${fmtDate(i.due)}${hint}`;
+}
+const BADGE = {pending:['Pending','◔'],approved:['Approved','✓'],rejected:['Rejected','✕']};
+function rowHTML(i){
+  const sel = S.sel.has(i.id), over = !canApprove(i) && i.amount>0;
+  const reason = `Over your ${usd.format(LIMIT)} limit. Needs Controller approval.`;
+  const actions = i.status==='pending'
+    ? `<button class="btn sm primary" data-act="approve" data-id="${i.id}" ${over?`aria-disabled="true" title="${reason}" aria-label="Approve ${i.no} (unavailable: ${reason})"`:`aria-label="Approve ${esc(i.no)}"`}>Approve</button>
+       <button class="btn sm" data-act="reject" data-id="${i.id}" aria-label="Reject ${esc(i.no)}">Reject</button>`
+    : '';
+  return `<tr data-id="${i.id}" aria-selected="${sel}">
+    <td class="chk"><input type="checkbox" data-sel="${i.id}" data-fk="chk-${i.id}" aria-label="Select ${esc(i.no)}" ${sel?'checked':''}></td>
+    <td><button class="rowlink" data-open="${i.id}" data-fk="open-${i.id}">${esc(i.no)}</button>${i.po?`<div class="po">${esc(i.po)}</div>`:''}</td>
+    <td><div class="vendor" title="${esc(i.vendor)}">${esc(i.vendor)}</div></td>
+    <td class="num ${i.amount<0?'neg':''}">${usd.format(i.amount)}${i.amount<0?'<div class="dim">Credit note</div>':''}</td>
+    <td>${fmtDate(i.invDate)}</td>
+    <td>${dueCell(i)}</td>
+    <td><span class="badge ${i.status}"><span aria-hidden="true">${BADGE[i.status][1]}</span>${BADGE[i.status][0]}</span></td>
+    <td>${i.flags.map(f=>`<span class="flag">⚠ ${esc(f)}</span>`).join('')}</td>
+    <td class="acts">${actions}
+      <span class="menu"><button class="btn sm" data-menu="${i.id}" data-fk="menu-${i.id}" aria-haspopup="menu" aria-expanded="false" aria-label="More actions for ${esc(i.no)}">⋯</button></span>
+    </td></tr>`;
+}
+
+function renderPager(){
+  const el = $('#pager');
+  if (S.loading||S.error){ el.innerHTML=''; return; }
+  const v = filtered(), pages = Math.max(1,Math.ceil(v.length/S.size));
+  const from = v.length ? (S.page-1)*S.size+1 : 0, to = Math.min(v.length, S.page*S.size);
+  el.innerHTML = `<div class="grp"><label for="size">Rows per page</label>
+      <select id="size">${[25,50,100].map(n=>`<option ${n===S.size?'selected':''}>${n}</option>`).join('')}</select></div>
+    <div class="grp"><span>${from}–${to} of ${v.length.toLocaleString()}</span>
+      <button class="btn sm" id="prev" ${S.page<=1?'disabled':''} aria-label="Previous page">‹ Prev</button>
+      <span aria-live="polite">Page ${S.page} of ${pages}</span>
+      <button class="btn sm" id="next" ${S.page>=pages?'disabled':''} aria-label="Next page">Next ›</button></div>`;
+}
+
+function renderBulk(){
+  const ids = [...S.sel].map(byId).filter(Boolean);
+  const b = $('#bulk'); b.hidden = !ids.length; document.body.classList.toggle('bulkon', !!ids.length);
+  if (!ids.length) return;
+  $('#bulkinfo').textContent = `${ids.length.toLocaleString()} selected · ${usd.format(total(ids))}`;
+  const elig = ids.filter(i=>i.status==='pending' && canApprove(i)).length;
+  $('#bApprove').textContent = `Approve ${elig}`;
+  $('#bApprove').disabled = !elig;
+  $('#bApprove').title = elig===ids.length ? '' : `${ids.length-elig} selected invoice(s) can’t be approved by you (already decided or over your limit) and will be skipped.`;
+  $('#bReject').disabled = !ids.some(i=>i.status==='pending');
+}
+
+/* ---------- toasts, announcements, undo ---------- */
+const undoStack = [];
+function announce(t){ const l=$('#live'); l.textContent=''; setTimeout(()=>l.textContent=t,30); }
+function toast(msg, undoFn){
+  const el = document.createElement('div'); el.className='toast';
+  el.innerHTML = `<span>${esc(msg)}</span>`;
+  if (undoFn){
+    const b = document.createElement('button'); b.className='btn'; b.textContent='Undo';
+    b.onclick = () => { undoFn(); el.remove(); };
+    el.append(b);
+  }
+  const host = $('#toasts'); [...host.children].forEach(c=>c.remove()); host.append(el);
+  const t = setTimeout(()=>{ el.remove(); }, 10000);
+  el.addEventListener('mouseenter',()=>clearTimeout(t));
+  el._undo = undoFn; return el;
+}
+function undoLast(){
+  const e = undoStack.pop(); if (!e) { announce('Nothing to undo'); return; }
+  e();
+}
+
+/* ---------- actions ---------- */
+function snapshot(list){ return list.map(i=>({i, status:i.status, deleted:false, logLen:i.log.length})); }
+function restore(snap, text){
+  snap.forEach(s=>{
+    if (s.deleted && !invoices.includes(s.i)) invoices.push(s.i);
+    s.i.status = s.status; s.i.log.length = s.logLen;
+  });
+  render(); announce(text);
+}
+function neighborFocus(id, idx){ // keep the reviewer's place after the row leaves the list
+  const rows = [...document.querySelectorAll('tbody tr[data-id]')];
+  const target = rows.find(r=>r.dataset.id===id) || rows[Math.min(idx, rows.length-1)];
+  if (target){ const b = target.querySelector('[data-open]'); if (b) b.focus(); }
+  else $('#list').focus();
+}
+function rowIndex(id){ return [...document.querySelectorAll('tbody tr[data-id]')].findIndex(r=>r.dataset.id===id); }
+
+function approve(list, opts={}){
+  const ok = list.filter(i=>i.status==='pending' && canApprove(i));
+  const skippedLimit = list.filter(i=>i.status==='pending' && !canApprove(i)).length;
+  const skippedOther = list.length - ok.length - skippedLimit;
+  if (!ok.length){
+    toast(skippedLimit ? `Can’t approve: over your ${usd.format(LIMIT)} limit. Needs Controller approval.` : 'Nothing to approve: already decided.');
+    return;
+  }
+  const idx = opts.focusId ? rowIndex(opts.focusId) : -1;
+  const snap = snapshot(ok);
+  ok.forEach(i=>{ i.status='approved'; i.log.push({t:Date.now(),text:'Approved by you'}); S.sel.delete(i.id); });
+  const skipped = skippedLimit+skippedOther;
+  const msg = ok.length===1 ? `Approved ${ok[0].no} · ${ok[0].vendor}` : `Approved ${plural(ok.length,'invoice')} · ${usd.format(total(ok))}`
+    + (skipped ? `. Skipped ${skipped}${skippedLimit?` (${skippedLimit} over your limit)`:''}` : '');
+  const undo = () => { restore(snap, 'Approval undone'); };
+  undoStack.push(undo);
+  render(); toast(msg, undo); announce(msg);
+  if (opts.focusId) neighborFocus(opts.focusId, idx);
+}
+
+function rejectFlow(list, focusId){
+  list = list.filter(i=>i.status==='pending');
+  if (!list.length) return;
+  const d = $('#dReject');
+  $('#dRejectT').textContent = list.length===1 ? `Reject ${list[0].no}?` : `Reject ${plural(list.length,'invoice')}?`;
+  $('#dRejectP').textContent = list.length===1 ? `${list[0].vendor} · ${usd.format(list[0].amount)}. The vendor is notified with your reason.` : `${usd.format(total(list))} across ${new Set(list.map(i=>i.vendor)).size} vendors. Each vendor is notified with your reason.`;
+  $('#rReason').value=''; $('#rNote').value=''; $('#rErr').textContent=''; $('#rNoteOpt').textContent='(optional)';
+  $('#rGo').textContent = list.length===1 ? 'Reject invoice' : `Reject ${list.length} invoices`;
+  d._list = list; d._focus = focusId; d._pos = view().findIndex(x=>x.id===list[0].id); d.showModal(); $('#rReason').focus();
+}
+$('#rReason').addEventListener('change',()=>{
+  $('#rNoteOpt').textContent = $('#rReason').value==='Other' ? '(required for “Other”)' : '(optional)'; $('#rErr').textContent='';
+});
+$('#fReject').addEventListener('submit', e=>{
+  e.preventDefault();
+  const d = $('#dReject'), reason = $('#rReason').value, note = $('#rNote').value.trim();
+  if (!reason){ $('#rErr').textContent='Choose a reason so the vendor knows what to fix.'; $('#rReason').focus(); return; }
+  if (reason==='Other' && !note){ $('#rErr').textContent='Add a short note explaining why you’re rejecting this invoice.'; $('#rNote').focus(); return; }
+  const list = d._list, idx = d._focus ? rowIndex(d._focus) : -1, snap = snapshot(list);
+  list.forEach(i=>{ i.status='rejected'; i.log.push({t:Date.now(),text:`Rejected by you: ${reason}${note?' – '+note:''}`}); S.sel.delete(i.id); });
+  d.close();
+  const msg = list.length===1 ? `Rejected ${list[0].no}` : `Rejected ${plural(list.length,'invoice')}`;
+  const undo = () => restore(snap,'Rejection undone');
+  undoStack.push(undo); render(); toast(msg+'. Vendor notified.', undo); announce(msg);
+  if ($('#drawer').open) drawerAfterAction(d._pos);
+  else if (d._focus) neighborFocus(d._focus, idx);
+});
+
+function deleteFlow(list, focusId){
+  if (!list.length) return;
+  const d = $('#dDelete'), big = list.length>=10;
+  $('#dDeleteT').textContent = list.length===1 ? `Delete ${list[0].no}?` : `Delete ${plural(list.length,'invoice')}?`;
+  $('#dDeleteP').innerHTML = list.length===1
+    ? `<b>${esc(list[0].no)}</b> from ${esc(list[0].vendor)} (${usd.format(list[0].amount)}) will be removed.`
+    : `${plural(list.length,'invoice')} totalling <b>${usd.format(total(list))}</b> will be removed${list.some(i=>i.status==='approved')?`, including ${plural(list.filter(i=>i.status==='approved').length,'approved invoice')}`:''}.`;
+  $('#typed').hidden = !big; $('#dType').value=''; $('#dErr').textContent='';
+  $('#dGo').textContent = list.length===1 ? 'Delete invoice' : `Delete ${list.length} invoices`;
+  d._list = list; d._focus = focusId; d._pos = view().findIndex(x=>x.id===list[0].id); d.showModal(); (big?$('#dType'):$('#dGo').previousElementSibling).focus();
+}
+$('#fDelete').addEventListener('submit', e=>{
+  e.preventDefault();
+  const d = $('#dDelete');
+  if (d._list.length>=10 && $('#dType').value.trim().toUpperCase()!=='DELETE'){ $('#dErr').textContent='Type DELETE to confirm.'; $('#dType').focus(); return; }
+  const list = d._list, idx = d._focus ? rowIndex(d._focus) : -1, snap = snapshot(list).map(s=>({...s,deleted:true}));
+  list.forEach(i=>{ invoices.splice(invoices.indexOf(i),1); S.sel.delete(i.id); });
+  d.close();
+  const msg = list.length===1 ? `Deleted ${list[0].no}` : `Deleted ${plural(list.length,'invoice')}`;
+  const undo = () => restore(snap,'Deletion undone');
+  undoStack.push(undo); render(); toast(msg, undo); announce(msg);
+  if ($('#drawer').open) drawerAfterAction(d._pos);
+  else if (d._focus) neighborFocus(d._focus, idx);
+});
+
+function reopen(i){
+  const snap = snapshot([i]);
+  i.status='pending'; i.log.push({t:Date.now(),text:'Returned to review by you'});
+  const undo = () => restore(snap,'Undone'); undoStack.push(undo);
+  render(); toast(`${i.no} returned to Needs review`, undo);
+}
+
+document.querySelectorAll('dialog [data-close]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
+
+/* ---------- detail drawer (review flow) ---------- */
+let openId = null;
+function openDrawer(id){
+  openId = id; const i = byId(id); if (!i) return;
+  const v = view(), pos = v.findIndex(x=>x.id===id);
+  const over = i.amount>LIMIT, d = $('#drawer');
+  d.innerHTML = `
+  <header><div><h2 id="drT">${esc(i.no)}</h2><div class="sub">${esc(i.vendor)}</div></div>
+    <button class="xbtn" data-dclose aria-label="Close details">✕</button></header>
+  <div class="scroll">
+    ${i.flags.map(f=>`<div class="alert">⚠ <b>${esc(f)}</b>${f==='Possible duplicate'?` – same vendor and amount as ${esc(i.dupOf||'another invoice')}.`:f==='No PO'?' – no purchase order is referenced.':' – invoice total is above the PO.'}</div>`).join('')}
+    <dl>
+      <dt>Status</dt><dd><span class="badge ${i.status}"><span aria-hidden="true">${BADGE[i.status][1]}</span>${BADGE[i.status][0]}</span></dd>
+      <dt>Amount</dt><dd><b>${usd.format(i.amount)}</b>${i.amount<0?' (credit note)':''}</dd>
+      <dt>Invoice date</dt><dd>${fmtDate(i.invDate)}</dd>
+      <dt>Due date</dt><dd>${fmtDate(i.due)}</dd>
+      <dt>Purchase order</dt><dd>${i.po?esc(i.po):'<span class="dim">None</span>'}</dd>
+      <dt>GL account</dt><dd>${esc(i.gl)}</dd>
+      <dt>Received</dt><dd>${fmtDate(i.received)} · ${esc(i.source)}</dd>
+    </dl>
+    <h3>History</h3>
+    <ul class="log">${i.log.slice().reverse().map(l=>`<li><span class="dim">${new Date(l.t).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</span><br>${esc(l.text)}</li>`).join('')}</ul>
+  </div>
+  <footer>
+    <button class="btn sm" data-dnav="-1" ${pos<=0?'disabled':''} aria-label="Previous invoice">‹</button>
+    <button class="btn sm" data-dnav="1" ${pos>=v.length-1?'disabled':''} aria-label="Next invoice">›</button>
+    <span class="note">${pos+1} of ${v.length}</span><span class="grow"></span>
+    ${i.status==='pending'
+      ? `<button class="btn" data-dreject>Reject…</button>
+         <button class="btn primary" data-dapprove ${over?'aria-disabled="true"':''} ${over?'aria-describedby="why"':''}>Approve${over?'':' & next'}</button>
+         ${over?`<div class="note" id="why" style="flex-basis:100%">You can’t approve this: it’s over your ${usd.format(LIMIT)} limit. A Controller must approve it.</div>`:''}`
+      : `<button class="btn" data-dreopen>Return to review</button>`}
+  </footer>`;
+  if (!d.open) d.showModal();
+  d.querySelector('footer .btn.primary, [data-dclose]').focus();
+}
+function drawerAfterAction(pos){
+  const v = view();
+  if (!v.length){ $('#drawer').close(); return; }
+  openDrawer(v[Math.min(Math.max(pos,0), v.length-1)].id);
+}
+$('#drawer').addEventListener('click', e=>{
+  const t = e.target.closest('button'); if (!t) { if (e.target===$('#drawer')) $('#drawer').close(); return; }
+  const i = byId(openId); if (!i) return;
+  if (t.matches('[data-dclose]')) $('#drawer').close();
+  else if (t.dataset.dnav){ const v=view(), p=v.findIndex(x=>x.id===openId)+(+t.dataset.dnav); if (v[p]) openDrawer(v[p].id); }
+  else if (t.matches('[data-dapprove]')){
+    if (!canApprove(i)){ announce('Over your approval limit'); return; }
+    const v = view(), pos = v.findIndex(x=>x.id===openId);
+    approve([i]);
+    const nv = view();
+    if (!nv.length) $('#drawer').close(); else openDrawer(nv[Math.min(pos, nv.length-1)].id);
+  }
+  else if (t.matches('[data-dreject]')){ $('#drawer').dataset.pos = view().findIndex(x=>x.id===openId); rejectFlow([i]); }
+  else if (t.matches('[data-dreopen]')){ reopen(i); openDrawer(i.id); }
+});
+$('#drawer').addEventListener('close',()=>{
+  const id = openId; openId = null;
+  const b = document.querySelector(`[data-open="${id}"]`); if (b) b.focus();
+});
+
+/* ---------- row menu ---------- */
+let menuEl = null;
+function closeMenu(refocus){
+  if (!menuEl) return;
+  const btn = menuEl.previousElementSibling; menuEl.remove(); menuEl=null;
+  if (btn){ btn.setAttribute('aria-expanded','false'); if (refocus) btn.focus(); }
+}
+function openMenu(btn){
+  closeMenu();
+  const i = byId(btn.dataset.menu);
+  const ul = document.createElement('ul'); ul.setAttribute('role','menu'); ul.setAttribute('aria-label',`Actions for ${i.no}`);
+  const items = [];
+  if (i.status!=='pending') items.push(['reopen','Return to review']);
+  items.push(['open','View details']);
+  items.push(['hr']);
+  items.push(['delete','Delete invoice…','d']);
+  ul.innerHTML = items.map(([k,l,c])=> k==='hr' ? '<li role="separator"><hr></li>' : `<li role="none"><button role="menuitem" data-mact="${k}" class="${c||''}" tabindex="-1">${l}</button></li>`).join('');
+  btn.after(ul);
+  const r = btn.getBoundingClientRect(); // fixed so the table wrapper's overflow can't clip it
+  ul.style.position='fixed'; ul.style.right=(innerWidth-r.right)+'px'; ul.style.top=(r.bottom+2)+'px';
+  if (r.bottom+150>innerHeight){ ul.style.top='auto'; ul.style.bottom=(innerHeight-r.top+2)+'px'; }
+  menuEl = ul; menuEl._id = i.id; btn.setAttribute('aria-expanded','true');
+  ul.querySelector('button').focus();
+}
+function menuKeys(e){
+  if (!menuEl) return;
+  const bs = [...menuEl.querySelectorAll('button')], k = bs.indexOf(document.activeElement);
+  if (e.key==='ArrowDown'){ e.preventDefault(); bs[(k+1)%bs.length].focus(); }
+  else if (e.key==='ArrowUp'){ e.preventDefault(); bs[(k-1+bs.length)%bs.length].focus(); }
+  else if (e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); closeMenu(true); }
+  else if (e.key==='Tab') closeMenu();
+}
+
+/* ---------- events ---------- */
+function setFilter(k,v){ S[k]=v; S.page=1; S.sel.clear(); render(); }
+let qTimer;
+$('#q').addEventListener('input', e=>{ clearTimeout(qTimer); qTimer=setTimeout(()=>{ S.q=e.target.value; S.page=1; S.sel.clear(); render(); },180); });
+$('#fVendor').addEventListener('change',e=>setFilter('vendor',e.target.value));
+$('#fDue').addEventListener('change',e=>setFilter('due',e.target.value));
+$('#fAmt').addEventListener('change',e=>setFilter('amt',e.target.value));
+$('#fFlag').addEventListener('change',e=>setFilter('flag',e.target.checked?'1':''));
+
+document.addEventListener('click', e=>{
+  const t = e.target.closest('button,input');
+  if (menuEl && !(t && menuEl.contains(t))) closeMenu(false);
+  if (!t) return;
+  const d = t.dataset;
+  if (d.tab){ S.tab=d.tab; S.page=1; S.sel.clear(); render(); }
+  else if (d.clear){
+    if (d.clear==='all') Object.assign(S,{q:'',vendor:'',due:'',amt:'',flag:'',page:1}); else { S[d.clear]=''; S.page=1; }
+    S.sel.clear(); render();
+  }
+  else if (d.sort){ if (S.sort===d.sort) S.dir = S.dir==='asc'?'desc':'asc'; else { S.sort=d.sort; S.dir='asc'; } S.page=1; render(); }
+  else if (d.sel){ t.checked ? S.sel.add(d.sel) : S.sel.delete(d.sel); render(); }
+  else if (t.id==='chkAll'){
+    const ids = view().slice((S.page-1)*S.size,S.page*S.size).map(r=>r.id);
+    ids.forEach(id=> t.checked ? S.sel.add(id) : S.sel.delete(id)); render();
+  }
+  else if (t.id==='selAll'){ view().forEach(r=>S.sel.add(r.id)); render(); announce(`${S.sel.size} invoices selected`); }
+  else if (t.id==='selNone'){ S.sel.clear(); render(); }
+  else if (d.open) openDrawer(d.open);
+  else if (d.act==='approve'){
+    if (t.getAttribute('aria-disabled')==='true'){ toast(`Can’t approve ${byId(d.id).no}: over your ${usd.format(LIMIT)} limit. Needs Controller approval.`); return; }
+    approve([byId(d.id)],{focusId:d.id});
+  }
+  else if (d.act==='reject') rejectFlow([byId(d.id)], d.id);
+  else if (d.menu){ menuEl && menuEl.previousElementSibling===t ? closeMenu(true) : openMenu(t); }
+  else if (d.mact){
+    const id = menuEl._id, i = byId(id), idx = rowIndex(id); closeMenu(false);
+    if (d.mact==='delete') deleteFlow([i], id);
+    else if (d.mact==='reopen') { reopen(i); neighborFocus(id, idx); }
+    else if (d.mact==='open') openDrawer(id);
+  }
+  else if (t.id==='bApprove') approve([...S.sel].map(byId));
+  else if (t.id==='bReject') rejectFlow([...S.sel].map(byId));
+  else if (t.id==='bDelete') deleteFlow([...S.sel].map(byId));
+  else if (t.id==='bClear'){ S.sel.clear(); render(); }
+  else if (t.id==='prev'){ S.page--; render(); $('#list').scrollIntoView({block:'start'}); }
+  else if (t.id==='next'){ S.page++; render(); $('#list').scrollIntoView({block:'start'}); }
+  else if (t.id==='retry'){ load(); }
+});
+window.addEventListener('scroll',()=>closeMenu(false),true);
+document.addEventListener('change', e=>{ if (e.target.id==='size'){ S.size=+e.target.value; S.page=1; render(); } });
+
+$('#tabs').addEventListener('keydown', e=>{
+  const tabs=[...document.querySelectorAll('.tab')], k=tabs.indexOf(document.activeElement);
+  if (k<0 || !['ArrowRight','ArrowLeft','Home','End'].includes(e.key)) return;
+  e.preventDefault();
+  const n = e.key==='Home'?0: e.key==='End'?tabs.length-1: (k+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+  tabs[n].click(); document.querySelector('.tab[aria-selected=true]').focus();
+});
+
+document.addEventListener('keydown', e=>{
+  if (menuEl){ menuKeys(e); return; }
+  const tag = (e.target.tagName||'').toLowerCase();
+  if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z' && !['input','textarea','select'].includes(tag)){ e.preventDefault(); undoLast(); return; }
+  if (e.ctrlKey||e.metaKey||e.altKey) return;
+  if (['input','textarea','select'].includes(tag)) { if (e.key==='Escape' && tag==='input' && e.target.id==='q' && e.target.value){ e.target.value=''; S.q=''; S.page=1; render(); } return; }
+  if (document.querySelector('dialog[open]:not(#drawer)')) return;
+  const row = document.activeElement.closest && document.activeElement.closest('tbody tr[data-id]');
+  const rows = [...document.querySelectorAll('tbody tr[data-id]')];
+  if (e.key==='/'){ e.preventDefault(); $('#q').focus(); }
+  else if (e.key==='j'||e.key==='k'){
+    if (!rows.length || document.getElementById('drawer').open) return;
+    const i = row ? rows.indexOf(row) : -1, n = e.key==='j' ? Math.min(i+1,rows.length-1) : Math.max(i-1,0);
+    const b = rows[n].querySelector('[data-open]'); b.focus(); b.scrollIntoView({block:'nearest'});
+  }
+  else if (row && e.key==='x'){ const c = row.querySelector('[data-sel]'); c.click(); }
+  else if (row && e.key==='a'){ const i=byId(row.dataset.id); if (i.status==='pending') approve([i],{focusId:i.id}); }
+  else if (row && e.key==='r'){ const i=byId(row.dataset.id); if (i.status==='pending') rejectFlow([i], i.id); }
+  else if (document.getElementById('drawer').open && e.key==='ArrowRight'){ document.querySelector('[data-dnav="1"]')?.click(); }
+  else if (document.getElementById('drawer').open && e.key==='ArrowLeft'){ document.querySelector('[data-dnav="-1"]')?.click(); }
+});
+
+/* ---------- load (simulated request) ---------- */
+function load(){
+  S.loading=true; S.error=false; render();
+  const fail = new URLSearchParams(location.search).get('sim')==='error' && !load.retried;
+  setTimeout(()=>{
+    S.loading=false;
+    if (fail){ S.error=true; load.retried=true; }
+    render();
+  }, 550);
+}
+load();
+})();
+</script>
+</body>
+</html>

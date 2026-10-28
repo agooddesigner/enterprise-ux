@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Customer Success Dashboard</title>
+<style>
+/* Layout: summary KPIs on top, health trend + renewals mid, account worklist below. Sample data, clearly labelled. */
+:root{--bg:#eef0f6;--card:#fff;--ink:#14161f;--ink2:#4a4f63;--mute:#6b7086;--line:#e3e6ef;--accent:#4f46e5;--accent-soft:#e8e7fc;--anchor:#14161f;--anchor-ink:#fff;--good:#157a4b;--good-bg:#dcf3e6;--warn:#92580a;--warn-bg:#fdecc8;--crit:#b3261e;--crit-bg:#fbdcd9;--track:#e9ebf3}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0f111a;--card:#181b27;--ink:#eceef6;--ink2:#b4b9cc;--mute:#9298ae;--line:#272b3b;--accent:#8b87ff;--accent-soft:#2a2860;--anchor:#262a40;--anchor-ink:#fff;--good:#5fd39a;--good-bg:#12372a;--warn:#f2c066;--warn-bg:#40300f;--crit:#ff8d85;--crit-bg:#451b18;--track:#262a3b;color-scheme:dark}}
+:root[data-theme=dark]{--bg:#0f111a;--card:#181b27;--ink:#eceef6;--ink2:#b4b9cc;--mute:#9298ae;--line:#272b3b;--accent:#8b87ff;--accent-soft:#2a2860;--anchor:#262a40;--anchor-ink:#fff;--good:#5fd39a;--good-bg:#12372a;--warn:#f2c066;--warn-bg:#40300f;--crit:#ff8d85;--crit-bg:#451b18;--track:#262a3b;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "DM Sans",system-ui,sans-serif;padding-block:28px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1240px;margin:0 auto;display:grid;gap:20px}
+header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-end}
+h1{font-size:clamp(28px,4vw,44px);line-height:1.1;margin:0;letter-spacing:-.02em}
+.fresh{color:var(--mute);font-size:13px;margin:6px 0 0}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink2);border-radius:999px;padding:8px 14px;font:inherit;cursor:pointer;min-height:36px}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:20px}
+.card{background:var(--card);border-radius:24px;padding:24px;min-width:0}
+.card h2{font-size:13px;font-weight:600;color:var(--mute);margin:0 0 12px;text-transform:uppercase;letter-spacing:.06em}
+.anchor{background:var(--anchor);color:var(--anchor-ink)}.anchor h2{color:#b9bdd3}
+.hero{grid-column:span 5}.k{grid-column:span 7;display:grid;grid-template-columns:repeat(3,1fr);gap:20px;padding:0;background:none}
+.k .card{display:flex;flex-direction:column;justify-content:space-between;gap:8px}
+.big{font-size:64px;line-height:1;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.big small{font-size:28px;font-weight:500;opacity:.7}
+.num{font-size:38px;line-height:1.1;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.num small{font-size:18px;font-weight:500;color:var(--mute)}
+.delta{display:inline-flex;gap:4px;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;width:fit-content}
+.delta.good{background:var(--good-bg);color:var(--good)}.delta.crit{background:var(--crit-bg);color:var(--crit)}
+.anchor .delta.good{background:#1f4a39;color:#7ee0ad}
+.sub{color:var(--mute);font-size:13px}.anchor .sub{color:#b9bdd3}
+.trend{grid-column:span 7}.ren{grid-column:span 5}.work{grid-column:span 12}
+svg{width:100%;height:auto;display:block}
+.bars{display:grid;gap:14px}
+.bar{display:grid;grid-template-columns:90px 1fr auto;gap:12px;align-items:center}
+.track{background:var(--track);border-radius:999px;height:14px;overflow:hidden}
+.fill{height:100%;border-radius:999px;background:var(--accent)}.fill.hot{background:var(--crit)}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:720px}
+th{text-align:left;font-size:12px;color:var(--mute);font-weight:600;padding:8px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:12px;border-bottom:1px solid var(--line);vertical-align:middle}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:hover td{background:var(--bg)}
+.acct{font-weight:600}.acct a{color:inherit;text-decoration:none}.acct a:hover{text-decoration:underline}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.pill.good{background:var(--good-bg);color:var(--good)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.crit{background:var(--crit-bg);color:var(--crit)}
+.tools{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between;align-items:center;margin-bottom:8px}
+.tools h2{margin:0}
+input[type=search]{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:8px 16px;font:inherit;min-width:220px}
+.empty{padding:32px;text-align:center;color:var(--mute)}
+.note{color:var(--mute);font-size:12px}
+@media(max-width:960px){.hero,.k,.trend,.ren{grid-column:span 12}}
+@media(max-width:560px){.k{grid-template-columns:1fr}.big{font-size:52px}.bar{grid-template-columns:70px 1fr auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Customer success</h1>
+    <p class="fresh">Sample data · Updated 08:10 PT · Window: last 90 days</p>
+  </div>
+  <div class="chips" role="group" aria-label="Segment">
+    <button class="chip" data-seg="all" aria-pressed="true">All segments</button>
+    <button class="chip" data-seg="Enterprise" aria-pressed="false">Enterprise</button>
+    <button class="chip" data-seg="Mid-market" aria-pressed="false">Mid-market</button>
+    <button class="chip" data-seg="SMB" aria-pressed="false">SMB</button>
+  </div>
+</header>
+
+<div class="grid">
+  <section class="card anchor hero" aria-labelledby="h-risk">
+    <h2 id="h-risk">Revenue at risk</h2>
+    <div class="big" id="riskAmt">$0</div>
+    <p class="sub" id="riskSub"></p>
+    <span class="delta good">▼ $38k vs last month</span>
+  </section>
+  <div class="k">
+    <section class="card"><h2>Net revenue retention</h2><div class="num">108<small>%</small></div><span class="delta good">▲ 2 pts</span></section>
+    <section class="card"><h2>Gross churn</h2><div class="num">1.9<small>% / mo</small></div><span class="delta good">▼ 0.3 pts</span></section>
+    <section class="card"><h2>NPS</h2><div class="num">41</div><span class="delta crit">▼ 4 pts</span></section>
+    <section class="card"><h2>Median first response</h2><div class="num">1.4<small> h</small></div><span class="delta good">▼ 0.2 h</span></section>
+    <section class="card"><h2>Open escalations</h2><div class="num">7</div><span class="delta crit">▲ 3</span></section>
+    <section class="card"><h2>Onboarding on track</h2><div class="num">82<small>%</small></div><span class="delta good">▲ 5 pts</span></section>
+  </div>
+
+  <section class="card trend" aria-labelledby="h-trend">
+    <h2 id="h-trend">Accounts by health, weekly</h2>
+    <svg id="trend" viewBox="0 0 640 240" role="img" aria-label="Stacked bars of healthy, neutral and at-risk accounts over 12 weeks. At-risk share fell from 14% to 11%."></svg>
+    <div class="sub" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
+      <span><span class="pill good" style="padding:0 8px 0 0;background:none">Healthy</span></span>
+      <span><span class="pill warn" style="padding:0 8px 0 0;background:none">Needs attention</span></span>
+      <span><span class="pill crit" style="padding:0 8px 0 0;background:none">At risk</span></span>
+    </div>
+  </section>
+
+  <section class="card ren" aria-labelledby="h-ren">
+    <h2 id="h-ren">Renewals, next 90 days</h2>
+    <div class="bars" id="renewals"></div>
+    <p class="note" style="margin-bottom:0">Bar length is ARR renewing; red marks months where more than 25% is flagged at risk.</p>
+  </section>
+
+  <section class="card work" aria-labelledby="h-work">
+    <div class="tools">
+      <h2 id="h-work">Accounts needing action</h2>
+      <input id="q" type="search" placeholder="Search accounts or owners" aria-label="Search accounts or owners">
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Account</th><th>Segment</th><th>Health</th><th class="n">ARR</th><th>Renews</th><th>Main signal</th><th>Owner</th><th>Last contact</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="empty" hidden>No accounts match. Clear the search or choose another segment.</div>
+  </section>
+</div>
+</div>
+
+<script>
+const accounts=[
+ ["Northwind Logistics","Enterprise","crit",412000,"Nov 14","Usage down 38% in 30 days","Priya Nair","12 days ago"],
+ ["Halcyon Health","Enterprise","crit",286000,"Dec 02","Champion left the company","Marcus Bell","6 days ago"],
+ ["Brightloom Retail","Mid-market","warn",94000,"Nov 29","3 open P1 tickets","Dana Ortiz","2 days ago"],
+ ["Kestrel Analytics","Mid-market","crit",78000,"Nov 09","Invoice 45 days overdue","Priya Nair","9 days ago"],
+ ["Orchard & Pine","SMB","warn",21000,"Dec 18","No login in 21 days","Tom Weiss","15 days ago"],
+ ["Lumen Studios","SMB","warn",18500,"Jan 05","NPS detractor response","Dana Ortiz","4 days ago"],
+ ["Vantage Freight","Enterprise","warn",355000,"Jan 12","Executive sponsor unresponsive","Marcus Bell","19 days ago"],
+ ["Pelican Bay Credit","Mid-market","crit",121000,"Nov 21","Competitor evaluation reported","Sam Okafor","3 days ago"],
+ ["Fernwood Dental Group","SMB","good",16000,"Dec 30","Expansion interest: 2 seats","Tom Weiss","1 day ago"],
+];
+const label={good:"Healthy",warn:"Needs attention",crit:"At risk"};
+const fmt=n=>n>=1e6?"$"+(n/1e6).toFixed(2)+"M":"$"+Math.round(n/1e3)+"k";
+let seg="all",q="";
+const p=new URLSearchParams(location.search);
+if(p.get("seg"))seg=p.get("seg");
+function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function render(){
+  const inSeg=accounts.filter(a=>seg==="all"||a[1]===seg);
+  const risk=inSeg.filter(a=>a[2]==="crit");
+  const amt=risk.reduce((s,a)=>s+a[3],0);
+  riskAmt.innerHTML=fmt(amt);
+  riskSub.textContent=risk.length+" at-risk accounts, "+fmt(inSeg.filter(a=>a[2]==="warn").reduce((s,a)=>s+a[3],0))+" more needs attention.";
+  const t=q.toLowerCase();
+  const list=inSeg.filter(a=>a[2]!=="good"&&(a[0]+a[6]).toLowerCase().includes(t)).sort((a,b)=>(a[2]==="crit"?0:1)-(b[2]==="crit"?0:1)||b[3]-a[3]);
+  rows.innerHTML=list.map(a=>`<tr><td class="acct"><a href="#${esc(a[0])}">${esc(a[0])}</a></td><td>${a[1]}</td><td><span class="pill ${a[2]}">${label[a[2]]}</span></td><td class="n">${fmt(a[3])}</td><td>${a[4]}</td><td>${esc(a[5])}</td><td>${esc(a[6])}</td><td>${a[7]}</td></tr>`).join("");
+  empty.hidden=list.length>0;
+  document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed",c.dataset.seg===seg));
+  const u=new URL(location);seg==="all"?u.searchParams.delete("seg"):u.searchParams.set("seg",seg);history.replaceState(null,"",u);
+}
+document.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{seg=c.dataset.seg;render()});
+q_=document.getElementById("q");q_.oninput=e=>{q=e.target.value;render()};
+
+// Stacked bars: 12 weeks, counts of 100 accounts
+const wk=[[64,22,14],[65,21,14],[64,23,13],[66,21,13],[67,20,13],[66,22,12],[68,20,12],[69,19,12],[68,21,11],[70,19,11],[71,18,11],[72,17,11]];
+(function(){
+  const W=640,H=240,l=34,b=26,top=8,bw=34,gap=(W-l-12*bw)/12,ph=H-b-top;
+  let s=`<g stroke="var(--line)" stroke-width="1">`;
+  [0,50,100].forEach(v=>{const y=top+ph*(1-v/100);s+=`<line x1="${l}" x2="${W}" y1="${y}" y2="${y}"/>`});
+  s+=`</g><g fill="var(--mute)" font-size="11" text-anchor="end">`;
+  [0,50,100].forEach(v=>{s+=`<text x="${l-6}" y="${top+ph*(1-v/100)+4}">${v}%</text>`});
+  s+=`</g>`;
+  const col=["var(--good)","var(--warn)","var(--crit)"];
+  wk.forEach((d,i)=>{
+    const x=l+gap/2+i*(bw+gap);let y=top+ph;
+    d.forEach((v,j)=>{const h=ph*v/100;y-=h;s+=`<rect x="${x}" y="${y}" width="${bw}" height="${Math.max(h-2,0)}" rx="4" fill="${col[j]}"><title>Week ${i+1}: ${["Healthy","Needs attention","At risk"][j]} ${v}%</title></rect>`});
+    s+=`<text x="${x+bw/2}" y="${H-8}" text-anchor="middle" fill="var(--mute)" font-size="11">W${i+1}</text>`;
+  });
+  trend.innerHTML=s;
+})();
+
+const ren=[["November",910000,.31],["December",640000,.18],["January",1120000,.12]];
+renewals.innerHTML=ren.map(r=>`<div class="bar"><span>${r[0]}</span><div class="track" role="img" aria-label="${r[0]}: ${fmt(r[1])} renewing, ${Math.round(r[2]*100)}% at risk"><div class="fill ${r[2]>.25?"hot":""}" style="width:${r[1]/1120000*100}%"></div></div><strong style="font-variant-numeric:tabular-nums">${fmt(r[1])}</strong></div>`).join("");
+render();
+</script>
+</body>
+</html>

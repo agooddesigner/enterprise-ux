@@ -1,0 +1,65 @@
+[
+  {
+    "code": "QM5P67",
+    "case": "E2",
+    "condition": "v1",
+    "score": 13,
+    "max": 15
+  },
+  {
+    "code": "9YWVJI",
+    "case": "E1",
+    "condition": "baseline",
+    "score": 4,
+    "max": 20
+  },
+  {
+    "code": "197ZF1",
+    "case": "E2",
+    "condition": "v2",
+    "score": 13,
+    "max": 15
+  },
+  {
+    "code": "T59682",
+    "case": "E2",
+    "condition": "baseline",
+    "score": 9,
+    "max": 15
+  },
+  {
+    "code": "RDIF8M",
+    "case": "E1",
+    "condition": "v2",
+    "score": 15,
+    "max": 20
+  },
+  {
+    "code": "4ZQLSE",
+    "case": "E1",
+    "condition": "v1",
+    "score": 14,
+    "max": 20
+  },
+  {
+    "code": "HQU3TN",
+    "case": "E7",
+    "condition": "v1",
+    "score": 9,
+    "max": 10
+  },
+  {
+    "code": "TLC5FE",
+    "case": "E7",
+    "condition": "v2",
+    "score": 9,
+    "max": 10
+  },
+  {
+    "code": "VR5LJL",
+    "case": "E7",
+    "condition": "baseline",
+    "score": 8,
+    "max": 10
+  }
+]

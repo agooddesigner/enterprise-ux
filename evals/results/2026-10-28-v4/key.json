@@ -1,0 +1,182 @@
+[
+  {
+    "code": "PCQSJT",
+    "case": "E9",
+    "condition": "v3",
+    "run": 1
+  },
+  {
+    "code": "FGN1LB",
+    "case": "E9",
+    "condition": "baseline",
+    "run": 1
+  },
+  {
+    "code": "KYZWII",
+    "case": "E13",
+    "condition": "v4",
+    "run": 1
+  },
+  {
+    "code": "2932DU",
+    "case": "E11",
+    "condition": "v3",
+    "run": 2
+  },
+  {
+    "code": "KZP02L",
+    "case": "E13",
+    "condition": "v4",
+    "run": 2
+  },
+  {
+    "code": "7XL6FC",
+    "case": "E12",
+    "condition": "v4",
+    "run": 2
+  },
+  {
+    "code": "HBRBXP",
+    "case": "E12",
+    "condition": "v3",
+    "run": 2
+  },
+  {
+    "code": "5A4LRC",
+    "case": "E11",
+    "condition": "v3",
+    "run": 1
+  },
+  {
+    "code": "8Z2L04",
+    "case": "E9",
+    "condition": "v3",
+    "run": 2
+  },
+  {
+    "code": "MGS419",
+    "case": "E12",
+    "condition": "v4",
+    "run": 1
+  },
+  {
+    "code": "UKO1UK",
+    "case": "E9",
+    "condition": "v4",
+    "run": 1
+  },
+  {
+    "code": "3XC7Y8",
+    "case": "E10",
+    "condition": "v3",
+    "run": 1
+  },
+  {
+    "code": "0CLYEL",
+    "case": "E12",
+    "condition": "baseline",
+    "run": 2
+  },
+  {
+    "code": "SREKAN",
+    "case": "E10",
+    "condition": "v4",
+    "run": 1
+  },
+  {
+    "code": "ZJA41F",
+    "case": "E11",
+    "condition": "v4",
+    "run": 1
+  },
+  {
+    "code": "Y5I6RO",
+    "case": "E9",
+    "condition": "baseline",
+    "run": 2
+  },
+  {
+    "code": "TEKSIN",
+    "case": "E11",
+    "condition": "baseline",
+    "run": 1
+  },
+  {
+    "code": "E24YBB",
+    "case": "E13",
+    "condition": "v3",
+    "run": 1
+  },
+  {
+    "code": "OTSVS9",
+    "case": "E12",
+    "condition": "v3",
+    "run": 1
+  },
+  {
+    "code": "U04E6Y",
+    "case": "E10",
+    "condition": "baseline",
+    "run": 1
+  },
+  {
+    "code": "F22XHO",
+    "case": "E13",
+    "condition": "baseline",
+    "run": 1
+  },
+  {
+    "code": "V0YBRP",
+    "case": "E11",
+    "condition": "baseline",
+    "run": 2
+  },
+  {
+    "code": "PU4VA5",
+    "case": "E11",
+    "condition": "v4",
+    "run": 2
+  },
+  {
+    "code": "BNPHWW",
+    "case": "E10",
+    "condition": "baseline",
+    "run": 2
+  },
+  {
+    "code": "9WLYAN",
+    "case": "E12",
+    "condition": "baseline",
+    "run": 1
+  },
+  {
+    "code": "7AY9Z0",
+    "case": "E13",
+    "condition": "v3",
+    "run": 2
+  },
+  {
+    "code": "66A0B0",
+    "case": "E9",
+    "condition": "v4",
+    "run": 2
+  },
+  {
+    "code": "0C6R90",
+    "case": "E13",
+    "condition": "baseline",
+    "run": 2
+  },
+  {
+    "code": "SRX30Z",
+    "case": "E10",
+    "condition": "v4",
+    "run": 2
+  },
+  {
+    "code": "QOCLPC",
+    "case": "E10",
+    "condition": "v3",
+    "run": 2
+  }
+]

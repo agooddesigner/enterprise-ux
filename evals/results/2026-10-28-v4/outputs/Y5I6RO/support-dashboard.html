@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Staffing Briefing</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #6f6d67;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11,11,11,.10);
+  --wash: rgba(11,11,11,.045);
+  --series-1: #2a78d6;
+  --good: #0ca30c;  --good-text: #006300;
+  --warn: #fab219;  --warn-text: #7a5300;
+  --crit: #d03b3b;  --crit-text: #a82424;
+  --crit-bg: rgba(208,59,59,.08);
+  --warn-bg: rgba(250,178,25,.14);
+  --accent-bg: rgba(42,120,214,.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --muted: #9a988f;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255,255,255,.10);
+    --wash: rgba(255,255,255,.05);
+    --series-1: #3987e5;
+    --good-text: #0ca30c;
+    --warn-text: #fab219;
+    --crit-text: #ec7676;
+    --crit-bg: rgba(208,59,59,.16);
+    --warn-bg: rgba(250,178,25,.12);
+    --accent-bg: rgba(57,135,229,.14);
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--page); color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; align-items: flex-end; margin-bottom: 16px; }
+h1 { font-size: 20px; margin: 0; letter-spacing: -.01em; }
+.sub { color: var(--ink-2); font-size: 13px; }
+.sub b { color: var(--ink); font-weight: 600; }
+h2 { font-size: 15px; margin: 0; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+.card-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; margin-bottom: 12px; }
+.card-head p { margin: 2px 0 0; color: var(--ink-2); font-size: 12.5px; }
+.stack { display: grid; gap: 16px; }
+
+/* Call to action */
+.brief { border-left: 4px solid var(--series-1); }
+.brief .headline { font-size: 18px; font-weight: 600; letter-spacing: -.01em; margin: 0 0 12px; max-width: 70ch; }
+.moves { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; margin: 0 0 14px; padding: 0; list-style: none; }
+.move { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--accent-bg); }
+.move .n { font-size: 24px; font-weight: 700; min-width: 28px; text-align: center; }
+.move .t { font-size: 13px; line-height: 1.35; }
+.move .t small { display: block; color: var(--ink-2); font-size: 12px; }
+.arrow { color: var(--muted); }
+.decisions { border-top: 1px solid var(--border); padding-top: 12px; }
+.decisions h3 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); }
+.decisions ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.decisions li { display: flex; gap: 8px; font-size: 13px; }
+.decisions li svg { flex: none; margin-top: 2px; }
+
+/* KPIs */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.kpi { padding: 14px 16px; }
+.kpi .l { color: var(--ink-2); font-size: 12.5px; }
+.kpi .v { font-size: 28px; font-weight: 650; letter-spacing: -.02em; margin: 2px 0; line-height: 1.15; }
+.kpi .v small { font-size: 13px; font-weight: 500; color: var(--ink-2); letter-spacing: 0; }
+.kpi .d { font-size: 12.5px; color: var(--ink-2); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.tag { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; font-size: 12px; white-space: nowrap; }
+.tag.bad { color: var(--crit-text); } .tag.ok { color: var(--good-text); } .tag.warn { color: var(--warn-text); }
+
+/* controls */
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.seg button, .btn {
+  font: inherit; font-size: 13px; color: var(--ink-2); background: transparent; border: 0;
+  padding: 6px 12px; cursor: pointer;
+}
+.seg button + button { border-left: 1px solid var(--border); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); font-weight: 600; }
+.seg button:hover:not([aria-pressed="true"]) { background: var(--wash); }
+button:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+/* Queue table */
+.tbl-wrap { overflow-x: auto; margin: 0 -18px; padding: 0 18px; }
+table { width: 100%; border-collapse: collapse; min-width: 880px; font-variant-numeric: tabular-nums; }
+th { text-align: left; font-size: 11.5px; font-weight: 600; color: var(--ink-2); text-transform: uppercase; letter-spacing: .05em; padding: 6px 10px; border-bottom: 1px solid var(--axis); white-space: nowrap; }
+td { padding: 11px 10px; border-bottom: 1px solid var(--grid); vertical-align: middle; }
+th.r, td.r { text-align: right; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--wash); }
+.qname { font-weight: 600; }
+.qname small { display: block; font-weight: 400; color: var(--ink-2); font-size: 12px; }
+.pill { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.pill.crit { background: var(--crit-bg); color: var(--crit-text); }
+.pill.warn { background: var(--warn-bg); color: var(--warn-text); }
+.pill.ok { color: var(--good-text); background: transparent; padding-left: 0; }
+.num-bad { color: var(--crit-text); font-weight: 650; }
+.staff { display: flex; align-items: center; gap: 10px; min-width: 210px; }
+.track { position: relative; flex: 1; height: 10px; background: var(--wash); border-radius: 5px; }
+.fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--series-1); border-radius: 0 4px 4px 0; transition: width .35s; }
+.need { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--ink); border-radius: 1px; transition: left .35s; }
+.staff .txt { width: 56px; text-align: right; font-size: 13px; }
+.gap { font-weight: 650; white-space: nowrap; }
+.gap.short { color: var(--crit-text); } .gap.spare { color: var(--ink-2); } .gap.even { color: var(--good-text); }
+.delta-chip { font-size: 11.5px; color: var(--series-1); font-weight: 650; margin-left: 4px; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--ink-2); margin-top: 12px; align-items: center; }
+.legend i { display: inline-block; vertical-align: middle; margin-right: 5px; }
+.sw { width: 14px; height: 8px; border-radius: 2px; background: var(--series-1); }
+.sw-line { width: 14px; height: 2px; background: var(--ink); }
+
+/* two-column lower */
+.cols { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 960px) { .cols { grid-template-columns: 1fr; } }
+#chart { position: relative; }
+#chart svg { display: block; width: 100%; overflow: visible; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); box-shadow: 0 4px 16px rgba(0,0,0,.14); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; min-width: 150px; opacity: 0; transition: opacity .08s; z-index: 2; }
+.tip b { display: block; margin-bottom: 4px; }
+.tip div { display: flex; justify-content: space-between; gap: 14px; }
+.tip span.k { color: var(--ink-2); }
+.chart-note { font-size: 13px; color: var(--ink-2); margin: 0 0 8px; }
+.chart-note b { color: var(--ink); }
+
+.accts { list-style: none; margin: 0; padding: 0; }
+.accts li { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 10px 0; border-bottom: 1px solid var(--grid); }
+.accts li:last-child { border-bottom: 0; }
+.accts .a { font-weight: 600; }
+.accts .a small { font-weight: 400; color: var(--ink-2); margin-left: 6px; }
+.accts .m { color: var(--ink-2); font-size: 12.5px; }
+.accts .r { text-align: right; font-size: 12.5px; }
+footer { margin-top: 20px; color: var(--muted); font-size: 12px; max-width: 90ch; }
+.sr { position: absolute; left: -9999px; }
+@media (max-width: 600px) { .brief .headline { font-size: 16px; } .kpi .v { font-size: 24px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Support staffing briefing</h1>
+      <div class="sub">Wednesday, Oct 28 · data as of <b>8:05 AM PT</b> · month-end billing volume expected after 1 PM</div>
+    </div>
+    <div class="sub" id="roster"></div>
+  </header>
+
+  <div class="stack">
+    <section class="card brief" aria-labelledby="brief-h">
+      <h2 id="brief-h" class="sr">Recommended agent moves</h2>
+      <p class="headline" id="headline"></p>
+      <ul class="moves" id="moves"></ul>
+      <div class="decisions" id="decisions"></div>
+    </section>
+
+    <section class="kpis" id="kpis" aria-label="Key metrics"></section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2>Queues: agents assigned vs. agents needed today</h2>
+          <p>Sorted by urgency. Needed = today’s workload ÷ what one agent clears in a day.</p>
+        </div>
+        <div class="seg" role="group" aria-label="Staffing view">
+          <button id="v-now" aria-pressed="true">Current assignment</button>
+          <button id="v-after" aria-pressed="false">After recommended moves</button>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Queue</th><th>Status</th>
+            <th class="r">Open</th><th class="r">Breached</th><th class="r">At risk (4h)</th><th class="r">Oldest</th>
+            <th>Assigned vs. needed</th><th>Gap</th><th>14-day backlog</th>
+          </tr></thead>
+          <tbody id="qbody"></tbody>
+        </table>
+      </div>
+      <div class="legend">
+        <span><i class="sw"></i>Agents assigned (present today)</span>
+        <span><i class="sw-line"></i>Agents needed</span>
+        <span>Breached = past SLA now · At risk = will breach within 4 hours</span>
+      </div>
+    </section>
+
+    <div class="cols">
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <h2>Inbound tickets by hour</h2>
+            <p>All queues, remaining forecast today vs. yesterday’s actuals</p>
+          </div>
+          <div class="seg" role="group" aria-label="Chart view">
+            <button id="c-chart" aria-pressed="true">Chart</button>
+            <button id="c-table" aria-pressed="false">Table</button>
+          </div>
+        </div>
+        <p class="chart-note" id="chartNote"></p>
+        <div id="chart"></div>
+        <div id="chartTable" hidden></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <h2>Accounts to watch</h2>
+            <p>Largest customers with breached or at-risk tickets</p>
+          </div>
+        </div>
+        <ul class="accts" id="accts"></ul>
+      </section>
+    </div>
+  </div>
+
+  <footer>
+    Workload today = breached + at-risk tickets + forecast inbound for the rest of the day + 40% of other open tickets.
+    Agents needed = workload ÷ per-agent daily throughput for that queue, rounded up. Agents can only move between queues they are cross-certified for;
+    each recommended move goes to the queue where one more agent relieves the most SLA pressure per agent already there.
+  </footer>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- data ---------- */
+const TOTAL_AGENTS = 40;
+const OUT = [{n:'Priya N.', r:'PTO'}, {n:'Marcus T.', r:'PTO'}, {n:'Elena V.', r:'Sick'}];
+
+// assigned = agents present today; cap = tickets one agent clears per day
+const Q = [
+  {id:'esc',   name:'Enterprise Escalations', sub:'Tier 3 · named accounts', assigned:4, open:41, breached:6,  atRisk:9,  fc:22,  cap:7,  oldest:'31h', hist:[22,24,23,26,25,27,29,28,31,33,34,36,38,41],
+   from:['tech'], lever:'Approve 4h overtime for Tier 3, or have CSMs take the top 3 accounts directly'},
+  {id:'int',   name:'Integrations & API',     sub:'Tier 2 · webhooks, SDKs',  assigned:6, open:88, breached:11, atRisk:19, fc:48,  cap:12, oldest:'26h', hist:[52,55,58,57,61,64,66,70,72,75,79,82,85,88],
+   from:['tech'], lever:'Defer P3 “how-to” tickets to tomorrow to free ~1 agent'},
+  {id:'bill',  name:'Billing & Invoicing',    sub:'Tier 1–2',                 assigned:5, open:64, breached:0,  atRisk:4,  fc:61,  cap:18, oldest:'9h',  hist:[48,50,47,52,55,53,58,60,57,59,61,63,62,64],
+   from:['sso','chat']},
+  {id:'tech',  name:'Technical Support',      sub:'Tier 1–2 · general product', assigned:10, open:96, breached:2, atRisk:8,  fc:110, cap:24, oldest:'14h', hist:[88,92,95,90,97,94,99,102,98,101,97,100,94,96],
+   from:[]},
+  {id:'onb',   name:'Onboarding',             sub:'Implementation · new logos', assigned:3, open:30, breached:0,  atRisk:1,  fc:12,  cap:7,  oldest:'19h', hist:[26,27,25,28,29,27,30,31,29,32,30,31,29,30],
+   from:['bill','tech'], lever:'Let CS managers run today’s two kickoff prep tickets'},
+  {id:'sec',   name:'Security & Compliance',  sub:'Questionnaires, audits',   assigned:2, open:12, breached:0,  atRisk:0,  fc:6,   cap:5,  oldest:'22h', hist:[10,11,9,12,13,11,12,14,12,13,11,12,13,12],
+   from:['sso','tech'], lever:'Pull one agent from SSO after 1 PM when its volume dips'},
+  {id:'sso',   name:'Account Access & SSO',   sub:'Tier 1',                   assigned:2, open:9,  breached:0,  atRisk:0,  fc:14,  cap:14, oldest:'3h',  hist:[8,9,7,10,9,8,11,9,8,10,9,8,10,9],
+   from:['chat','bill']},
+  {id:'chat',  name:'Live Chat',              sub:'Tier 1 · 7am–7pm',         assigned:5, open:4,  breached:0,  atRisk:0,  fc:80,  cap:20, oldest:'4m',  hist:[3,4,5,3,4,2,3,5,4,3,4,3,5,4],
+   from:['sso','bill']},
+];
+const byId = Object.fromEntries(Q.map(q => [q.id, q]));
+
+const HOURS = ['8a','9a','10a','11a','12p','1p','2p','3p','4p','5p'];
+const FORECAST = [24,36,44,38,30,34,40,42,35,30];
+const YESTERDAY = [22,32,41,35,29,30,34,36,30,26];
+
+const ACCOUNTS = [
+  {n:'Halvorsen Freight Systems', arr:'$1.8M', t:'Webhook delivery failing for 3 days', q:'Integrations & API', s:'Breached 6h ago', c:'crit'},
+  {n:'Meridian Health Network',   arr:'$1.4M', t:'SSO login loop after IdP certificate rotation', q:'Escalations', s:'Breached 2h ago', c:'crit'},
+  {n:'Brightwater Retail Group',  arr:'$960K', t:'Invoice export timing out on large ledgers', q:'Escalations', s:'Breaches in 1h 40m', c:'warn'},
+  {n:'Corvid Analytics',          arr:'$720K', t:'Rate limit increase blocking nightly sync', q:'Integrations & API', s:'Breaches in 2h 15m', c:'warn'},
+  {n:'Tallgrass Insurance',       arr:'$640K', t:'SOC 2 evidence request for renewal', q:'Security & Compliance', s:'Due Friday', c:'ok'},
+  {n:'Ostrander Logistics',       arr:'$510K', t:'API v2 pagination returns duplicate records', q:'Integrations & API', s:'Breaches in 3h 05m', c:'warn'},
+];
+
+/* ---------- planning ---------- */
+function workload(q) { return q.breached + q.atRisk + q.fc + 0.4 * (q.open - q.breached - q.atRisk); }
+Q.forEach(q => { q.need = Math.ceil(workload(q) / q.cap); q.urgency = q.breached * 3 + q.atRisk; });
+
+function plan() {
+  const after = Object.fromEntries(Q.map(q => [q.id, q.assigned]));
+  const spare = Object.fromEntries(Q.map(q => [q.id, Math.max(0, q.assigned - q.need)]));
+  const moves = {};
+  for (;;) {
+    let best = null;
+    for (const t of Q) {
+      if (after[t.id] >= t.need) continue;
+      const src = t.from.find(f => spare[f] > 0);
+      if (!src) continue;
+      const score = (t.urgency || 0.5) / after[t.id];
+      if (!best || score > best.score) best = {t, src, score};
+    }
+    if (!best) break;
+    spare[best.src]--; after[best.src]--; after[best.t.id]++;
+    const k = best.src + '>' + best.t.id;
+    moves[k] = (moves[k] || 0) + 1;
+  }
+  return {after, moves: Object.entries(moves).map(([k, n]) => { const [f, t] = k.split('>'); return {from: byId[f], to: byId[t], n}; })};
+}
+const P = plan();
+const present = Q.reduce((a, q) => a + q.assigned, 0);
+
+/* ---------- header, brief ---------- */
+$('#roster').innerHTML = `<b>${present} of ${TOTAL_AGENTS}</b> agents on shift · out: ` +
+  OUT.map(o => `${esc(o.n)} (${o.r})`).join(', ');
+
+const moved = P.moves.reduce((a, m) => a + m.n, 0);
+const short = Q.reduce((a, q) => a + Math.max(0, q.need - P.after[q.id]), 0);
+const stillShort = Q.filter(q => P.after[q.id] < q.need);
+$('#headline').textContent = moved
+  ? `Move ${moved} agents out of ${[...new Set(P.moves.map(m => m.from.name))].join(' and ')} first thing. ` +
+    (short ? `That still leaves ${short} agent${short>1?'s':''} of work uncovered in ${stillShort.length} queues.` : 'That covers every queue.')
+  : 'No safe moves available — staffing is balanced.';
+
+$('#moves').innerHTML = P.moves.map(m => `
+  <li class="move"><span class="n">${m.n}</span>
+  <span class="t">${esc(m.from.name)} <span class="arrow">→</span> <b>${esc(m.to.name)}</b>
+  <small>${m.to.breached} breached, ${m.to.atRisk} at risk · ${m.from.name.split(' ')[0]} has ${m.from.assigned - m.from.need} spare</small></span></li>`).join('');
+
+const iconWarn = '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5 15 14H1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 6.5v3.5M8 12v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+$('#decisions').innerHTML = stillShort.length ? `<h3>Still uncovered after moves — needs your call</h3><ul>` +
+  stillShort.map(q => `<li style="color:var(--ink)"><span style="color:var(--crit-text)">${iconWarn}</span>
+    <span><b>${esc(q.name)}</b> short ${q.need - P.after[q.id]}${q.lever ? ' — ' + esc(q.lever) : ''}</span></li>`).join('') + '</ul>' : '';
+
+/* ---------- KPIs ---------- */
+const sum = f => Q.reduce((a, q) => a + f(q), 0);
+const openNow = sum(q => q.open), openYday = sum(q => q.hist[12]);
+const breachedNow = sum(q => q.breached), atRiskNow = sum(q => q.atRisk);
+const up = '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1 9 8H1z" fill="currentColor"/></svg>';
+const down = '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 9 1 2h8z" fill="currentColor"/></svg>';
+const pct = ((openNow - openYday) / openYday * 100).toFixed(1);
+const KPIS = [
+  {l:'Open tickets', v:openNow, d:`<span class="tag warn">${up} ${pct}%</span> vs. yesterday 8 AM (${openYday})`},
+  {l:'SLA breached now', v:breachedNow, d:`<span class="tag bad">${up} 7</span> vs. yesterday (12) · 17 of 19 in two queues`},
+  {l:'Will breach in next 4h', v:atRiskNow, d:`<span class="tag bad">${up} 9</span> vs. yesterday (32) · peak inbound at 10 AM`},
+  {l:'Median first response', v:'47<small> min</small>', d:`<span class="tag ok">Within</span> 60 min target · yesterday 41`},
+  {l:'CSAT, 7-day', v:'91%', d:`<span class="tag warn">${down} 1 pt</span> vs. prior week · 2 low scores on integrations`},
+];
+$('#kpis').innerHTML = KPIS.map(k => `<div class="card kpi"><div class="l">${k.l}</div><div class="v">${k.v}</div><div class="d">${k.d}</div></div>`).join('');
+
+/* ---------- queue table ---------- */
+let view = 'now';
+function spark(a) {
+  const w = 96, h = 26, mn = Math.min(...a), mx = Math.max(...a), r = mx - mn || 1;
+  const pts = a.map((v, i) => [i / (a.length - 1) * (w - 6) + 2, h - 4 - (v - mn) / r * (h - 8)]);
+  const last = pts[pts.length - 1];
+  return `<svg width="${w}" height="${h}" role="img" aria-label="Backlog from ${a[0]} to ${a[a.length-1]} over 14 days">
+    <polyline points="${pts.map(p => p.map(n => n.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${last[0]}" cy="${last[1]}" r="3" fill="var(--ink)" stroke="var(--surface)" stroke-width="2"/></svg>`;
+}
+function status(q, n) {
+  const gap = n - q.need;
+  if (q.breached >= 5 || gap <= -3) return ['crit', 'Critical', '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5.5" fill="currentColor"/><path d="M6 3v3.5M6 8.3v.1" stroke="var(--surface)" stroke-width="1.5" stroke-linecap="round"/></svg>'];
+  if (gap < 0 || q.atRisk >= 3) return ['warn', 'Watch', '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1 11.5 11h-11z" fill="currentColor"/></svg>'];
+  return ['ok', 'On track', '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5.5" fill="currentColor"/><path d="m3.6 6.2 1.7 1.7 3.2-3.5" fill="none" stroke="var(--surface)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'];
+}
+const maxScale = Math.max(...Q.map(q => Math.max(q.need, q.assigned, P.after[q.id]))) + 1;
+function renderTable() {
+  const rows = [...Q].sort((a, b) => b.urgency - a.urgency || (a.assigned - a.need) - (b.assigned - b.need));
+  $('#qbody').innerHTML = rows.map(q => {
+    const n = view === 'after' ? P.after[q.id] : q.assigned;
+    const [cls, label, icon] = status(q, n);
+    const gap = n - q.need, d = n - q.assigned;
+    const g = gap < 0 ? `<span class="gap short">${-gap} short</span>` : gap > 0 ? `<span class="gap spare">${gap} spare</span>` : `<span class="gap even">Covered</span>`;
+    const trend = Math.round((q.hist[13] - q.hist[0]) / q.hist[0] * 100);
+    return `<tr>
+      <td><div class="qname">${esc(q.name)}<small>${esc(q.sub)}</small></div></td>
+      <td><span class="pill ${cls}">${icon}${label}</span></td>
+      <td class="r">${q.open}</td>
+      <td class="r ${q.breached ? 'num-bad' : ''}">${q.breached}</td>
+      <td class="r ${q.atRisk >= 8 ? 'num-bad' : ''}">${q.atRisk}</td>
+      <td class="r">${q.oldest}</td>
+      <td><div class="staff"><div class="track" role="img" aria-label="${n} assigned, ${q.need} needed">
+        <div class="fill" style="width:${n / maxScale * 100}%"></div><div class="need" style="left:${q.need / maxScale * 100}%"></div></div>
+        <span class="txt"><b>${n}</b> / ${q.need}${view === 'after' && d ? `<span class="delta-chip">${d > 0 ? '+' : '−'}${Math.abs(d)}</span>` : ''}</span></div></td>
+      <td>${g}</td>
+      <td><div style="display:flex;align-items:center;gap:8px">${spark(q.hist)}<span style="font-size:12px;color:var(--ink-2)">${trend > 0 ? '+' : ''}${trend}%</span></div></td>
+    </tr>`;
+  }).join('');
+}
+function setView(v) {
+  view = v;
+  $('#v-now').setAttribute('aria-pressed', v === 'now');
+  $('#v-after').setAttribute('aria-pressed', v === 'after');
+  renderTable();
+}
+$('#v-now').onclick = () => setView('now');
+$('#v-after').onclick = () => setView('after');
+renderTable();
+
+/* ---------- watchlist ---------- */
+const sCls = {crit: 'bad', warn: 'warn', ok: ''};
+$('#accts').innerHTML = ACCOUNTS.map(a => `<li>
+  <div class="a">${esc(a.n)}<small>${a.arr} ARR</small></div>
+  <div class="r"><span class="tag ${sCls[a.c]}">${a.c === 'crit' ? '●' : a.c === 'warn' ? '▲' : '○'} ${esc(a.s)}</span></div>
+  <div class="m">${esc(a.t)}</div><div class="m r">${esc(a.q)}</div></li>`).join('');
+
+/* ---------- chart ---------- */
+const fcTotal = FORECAST.reduce((a, b) => a + b), yTotal = YESTERDAY.reduce((a, b) => a + b);
+const peakI = FORECAST.indexOf(Math.max(...FORECAST));
+$('#chartNote').innerHTML = `<b>${fcTotal} tickets</b> still to arrive today, ${((fcTotal / yTotal - 1) * 100).toFixed(0)}% above yesterday. Biggest hour: <b>${HOURS[peakI].replace('a',' AM').replace('p',' PM')}</b> (${FORECAST[peakI]}/hr).`;
+
+function drawChart() {
+  const el = $('#chart');
+  const W = Math.max(300, el.clientWidth), H = 230, m = {l: 34, r: 56, t: 10, b: 26};
+  const iw = W - m.l - m.r, ih = H - m.t - m.b, maxY = 50;
+  const x = i => m.l + i / (HOURS.length - 1) * iw, y = v => m.t + ih - v / maxY * ih;
+  const path = a => a.map((v, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1)).join('');
+  let s = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Hourly inbound tickets, today forecast vs yesterday">`;
+  for (let v = 0; v <= maxY; v += 10) s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="${v ? 'var(--grid)' : 'var(--axis)'}"/><text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`;
+  HOURS.forEach((h, i) => s += `<text x="${x(i)}" y="${H - 6}" text-anchor="middle" font-size="11" fill="var(--muted)">${h}</text>`);
+  s += `<path d="${path(YESTERDAY)}" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>`;
+  s += `<path d="${path(FORECAST)}" fill="none" stroke="var(--series-1)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  const L = HOURS.length - 1;
+  s += `<text x="${x(L) + 8}" y="${y(FORECAST[L]) - 2}" font-size="12" font-weight="600" fill="var(--ink)">Today</text>`;
+  s += `<text x="${x(L) + 8}" y="${y(YESTERDAY[L]) + 14}" font-size="12" fill="var(--ink-2)">Yesterday</text>`;
+  s += `<circle cx="${x(peakI)}" cy="${y(FORECAST[peakI])}" r="4.5" fill="var(--series-1)" stroke="var(--surface)" stroke-width="2"/>`;
+  s += `<g id="cross" style="display:none"><line id="cl" y1="${m.t}" y2="${m.t + ih}" stroke="var(--axis)"/><circle id="c1" r="4.5" fill="var(--series-1)" stroke="var(--surface)" stroke-width="2"/><circle id="c2" r="4.5" fill="var(--muted)" stroke="var(--surface)" stroke-width="2"/></g>`;
+  s += `<rect id="hit" x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent"/></svg><div class="tip" id="tip"></div>`;
+  el.innerHTML = s;
+  const hit = $('#hit'), tip = $('#tip');
+  const move = e => {
+    const r = el.getBoundingClientRect();
+    const i = Math.max(0, Math.min(L, Math.round((e.clientX - r.left - m.l) / iw * L)));
+    $('#cross').style.display = '';
+    $('#cl').setAttribute('x1', x(i)); $('#cl').setAttribute('x2', x(i));
+    $('#c1').setAttribute('cx', x(i)); $('#c1').setAttribute('cy', y(FORECAST[i]));
+    $('#c2').setAttribute('cx', x(i)); $('#c2').setAttribute('cy', y(YESTERDAY[i]));
+    const diff = FORECAST[i] - YESTERDAY[i];
+    tip.innerHTML = `<b>${HOURS[i].replace('a',' AM').replace('p',' PM')} hour</b><div><span class="k">Today forecast</span><span>${FORECAST[i]}</span></div><div><span class="k">Yesterday</span><span>${YESTERDAY[i]}</span></div><div><span class="k">Difference</span><span>${diff > 0 ? '+' : ''}${diff}</span></div>`;
+    tip.style.opacity = 1;
+    const tx = x(i) + 14 + 160 > W ? x(i) - 14 - 160 : x(i) + 14;
+    tip.style.left = tx + 'px'; tip.style.top = '8px';
+  };
+  hit.addEventListener('pointermove', move);
+  hit.addEventListener('pointerleave', () => { tip.style.opacity = 0; $('#cross').style.display = 'none'; });
+}
+$('#chartTable').innerHTML = `<table style="min-width:0"><thead><tr><th>Hour</th><th class="r">Today forecast</th><th class="r">Yesterday</th><th class="r">Difference</th></tr></thead><tbody>` +
+  HOURS.map((h, i) => `<tr><td>${h.replace('a',' AM').replace('p',' PM')}</td><td class="r">${FORECAST[i]}</td><td class="r">${YESTERDAY[i]}</td><td class="r">${FORECAST[i] - YESTERDAY[i] > 0 ? '+' : ''}${FORECAST[i] - YESTERDAY[i]}</td></tr>`).join('') + '</tbody></table>';
+function setChart(t) {
+  $('#c-chart').setAttribute('aria-pressed', t === 'chart');
+  $('#c-table').setAttribute('aria-pressed', t === 'table');
+  $('#chart').hidden = t !== 'chart'; $('#chartTable').hidden = t !== 'table';
+  if (t === 'chart') drawChart();
+}
+$('#c-chart').onclick = () => setChart('chart');
+$('#c-table').onclick = () => setChart('table');
+drawChart();
+new ResizeObserver(() => { if (!$('#chart').hidden) drawChart(); }).observe($('#chart'));
+</script>
+</body>
+</html>

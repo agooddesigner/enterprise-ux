@@ -1,0 +1,39 @@
+/* Acme Design System — tokens + core components (fixture for eval E12) */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap");
+:root{
+  --ds-font: "IBM Plex Sans", system-ui, sans-serif;
+  --ds-color-brand: #0F766E;
+  --ds-color-brand-hover: #115E59;
+  --ds-color-brand-subtle: #CCFBF1;
+  --ds-color-bg: #F8FAFC;
+  --ds-color-surface: #FFFFFF;
+  --ds-color-surface-raised: #F1F5F9;
+  --ds-color-border: #E2E8F0;
+  --ds-color-border-strong: #CBD5E1;
+  --ds-color-text: #0F172A;
+  --ds-color-text-muted: #475569;
+  --ds-color-success: #15803D; --ds-color-success-subtle: #DCFCE7;
+  --ds-color-warning: #B45309; --ds-color-warning-subtle: #FEF3C7;
+  --ds-color-danger: #B91C1C;  --ds-color-danger-subtle: #FEE2E2;
+  --ds-color-focus: #2563EB;
+  --ds-radius-sm: 2px; --ds-radius-md: 4px; --ds-radius-lg: 6px;
+  --ds-space-1: 4px; --ds-space-2: 8px; --ds-space-3: 12px; --ds-space-4: 16px; --ds-space-6: 24px; --ds-space-8: 32px;
+  --ds-text-xs: 12px; --ds-text-sm: 13px; --ds-text-md: 14px; --ds-text-lg: 16px; --ds-text-xl: 20px; --ds-text-2xl: 28px;
+  --ds-shadow-sm: 0 1px 2px rgba(15,23,42,.06);
+  --ds-row-height: 40px;
+}
+body{font-family:var(--ds-font);font-size:var(--ds-text-md);color:var(--ds-color-text);background:var(--ds-color-bg)}
+.ds-btn{font:500 var(--ds-text-md)/1 var(--ds-font);height:36px;padding:0 var(--ds-space-4);border-radius:var(--ds-radius-md);border:1px solid var(--ds-color-border-strong);background:var(--ds-color-surface);color:var(--ds-color-text);cursor:pointer}
+.ds-btn--primary{background:var(--ds-color-brand);border-color:var(--ds-color-brand);color:#fff}
+.ds-btn--primary:hover{background:var(--ds-color-brand-hover)}
+.ds-btn--danger{background:var(--ds-color-danger);border-color:var(--ds-color-danger);color:#fff}
+.ds-btn:focus-visible,.ds-input:focus-visible{outline:2px solid var(--ds-color-focus);outline-offset:2px}
+.ds-card{background:var(--ds-color-surface);border:1px solid var(--ds-color-border);border-radius:var(--ds-radius-lg);padding:var(--ds-space-6);box-shadow:var(--ds-shadow-sm)}
+.ds-table{width:100%;border-collapse:collapse}
+.ds-table th{font-size:var(--ds-text-xs);text-transform:uppercase;letter-spacing:.04em;color:var(--ds-color-text-muted);text-align:left;border-bottom:1px solid var(--ds-color-border);padding:0 var(--ds-space-3);height:var(--ds-row-height)}
+.ds-table td{border-bottom:1px solid var(--ds-color-border);padding:0 var(--ds-space-3);height:var(--ds-row-height)}
+.ds-badge{display:inline-flex;align-items:center;gap:var(--ds-space-1);font-size:var(--ds-text-xs);font-weight:500;padding:2px var(--ds-space-2);border-radius:var(--ds-radius-sm);background:var(--ds-color-surface-raised);color:var(--ds-color-text-muted)}
+.ds-badge--success{background:var(--ds-color-success-subtle);color:var(--ds-color-success)}
+.ds-badge--warning{background:var(--ds-color-warning-subtle);color:var(--ds-color-warning)}
+.ds-badge--danger{background:var(--ds-color-danger-subtle);color:var(--ds-color-danger)}
+.ds-input{font:var(--ds-text-md) var(--ds-font);height:36px;padding:0 var(--ds-space-3);border:1px solid var(--ds-color-border-strong);border-radius:var(--ds-radius-md);background:var(--ds-color-surface);color:var(--ds-color-text)}

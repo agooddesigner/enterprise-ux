@@ -1,0 +1,62 @@
+<!-- Eval fixture for case E6. Contains 18 deliberately planted UX/accessibility problems.
+     DO NOT paste this comment block into the test prompt — paste only from <html> down. -->
+<html>
+<head>
+<title>App</title>
+<style>
+  body { font-family: sans-serif; margin: 0; }
+  .header { position: sticky; top: 0; height: 72px; background: #fff; border-bottom: 1px solid #eee; }
+  button:focus, input:focus, a:focus { outline: none; }
+  .status-ok { color: #2e9e44; } .status-bad { color: #d64545; }
+  .muted { color: #b5b5b5; }
+  .icon-btn { width: 16px; height: 16px; padding: 0; border: 0; }
+  .spinner-page { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+  td.num { text-align: center; }
+</style>
+</head>
+<body>
+<div class="header"><b>Acme Ops Console</b></div>
+
+<div class="spinner-page" id="loader">Loading...</div>
+
+<h2>Vendor Invoices</h2>
+
+<div>
+  <input type="text" placeholder="Vendor name">
+  <input type="text" placeholder="Amount">
+  <button id="submit" disabled>Submit</button>
+  <div id="err" class="status-bad">Invalid input</div>
+</div>
+
+<div class="grid">
+  <div class="row head"><span>ID</span><span>Vendor</span><span>Amount</span><span>Status</span><span></span></div>
+  <div class="row" onclick="openInvoice(1)">
+    <span>8f3a-22c1</span><span>Acme Corp</span><span class="num">1200.5</span>
+    <span class="status-ok">●</span>
+    <span><button class="icon-btn" onclick="save(1)">💾</button><button class="icon-btn" onclick="del(1)">🗑</button></span>
+  </div>
+  <div class="row" onclick="openInvoice(2)">
+    <span>91bd-07aa</span><span>Globex International Holdings Private Limited (Asia Pacific Region)</span><span class="num">87</span>
+    <span class="status-bad">●</span>
+    <span><button class="icon-btn" onclick="save(2)">💾</button><button class="icon-btn" onclick="del(2)">🗑</button></span>
+  </div>
+</div>
+
+<p class="muted">Showing all invoices</p>
+
+<button onclick="deleteAll()">Delete All</button>
+
+<script>
+  function del(id){ fetch('/api/invoices/'+id,{method:'DELETE'}); }
+  function deleteAll(){ fetch('/api/invoices',{method:'DELETE'}); }
+  function save(id){
+    fetch('/api/invoices/'+id,{method:'PUT'}).catch(()=>toast('Error 500: Something went wrong', 2000));
+  }
+  function toast(msg, ms){ const t=document.createElement('div'); t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(), ms); }
+  function openInvoice(id){ location.hash = ''; showModal(id); }
+  function showModal(id){ /* opens modal; from inside it a "Confirm" opens a second modal */ }
+  // On any form error the form is reset:
+  document.getElementById('submit').addEventListener('click', ()=>{ document.querySelectorAll('input').forEach(i=>i.value=''); });
+</script>
+</body>
+</html>

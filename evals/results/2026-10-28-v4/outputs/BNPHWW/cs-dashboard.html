@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Customer Success Dashboard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sticky filter bar, KPI strip, then a two-column work area: accounts needing action (wide) + renewals/health (narrow), trends below. */
+:root{
+  --bg:#f5f6f7; --surface:#ffffff; --line:#e1e4e8; --grid:#eceef1;
+  --ink:#171c22; --ink2:#4b5563; --ink3:#6b7480;
+  --accent:#0f6e6e; --accent-soft:#dcefef;
+  --good:#1a7f4b; --warn:#b26a00; --crit:#c0392b;
+  --good-bg:#e0f3e8; --warn-bg:#fbeccf; --crit-bg:#f9e0dc;
+  --s1:#0f6e6e; --s2:#8a93a0;
+  --font:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1317; --surface:#171d23; --line:#28313a; --grid:#212932;
+  --ink:#e8ecf0; --ink2:#aab3bd; --ink3:#8a94a0;
+  --accent:#4fc1bd; --accent-soft:#16373a;
+  --good:#4cc38a; --warn:#e0a13a; --crit:#f0786a;
+  --good-bg:#17332a; --warn-bg:#3a2d14; --crit-bg:#3d201d;
+  --s1:#4fc1bd; --s2:#8a94a0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1317; --surface:#171d23; --line:#28313a; --grid:#212932;
+  --ink:#e8ecf0; --ink2:#aab3bd; --ink3:#8a94a0;
+  --accent:#4fc1bd; --accent-soft:#16373a;
+  --good:#4cc38a; --warn:#e0a13a; --crit:#f0786a;
+  --good-bg:#17332a; --warn-bg:#3a2d14; --crit-bg:#3d201d;
+  --s1:#4fc1bd; --s2:#8a94a0; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--font);
+  padding-block:0 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:20px;font-weight:600;margin:0}
+h2{font-size:13px;font-weight:600;margin:0;letter-spacing:.01em}
+.sub{color:var(--ink3);font-size:12px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.bar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between;padding-block:18px 4px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+select,.seg button{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer}
+.seg{display:inline-flex}
+.seg button{border-radius:0;margin-left:-1px}
+.seg button:first-child{border-radius:6px 0 0 6px;margin:0}.seg button:last-child{border-radius:0 6px 6px 0}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink);position:relative;font-weight:600}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.note{background:var(--warn-bg);color:var(--ink);border-radius:6px;padding:8px 12px;font-size:12px}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.kpi .v{font-size:28px;font-weight:500;font-family:var(--mono);font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi .d{font-size:12px;font-family:var(--mono)}
+.up{color:var(--good)}.down{color:var(--crit)}.flat{color:var(--ink3)}
+.kpi svg{margin-top:4px;width:100%;height:28px}
+
+.grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px}
+@media(max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:16px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.ph{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);font-weight:500;text-align:left;padding:6px 10px;border-bottom:1px solid var(--line)}
+td{padding:10px;border-bottom:1px solid var(--grid);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right}
+.acct{font-weight:500}.acct small{display:block;color:var(--ink3);font-weight:400;font-size:12px}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 10px 2px 8px;font-size:12px;font-weight:500;white-space:nowrap}
+.pill i{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
+.pill.crit{background:var(--crit-bg);color:var(--crit)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.good{background:var(--good-bg);color:var(--good)}
+.score{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.meter{width:56px;height:6px;background:var(--grid);border-radius:3px;overflow:hidden}
+.meter b{display:block;height:100%;border-radius:3px}
+.leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink2)}
+.leg span{display:inline-flex;align-items:center;gap:6px}.leg i{width:10px;height:10px;border-radius:2px;display:inline-block}
+svg text{fill:var(--ink3);font:11px var(--font)}
+svg .t{font-family:var(--mono)}
+.chart{width:100%;height:auto;display:block}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);padding:6px 10px;border-radius:6px;font-size:12px;z-index:20;opacity:0;transition:opacity .08s}
+.row{display:grid;grid-template-columns:110px 1fr 40px;gap:10px;align-items:center;font-size:13px}
+.stack{display:flex;height:14px;gap:2px}
+.stack b{display:block;height:100%;border-radius:2px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="bar">
+    <div>
+      <h1>Customer Success</h1>
+      <div class="sub">Portfolio health, renewals and support load · sample data</div>
+    </div>
+    <div class="controls">
+      <label class="sub" for="seg">Segment</label>
+      <select id="seg"><option>All teams</option><option>Enterprise</option><option>Mid-market</option><option>SMB</option></select>
+      <div class="seg" role="group" aria-label="Period" id="period">
+        <button aria-pressed="false" data-n="7">7d</button>
+        <button aria-pressed="false" data-n="30">30d</button>
+        <button aria-pressed="true" data-n="90">90d</button>
+      </div>
+    </div>
+  </header>
+  <div class="note">All figures are illustrative sample data. Connect your CRM and support tool to replace them.</div>
+
+  <section class="kpis" id="kpis" aria-label="Key metrics"></section>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="h-risk">
+      <div class="ph"><h2 id="h-risk">Accounts that need action</h2><span class="sub">Sorted by ARR at risk · renewals within 90 days</span></div>
+      <div class="scroll">
+      <table>
+        <thead><tr><th>Account</th><th>Health</th><th>Why</th><th class="r">ARR</th><th class="r">Renews</th><th>Owner</th></tr></thead>
+        <tbody id="risk"></tbody>
+      </table></div>
+    </section>
+
+    <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+      <section class="panel" aria-labelledby="h-health">
+        <div class="ph"><h2 id="h-health">Health distribution</h2><span class="sub num">412 accounts</span></div>
+        <div class="stack" id="stack" role="img" aria-label="Healthy 68%, Watch 22%, At risk 10%"></div>
+        <div class="leg" id="stackLeg"></div>
+        <div id="bySeg" style="display:flex;flex-direction:column;gap:10px"></div>
+      </section>
+      <section class="panel" aria-labelledby="h-ren">
+        <div class="ph"><h2 id="h-ren">Renewals by month</h2><span class="sub">ARR, $K</span></div>
+        <svg class="chart" id="ren" viewBox="0 0 360 190" role="img" aria-label="Renewing ARR by month"></svg>
+        <div class="leg"><span><i style="background:var(--s1)"></i>Renewing</span><span><i style="background:var(--crit)"></i>Of which at risk</span></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <section class="panel" aria-labelledby="h-nrr">
+      <div class="ph"><h2 id="h-nrr">Net revenue retention</h2><span class="sub">Trailing 12 months, %</span></div>
+      <svg class="chart" id="nrr" viewBox="0 0 560 220" role="img" aria-label="Net revenue retention by month"></svg>
+    </section>
+    <section class="panel" aria-labelledby="h-sup">
+      <div class="ph"><h2 id="h-sup">Support load</h2><span class="sub">Tickets opened per week vs. median first response (hrs)</span></div>
+      <svg class="chart" id="sup" viewBox="0 0 560 220" role="img" aria-label="Weekly tickets opened"></svg>
+      <div class="leg"><span><i style="background:var(--s1)"></i>Tickets opened</span><span><i style="background:var(--s2)"></i>Escalated</span></div>
+    </section>
+  </div>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const $=s=>document.querySelector(s), NS='http://www.w3.org/2000/svg';
+const tip=$('#tip');
+function showTip(e,html){tip.innerHTML=html;tip.style.opacity=1;const x=Math.min(e.clientX+12,innerWidth-tip.offsetWidth-8);tip.style.left=x+'px';tip.style.top=(e.clientY+14)+'px'}
+function hideTip(){tip.style.opacity=0}
+function el(p,n,a,t){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);if(t!=null)e.textContent=t;p.appendChild(e);return e}
+const css=v=>`var(--${v})`;
+
+/* KPIs */
+const kpis=[
+ {l:'Net revenue retention',v:'108%',d:'+2.1 pts',dir:'up',s:[101,102,103,103,104,106,105,106,107,108]},
+ {l:'Gross retention',v:'93.4%',d:'−0.6 pts',dir:'down',s:[95,94.8,94.5,94.4,94.2,94,93.9,93.6,93.5,93.4]},
+ {l:'ARR at risk',v:'$1.84M',d:'+$210K',dir:'down',s:[1.2,1.3,1.35,1.4,1.5,1.55,1.62,1.7,1.78,1.84]},
+ {l:'Avg. health score',v:'74',d:'+1',dir:'up',s:[70,71,71,72,72,73,73,73,74,74]},
+ {l:'CSAT',v:'4.5 / 5',d:'flat',dir:'flat',s:[4.4,4.5,4.5,4.4,4.5,4.6,4.5,4.5,4.5,4.5]},
+ {l:'Open escalations',v:'17',d:'−4 vs last week',dir:'up',s:[26,24,25,22,21,23,20,21,19,17]},
+];
+$('#kpis').innerHTML=kpis.map((k,i)=>`<div class="kpi"><span class="sub">${k.l}</span><span class="v">${k.v}</span><span class="d ${k.dir}">${k.dir==='up'?'▲':k.dir==='down'?'▼':'●'} ${k.d}</span><svg viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true">${spark(k.s,k.dir)}</svg></div>`).join('');
+function spark(s,dir){const mn=Math.min(...s),mx=Math.max(...s),p=s.map((v,i)=>[i*100/(s.length-1),26-(v-mn)/(mx-mn||1)*22]);
+ const c=dir==='down'?'var(--crit)':dir==='up'?'var(--good)':'var(--ink3)';
+ const d='M'+p.map(a=>a.join(',')).join('L');
+ return `<path d="${d}L100,28L0,28Z" fill="${c}" opacity=".12"/><path d="${d}" fill="none" stroke="${c}" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`}
+
+/* At-risk accounts */
+const accts=[
+ ['Northwind Logistics','Enterprise',86,'Exec sponsor left; usage down 38%',480,'Nov 14','Priya N.'],
+ ['Halvorsen Health','Enterprise',51,'Open P1 escalation, 9 days',390,'Nov 30','Marcus T.'],
+ ['Brightline Retail','Mid-market',44,'No login from admin in 45 days',210,'Dec 03','Ana R.'],
+ ['Kestrel Energy','Enterprise',58,'Seat utilisation at 41%',340,'Dec 12','Priya N.'],
+ ['Lumen Analytics','Mid-market',62,'Asked for competitor comparison',150,'Dec 19','Jonas W.'],
+ ['Orchard & Pine','SMB',39,'Two failed payments, low NPS',48,'Nov 09','Sofia L.'],
+ ['Tidewater Marine','Mid-market',64,'Onboarding stalled at step 3',120,'Jan 08','Ana R.'],
+].map(a=>({name:a[0],seg:a[1],h:a[2],why:a[3],arr:a[4],ren:a[5],own:a[6]}));
+accts.sort((a,b)=>b.arr-a.arr);
+const band=h=>h<50?['crit','At risk']:h<65?['warn','Watch']:['good','Healthy'];
+$('#risk').innerHTML=accts.map(a=>{const [c,t]=band(a.h);return `<tr><td class="acct">${a.name}<small>${a.seg}</small></td>
+<td><div class="score"><span class="pill ${c}"><i></i>${t}</span><span class="num">${a.h}</span></div></td>
+<td>${a.why}</td><td class="r num">$${a.arr}K</td><td class="r num">${a.ren}</td><td>${a.own}</td></tr>`}).join('');
+
+/* Health distribution */
+const hd=[['Healthy',68,'good'],['Watch',22,'warn'],['At risk',10,'crit']];
+$('#stack').innerHTML=hd.map(h=>`<b style="width:${h[1]}%;background:var(--${h[2]})" data-t="${h[0]}: ${h[1]}%"></b>`).join('');
+$('#stackLeg').innerHTML=hd.map(h=>`<span><i style="background:var(--${h[2]})"></i>${h[0]} <span class="num">${h[1]}%</span></span>`).join('');
+const segs=[['Enterprise',[61,27,12]],['Mid-market',[66,23,11]],['SMB',[74,18,8]]];
+$('#bySeg').innerHTML=segs.map(s=>`<div class="row"><span>${s[0]}</span><div class="stack">${s[1].map((v,i)=>`<b style="width:${v}%;background:var(--${hd[i][2]})" data-t="${s[0]} · ${hd[i][0]}: ${v}%"></b>`).join('')}</div><span class="num sub">${s[1][2]}%</span></div>`).join('');
+document.querySelectorAll('.stack b').forEach(b=>{b.onmousemove=e=>showTip(e,b.dataset.t);b.onmouseleave=hideTip});
+
+/* Renewals bar chart */
+(function(){const svg=$('#ren'),d=[['Nov',620,210],['Dec',840,330],['Jan',510,90],['Feb',430,40],['Mar',700,120]];
+ const W=360,H=190,L=34,B=24,T=8,mx=1000,y=v=>T+(H-T-B)*(1-v/mx),bw=30,step=(W-L-8)/d.length;
+ [0,250,500,750,1000].forEach(t=>{el(svg,'line',{x1:L,x2:W,y1:y(t),y2:y(t),stroke:css('grid')});el(svg,'text',{x:L-6,y:y(t)+4,'text-anchor':'end',class:'t'},t)});
+ d.forEach((r,i)=>{const x=L+i*step+(step-bw)/2;
+  const g=el(svg,'g',{});
+  el(g,'path',{d:`M${x},${y(0)}V${y(r[1])+4}Q${x},${y(r[1])} ${x+4},${y(r[1])}H${x+bw-4}Q${x+bw},${y(r[1])} ${x+bw},${y(r[1])+4}V${y(0)}Z`,fill:css('s1')});
+  el(g,'rect',{x,y:y(r[2]),width:bw,height:y(0)-y(r[2]),fill:css('crit'),stroke:css('surface'),'stroke-width':2});
+  el(svg,'text',{x:x+bw/2,y:H-8,'text-anchor':'middle'},r[0]);
+  const h=el(svg,'rect',{x:x-6,y:T,width:bw+12,height:H-T-B,fill:'transparent'});
+  h.onmousemove=e=>showTip(e,`<b>${r[0]}</b><br>Renewing $${r[1]}K<br>At risk $${r[2]}K (${Math.round(r[2]/r[1]*100)}%)`);h.onmouseleave=hideTip;});
+})();
+
+/* Line helpers */
+function lineChart(svg,labels,series,opt){const W=560,H=220,L=40,R=12,T=10,B=26,{min,max,ticks,fmt}=opt;
+ const x=i=>L+i*(W-L-R)/(labels.length-1),y=v=>T+(H-T-B)*(1-(v-min)/(max-min));
+ ticks.forEach(t=>{el(svg,'line',{x1:L,x2:W-R,y1:y(t),y2:y(t),stroke:css('grid')});el(svg,'text',{x:L-6,y:y(t)+4,'text-anchor':'end',class:'t'},fmt(t))});
+ labels.forEach((l,i)=>{if(i%opt.every===0||i===labels.length-1)el(svg,'text',{x:x(i),y:H-8,'text-anchor':'middle'},l)});
+ series.forEach(s=>{const pts=s.d.map((v,i)=>`${x(i)},${y(v)}`);
+  if(s.area)el(svg,'path',{d:`M${x(0)},${y(min)}L${pts.join('L')}L${x(s.d.length-1)},${y(min)}Z`,fill:css(s.c),opacity:.1});
+  el(svg,'path',{d:'M'+pts.join('L'),fill:'none',stroke:css(s.c),'stroke-width':2,'stroke-linejoin':'round'});
+  const n=s.d.length-1;el(svg,'circle',{cx:x(n),cy:y(s.d[n]),r:4,fill:css(s.c),stroke:css('surface'),'stroke-width':2})});
+ const guide=el(svg,'line',{y1:T,y2:H-B,stroke:css('ink3'),'stroke-dasharray':'3 3',opacity:0});
+ const dots=series.map(s=>el(svg,'circle',{r:4,fill:css(s.c),stroke:css('surface'),'stroke-width':2,opacity:0}));
+ const hit=el(svg,'rect',{x:L,y:T,width:W-L-R,height:H-T-B,fill:'transparent'});
+ hit.onmousemove=e=>{const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)*W/r.width;
+  const i=Math.max(0,Math.min(labels.length-1,Math.round((px-L)/((W-L-R)/(labels.length-1)))));
+  guide.setAttribute('x1',x(i));guide.setAttribute('x2',x(i));guide.setAttribute('opacity',1);
+  dots.forEach((d,k)=>{d.setAttribute('cx',x(i));d.setAttribute('cy',y(series[k].d[i]));d.setAttribute('opacity',1)});
+  showTip(e,`<b>${labels[i]}</b>`+series.map(s=>`<br>${s.n}: ${opt.fmt2(s.d[i])}`).join(''))};
+ hit.onmouseleave=()=>{hideTip();guide.setAttribute('opacity',0);dots.forEach(d=>d.setAttribute('opacity',0))};}
+
+lineChart($('#nrr'),['Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'],
+ [{n:'NRR',c:'s1',area:true,d:[101,102,102,103,103,104,105,106,105,106,107,108]}],
+ {min:96,max:112,ticks:[96,100,104,108,112],every:1,fmt:v=>v+'%',fmt2:v=>v+'%'});
+const wk=Array.from({length:12},(_,i)=>'W'+(i+31));
+lineChart($('#sup'),wk,
+ [{n:'Opened',c:'s1',area:true,d:[212,198,224,240,231,219,248,262,255,241,236,228]},
+  {n:'Escalated',c:'s2',d:[18,15,21,24,22,19,26,31,28,24,21,17]}],
+ {min:0,max:300,ticks:[0,100,200,300],every:2,fmt:v=>v,fmt2:v=>v});
+
+/* Controls (visual only in sample) */
+document.querySelectorAll('#period button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#period button').forEach(x=>x.setAttribute('aria-pressed',x===b))});
+</script>
+</body>
+</html>

@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tally Billing Overview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: 4-col bento (hero 2x2 + two wide/small tiles), then a ledger table beside a renewals list. */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f6f7f9;
+  --ink: #14181f;
+  --ink-2: #4b5565;
+  --ink-3: #6b7585;
+  --line: #e4e7ec;
+  --line-strong: #d3d8e0;
+  --accent: #3b4fd8;
+  --accent-soft: #e9ecfc;
+  --good: #1a7f4b;
+  --good-soft: #e3f4ea;
+  --warn: #a15c07;
+  --warn-soft: #fbf0dc;
+  --bad: #c0392b;
+  --bad-soft: #fbe8e5;
+  --grid: #eceff3;
+  --shadow: 0 1px 2px rgba(16,24,40,.04);
+  --font-body: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1016; --surface: #151a22; --surface-2: #1b212b;
+    --ink: #eceff4; --ink-2: #aab3c2; --ink-3: #8a94a5;
+    --line: #232a35; --line-strong: #323b49;
+    --accent: #8d9bff; --accent-soft: #232a52;
+    --good: #4cc38a; --good-soft: #14291f;
+    --warn: #e5a64a; --warn-soft: #2e2412;
+    --bad: #f0786a; --bad-soft: #321a17;
+    --grid: #1f2530; --shadow: none;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1016; --surface: #151a22; --surface-2: #1b212b;
+  --ink: #eceff4; --ink-2: #aab3c2; --ink-3: #8a94a5;
+  --line: #232a35; --line-strong: #323b49;
+  --accent: #8d9bff; --accent-soft: #232a52;
+  --good: #4cc38a; --good-soft: #14291f;
+  --warn: #e5a64a; --warn-soft: #2e2412;
+  --bad: #f0786a; --bad-soft: #321a17;
+  --grid: #1f2530; --shadow: none;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.5 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* header */
+header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--ink-3); font-size: 13px; }
+.mark { width: 22px; height: 22px; border-radius: 6px; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-weight: 600; font-size: 13px; }
+h1 { margin: 6px 0 0; font-size: 24px; line-height: 1.2; font-weight: 600; letter-spacing: -.015em; }
+.head-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink-2); font: inherit; font-size: 13px; }
+button.chip { cursor: pointer; }
+button.chip:hover { color: var(--ink); border-color: var(--ink-3); }
+.chip b { color: var(--ink); font-weight: 500; }
+
+/* bento */
+.bento { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; box-shadow: var(--shadow); min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.label { font-size: 13px; color: var(--ink-2); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.value { font-size: 30px; line-height: 1.1; font-weight: 500; letter-spacing: -.02em; }
+.sub { font-size: 12.5px; color: var(--ink-3); }
+.delta { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 500; padding: 1px 7px; border-radius: 99px; }
+.delta.up { color: var(--good); background: var(--good-soft); }
+.delta.down { color: var(--bad); background: var(--bad-soft); }
+
+.hero { grid-column: span 2; grid-row: span 2; padding: 22px 24px 18px; gap: 6px; }
+.hero .value { font-size: clamp(44px, 6.4vw, 68px); font-weight: 500; letter-spacing: -.035em; margin-top: 6px; }
+.hero .meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.chart { position: relative; margin-top: 14px; flex: 1; min-height: 190px; }
+.chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--bg); padding: 6px 9px; border-radius: 6px; font-size: 12px; white-space: nowrap; transform: translate(-50%, -100%); opacity: 0; transition: opacity .1s; z-index: 2; }
+.tip b { font-weight: 500; display: block; font-size: 13px; }
+
+.wide { grid-column: span 2; }
+.aging { display: flex; height: 8px; gap: 2px; margin-top: 4px; }
+.aging span { display: block; border-radius: 2px; min-width: 4px; }
+.legend { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 2px; }
+.legend div { font-size: 12px; color: var(--ink-3); min-width: 0; }
+.legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+.legend strong { display: block; font-weight: 500; color: var(--ink); font-size: 13px; margin-top: 1px; }
+.spark { height: 36px; margin-top: auto; }
+.spark svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+/* lower section */
+.lower { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); min-width: 0; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+.panel-head h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.005em; }
+.tabs { display: inline-flex; gap: 2px; padding: 2px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; }
+.tabs button { font: inherit; font-size: 12.5px; color: var(--ink-2); background: none; border: 0; padding: 4px 10px; border-radius: 6px; cursor: pointer; }
+.tabs button:hover { color: var(--ink); }
+.tabs button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line-strong); }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 560px; }
+th { text-align: left; font-weight: 500; font-size: 12px; color: var(--ink-3); padding: 9px 20px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 12px 20px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: var(--surface-2); }
+th.r, td.r { text-align: right; }
+td .id { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-3); }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 2px 9px 2px 8px; border-radius: 99px; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pill.paid { color: var(--good); background: var(--good-soft); }
+.pill.open { color: var(--accent); background: var(--accent-soft); }
+.pill.overdue { color: var(--bad); background: var(--bad-soft); }
+.empty { padding: 28px 20px; color: var(--ink-3); text-align: center; }
+
+.renewals { list-style: none; margin: 0; padding: 6px 0; }
+.renewals li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 11px 20px; }
+.renewals li + li { border-top: 1px solid var(--line); }
+.renewals .who { min-width: 0; }
+.renewals .who div:first-child { font-weight: 500; overflow-wrap: anywhere; }
+.renewals .who div:last-child { font-size: 12.5px; color: var(--ink-3); }
+.renewals .amt { text-align: right; }
+.renewals .amt div:last-child { font-size: 12.5px; color: var(--ink-3); }
+.foot { font-size: 12px; color: var(--ink-3); }
+
+@media (max-width: 980px) {
+  .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero, .wide { grid-column: span 2; }
+  .hero { grid-row: auto; }
+  .lower { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 520px) {
+  .bento { grid-template-columns: minmax(0, 1fr); }
+  .hero, .wide { grid-column: auto; }
+  .legend { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tile { padding: 16px; }
+  .hero { padding: 18px 16px 14px; }
+  th, td, .panel-head, .renewals li { padding-left: 16px; padding-right: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="brand"><span class="mark" aria-hidden="true">T</span> Tally · Billing</div>
+      <h1>Billing overview</h1>
+    </div>
+    <div class="head-right">
+      <span class="chip">October 2026 <b class="num">· as of Oct 28</b></span>
+      <span class="chip">Next payout <b class="num">$58,214 · Oct 30</b></span>
+      <button class="chip" id="theme" type="button" aria-label="Switch colour theme">Theme</button>
+    </div>
+  </header>
+
+  <section class="bento" aria-label="Key figures">
+    <article class="tile hero">
+      <div class="label"><span>Monthly recurring revenue</span><span class="sub">Last 12 months</span></div>
+      <div class="value num">$462,700</div>
+      <div class="meta">
+        <span class="delta up num">▲ 2.5% vs Sep</span>
+        <span class="sub num">+45.3% year over year · 1,284 active subscriptions</span>
+      </div>
+      <div class="chart" id="heroChart"><div class="tip" id="heroTip"></div></div>
+    </article>
+
+    <article class="tile wide">
+      <div class="label"><span>Outstanding invoices</span><span class="sub num">31 invoices</span></div>
+      <div class="value num">$128,450</div>
+      <div class="sub num"><span style="color:var(--bad);font-weight:500">$41,900 overdue</span> across 9 invoices</div>
+      <div class="aging" id="aging" role="img" aria-label="Outstanding balance by age"></div>
+      <div class="legend" id="agingLegend"></div>
+    </article>
+
+    <article class="tile">
+      <div class="label"><span>Collection rate</span></div>
+      <div class="value num">96.4%</div>
+      <div class="sub"><span class="delta up num">▲ 1.6 pts</span> last 30 days</div>
+      <div class="spark" id="spark1"></div>
+    </article>
+
+    <article class="tile">
+      <div class="label"><span>Failed payments</span></div>
+      <div class="value num">7</div>
+      <div class="sub num"><span style="color:var(--warn);font-weight:500">$3,180</span> need a new card</div>
+      <div class="spark" id="spark2"></div>
+    </article>
+  </section>
+
+  <section class="lower">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Invoices</h2>
+        <div class="tabs" role="group" aria-label="Filter invoices">
+          <button type="button" data-f="all" aria-pressed="true">All</button>
+          <button type="button" data-f="overdue" aria-pressed="false">Overdue</button>
+          <button type="button" data-f="open" aria-pressed="false">Open</button>
+          <button type="button" data-f="paid" aria-pressed="false">Paid</button>
+        </div>
+      </div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Invoice</th><th>Customer</th><th>Due</th><th>Status</th><th class="r">Amount</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Renewals, next 30 days</h2><span class="sub num">$118,940</span></div>
+      <ul class="renewals" id="renewals"></ul>
+    </div>
+  </section>
+
+  <p class="foot">Example data for design review. Amounts in USD; overdue is measured from invoice due date.</p>
+</div>
+
+<script>
+(function () {
+  var NS = "http://www.w3.org/2000/svg";
+  var fmt = function (n) { return "$" + n.toLocaleString("en-US"); };
+  var css = function (v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); };
+  var el = function (tag, attrs, parent) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  };
+
+  /* ---------- theme toggle ---------- */
+  var root = document.documentElement, tbtn = document.getElementById("theme");
+  try { var saved = localStorage.getItem("tally-theme"); if (saved) root.setAttribute("data-theme", saved); } catch (e) {}
+  function isDark() {
+    var t = root.getAttribute("data-theme");
+    return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+  function syncBtn() { tbtn.textContent = isDark() ? "Dark" : "Light"; }
+  tbtn.addEventListener("click", function () {
+    var next = isDark() ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("tally-theme", next); } catch (e) {}
+    syncBtn(); drawAll();
+  });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () { syncBtn(); drawAll(); });
+  syncBtn();
+
+  /* ---------- data ---------- */
+  var months = ["Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct"];
+  var mrr = [318400, 327900, 336200, 349000, 358500, 371300, 389600, 404800, 423100, 437000, 451200, 462700];
+  var collect = [93.1, 93.8, 94.2, 94.8, 94.5, 95.1, 95.6, 95.2, 95.9, 96.1, 96.0, 96.4];
+  var failed = [4, 6, 3, 9, 5, 8, 11, 6, 5, 9, 8, 7];
+  var aging = [
+    { k: "Current", n: 22, v: 86550, c: "--line-strong" },
+    { k: "1–30 days", n: 6, v: 24300, c: "--warn" },
+    { k: "31–60 days", n: 2, v: 9800, c: "--bad" },
+    { k: "60+ days", n: 1, v: 7800, c: "--bad" }
+  ];
+  var invoices = [
+    ["INV-2058", "Ostrander & Pike", "Nov 21", "open", 14200],
+    ["INV-2056", "Kestrel Analytics", "Nov 19", "open", 22750],
+    ["INV-2049", "Fernhill Studio", "Nov 12", "open", 3900],
+    ["INV-2047", "Halden Health", "Oct 20 · 8d late", "overdue", 6900],
+    ["INV-2044", "Copperline Energy", "Paid Oct 25", "paid", 31000],
+    ["INV-2041", "Northwind Logistics", "Oct 17 · 11d late", "overdue", 11200],
+    ["INV-2051", "Meridian Dental Group", "Paid Oct 27", "paid", 6480],
+    ["INV-2003", "Castellan Foods", "Sep 21 · 37d late", "overdue", 5600],
+    ["INV-1988", "Brightline Media", "Aug 24 · 65d late", "overdue", 7800]
+  ];
+  var renewals = [
+    ["Kestrel Analytics", "Nov 2 · Scale, annual", 22750],
+    ["Lumen Credit Union", "Nov 6 · Enterprise, annual", 48000],
+    ["Fernhill Studio", "Nov 12 · Growth, monthly", 3900],
+    ["Ostrander & Pike", "Nov 21 · Scale, annual", 14200],
+    ["Verity Labs", "Nov 24 · Growth, annual", 30090]
+  ];
+
+  /* ---------- hero chart ---------- */
+  var heroBox = document.getElementById("heroChart"), tip = document.getElementById("heroTip");
+  function drawHero() {
+    var old = heroBox.querySelector("svg"); if (old) old.remove();
+    var W = heroBox.clientWidth, H = heroBox.clientHeight;
+    if (!W || !H) return;
+    var m = { t: 12, r: 8, b: 22, l: 40 };
+    var lo = 300000, hi = 500000;
+    var x = function (i) { return m.l + (W - m.l - m.r) * i / (mrr.length - 1); };
+    var y = function (v) { return m.t + (H - m.t - m.b) * (1 - (v - lo) / (hi - lo)); };
+    var svg = el("svg", { width: W, height: H, viewBox: "0 0 " + W + " " + H }, null);
+    heroBox.insertBefore(svg, tip);
+    [300000, 400000, 500000].forEach(function (g) {
+      el("line", { x1: m.l, x2: W - m.r, y1: y(g), y2: y(g), stroke: css("--grid"), "stroke-width": 1 }, svg);
+      var t = el("text", { x: m.l - 8, y: y(g) + 4, "text-anchor": "end", "font-size": 11, fill: css("--ink-3"), "font-family": "Geist Mono, monospace" }, svg);
+      t.textContent = "$" + g / 1000 + "k";
+    });
+    months.forEach(function (mo, i) {
+      if (i % 2 === 1 && i !== months.length - 1) return;
+      var t = el("text", { x: x(i), y: H - 4, "text-anchor": i === 0 ? "start" : i === months.length - 1 ? "end" : "middle", "font-size": 11, fill: css("--ink-3"), "font-family": "Geist, sans-serif" }, svg);
+      t.textContent = mo;
+    });
+    var pts = mrr.map(function (v, i) { return [x(i), y(v)]; });
+    var line = pts.map(function (p, i) { return (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" ");
+    var defs = el("defs", {}, svg), gr = el("linearGradient", { id: "hg", x1: 0, x2: 0, y1: 0, y2: 1 }, defs);
+    el("stop", { offset: "0", "stop-color": css("--accent"), "stop-opacity": isDark() ? .28 : .16 }, gr);
+    el("stop", { offset: "1", "stop-color": css("--accent"), "stop-opacity": 0 }, gr);
+    el("path", { d: line + " L" + pts[pts.length - 1][0] + " " + (H - m.b) + " L" + pts[0][0] + " " + (H - m.b) + " Z", fill: "url(#hg)" }, svg);
+    el("path", { d: line, fill: "none", stroke: css("--accent"), "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+    var last = pts[pts.length - 1];
+    el("circle", { cx: last[0], cy: last[1], r: 4, fill: css("--accent"), stroke: css("--surface"), "stroke-width": 2 }, svg);
+    var cross = el("line", { y1: m.t, y2: H - m.b, stroke: css("--line-strong"), "stroke-width": 1, opacity: 0 }, svg);
+    var dot = el("circle", { r: 4.5, fill: css("--accent"), stroke: css("--surface"), "stroke-width": 2, opacity: 0 }, svg);
+    var hit = el("rect", { x: m.l, y: 0, width: W - m.l - m.r, height: H, fill: "transparent" }, svg);
+    function move(ev) {
+      var r = svg.getBoundingClientRect(), px = ev.clientX - r.left;
+      var i = Math.max(0, Math.min(mrr.length - 1, Math.round((px - m.l) / ((W - m.l - m.r) / (mrr.length - 1)))));
+      cross.setAttribute("x1", pts[i][0]); cross.setAttribute("x2", pts[i][0]); cross.setAttribute("opacity", 1);
+      dot.setAttribute("cx", pts[i][0]); dot.setAttribute("cy", pts[i][1]); dot.setAttribute("opacity", 1);
+      var prev = i ? mrr[i] - mrr[i - 1] : null;
+      tip.innerHTML = months[i] + (i < 2 ? " 2025" : " 2026") + "<b class='num'>" + fmt(mrr[i]) + "</b>" +
+        (prev === null ? "" : "<span class='num'>" + (prev >= 0 ? "+" : "−") + fmt(Math.abs(prev)) + " vs prior month</span>");
+      tip.style.left = Math.max(70, Math.min(W - 70, pts[i][0])) + "px";
+      tip.style.top = (pts[i][1] - 12) + "px";
+      tip.style.opacity = 1;
+    }
+    function leave() { cross.setAttribute("opacity", 0); dot.setAttribute("opacity", 0); tip.style.opacity = 0; }
+    hit.addEventListener("pointermove", move); hit.addEventListener("pointerleave", leave);
+  }
+
+  /* ---------- sparklines ---------- */
+  function spark(id, data, kind, color) {
+    var box = document.getElementById(id); box.innerHTML = "";
+    var W = box.clientWidth, H = box.clientHeight; if (!W) return;
+    var svg = el("svg", { width: W, height: H, viewBox: "0 0 " + W + " " + H }, box);
+    var mn = Math.min.apply(null, data), mx = Math.max.apply(null, data);
+    if (kind === "bars") {
+      var gap = 3, bw = (W - gap * (data.length - 1)) / data.length;
+      data.forEach(function (v, i) {
+        var h = Math.max(3, (v / mx) * (H - 2));
+        el("rect", { x: i * (bw + gap), y: H - h, width: bw, height: h, rx: 2, fill: i === data.length - 1 ? color : css("--line-strong") }, svg);
+      });
+    } else {
+      var pad = 4, p = data.map(function (v, i) { return [pad + (W - pad * 2) * i / (data.length - 1), pad + (H - pad * 2) * (1 - (v - mn) / (mx - mn))]; });
+      el("path", { d: p.map(function (q, i) { return (i ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1); }).join(" "), fill: "none", stroke: color, "stroke-width": 1.75, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+      var e = p[p.length - 1];
+      el("circle", { cx: e[0], cy: e[1], r: 3.5, fill: color, stroke: css("--surface"), "stroke-width": 2 }, svg);
+    }
+  }
+
+  /* ---------- aging bar ---------- */
+  function drawAging() {
+    var bar = document.getElementById("aging"), lg = document.getElementById("agingLegend");
+    bar.innerHTML = ""; lg.innerHTML = "";
+    var total = aging.reduce(function (s, a) { return s + a.v; }, 0);
+    aging.forEach(function (a) {
+      var s = document.createElement("span");
+      s.style.flex = a.v / total; s.style.background = css(a.c);
+      s.title = a.k + ": " + fmt(a.v);
+      bar.appendChild(s);
+      var d = document.createElement("div");
+      d.innerHTML = "<i style='background:" + css(a.c) + "'></i>" + a.k + "<strong class='num'>" + fmt(a.v) + "</strong>";
+      lg.appendChild(d);
+    });
+  }
+
+  function drawAll() {
+    drawHero(); drawAging();
+    spark("spark1", collect, "line", css("--good"));
+    spark("spark2", failed, "bars", css("--warn"));
+  }
+
+  /* ---------- table + renewals ---------- */
+  var labels = { paid: "Paid", open: "Open", overdue: "Overdue" };
+  var tbody = document.getElementById("rows");
+  function renderRows(f) {
+    var list = invoices.filter(function (r) { return f === "all" || r[3] === f; });
+    if (!list.length) { tbody.innerHTML = "<tr><td colspan='5' class='empty'>No invoices match this filter.</td></tr>"; return; }
+    tbody.innerHTML = list.map(function (r) {
+      return "<tr><td><span class='id'>" + r[0] + "</span></td><td>" + r[1] + "</td><td class='num'>" + r[2] +
+        "</td><td><span class='pill " + r[3] + "'>" + labels[r[3]] + "</span></td><td class='r num'>" + fmt(r[4]) + "</td></tr>";
+    }).join("");
+  }
+  document.querySelectorAll(".tabs button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      document.querySelectorAll(".tabs button").forEach(function (o) { o.setAttribute("aria-pressed", o === b); });
+      renderRows(b.dataset.f);
+    });
+  });
+  renderRows("all");
+  document.getElementById("renewals").innerHTML = renewals.map(function (r) {
+    return "<li><div class='who'><div>" + r[0] + "</div><div>" + r[1] + "</div></div><div class='amt num'><div>" + fmt(r[2]) + "</div></div></li>";
+  }).join("");
+
+  drawAll();
+  if (window.ResizeObserver) new ResizeObserver(function () { drawAll(); }).observe(document.querySelector(".wrap"));
+  else addEventListener("resize", drawAll);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+})();
+</script>
+</body>
+</html>

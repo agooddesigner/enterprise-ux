@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support tickets board</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f4f5f7; --surface: #ffffff; --col: #e8eaee; --text: #1a1d23; --muted: #4b5260;
+    --border: #8a91a0; --accent: #0b57d0; --accent-text: #ffffff; --focus: #0b57d0;
+    --drop: #d6e4ff; --high: #a40e26; --med: #7a4b00; --low: #1d5c2e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12141a; --surface: #1d2028; --col: #181b22; --text: #eef0f4; --muted: #b4bac7;
+      --border: #7b8394; --accent: #8ab4f8; --accent-text: #0b1220; --focus: #8ab4f8;
+      --drop: #26354f; --high: #ff9aa8; --med: #f2c46d; --low: #8fd9a0;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 1rem/1.5 system-ui, sans-serif; background: var(--bg); color: var(--text); }
+  .skip { position: absolute; left: .5rem; top: -4rem; background: var(--surface); padding: .5rem 1rem; z-index: 10; }
+  .skip:focus { top: .5rem; }
+  header, main { max-width: 90rem; margin: 0 auto; padding: 1rem; }
+  h1 { font-size: 1.5rem; margin: 0 0 .5rem; }
+  .help { margin: 0 0 1rem; color: var(--muted); max-width: 60ch; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  form.add { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; margin-bottom: 1rem; }
+  .field { display: flex; flex-direction: column; gap: .25rem; }
+  label { font-weight: 600; font-size: .9rem; }
+  input, select, button {
+    font: inherit; color: var(--text); background: var(--surface);
+    border: 2px solid var(--border); border-radius: 6px; padding: .4rem .6rem; min-height: 2.5rem;
+  }
+  input[type=text] { min-width: min(20rem, 80vw); }
+  button { cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
+  .board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+  @media (max-width: 900px) { .board { grid-template-columns: 1fr; } }
+  .column { background: var(--col); border-radius: 10px; padding: .75rem; }
+  .column h2 { font-size: 1.1rem; margin: 0 0 .75rem; display: flex; justify-content: space-between; }
+  .count { font-weight: 400; color: var(--muted); }
+  ul.cards { list-style: none; margin: 0; padding: 0; min-height: 4rem; display: grid; gap: .6rem; border-radius: 8px; }
+  ul.cards.over { background: var(--drop); outline: 2px dashed var(--accent); outline-offset: 2px; }
+  .empty { color: var(--muted); margin: 0; padding: .75rem; border: 2px dashed var(--border); border-radius: 8px; }
+  .card { background: var(--surface); border: 2px solid var(--border); border-radius: 8px; padding: .6rem .75rem; cursor: grab; }
+  .card.dragging { opacity: .5; }
+  .card.grabbed { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent); }
+  .card h3 { font-size: 1rem; margin: 0 0 .25rem; overflow-wrap: anywhere; }
+  .meta { display: flex; gap: .5rem; flex-wrap: wrap; font-size: .85rem; color: var(--muted); margin: 0 0 .5rem; }
+  .prio { font-weight: 700; }
+  .prio.High { color: var(--high); } .prio.Medium { color: var(--med); } .prio.Low { color: var(--low); }
+  .actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+  .actions label { font-size: .85rem; font-weight: 400; }
+  .actions select { min-height: 2.25rem; max-width: 100%; }
+  .grab { font-size: .85rem; min-height: 2.25rem; }
+  .card.grabbed .grab { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  #status { min-height: 1.5rem; margin: 0 0 .75rem; font-weight: 600; }
+  @media (prefers-reduced-motion: no-preference) { .card { transition: box-shadow .15s; } }
+  @media (forced-colors: active) { .card.grabbed { outline: 3px solid Highlight; } ul.cards.over { outline: 2px dashed Highlight; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#board">Skip to board</a>
+<header>
+  <h1>Support tickets</h1>
+  <p class="help" id="instructions">
+    Move tickets between columns by dragging with a mouse, by using each ticket’s “Move to” menu,
+    or with the keyboard: focus a ticket’s “Reorder” button, press Space to pick it up, use the arrow keys
+    to move it, Space to drop it, or Escape to cancel.
+  </p>
+  <form class="add" id="addForm">
+    <div class="field">
+      <label for="newTitle">New ticket title</label>
+      <input type="text" id="newTitle" required autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="newPrio">Priority</label>
+      <select id="newPrio"><option>High</option><option selected>Medium</option><option>Low</option></select>
+    </div>
+    <button class="primary" type="submit">Add ticket to New</button>
+  </form>
+  <p id="status" role="status" aria-live="polite" aria-atomic="true"></p>
+</header>
+<main id="board" class="board" aria-label="Ticket board" tabindex="-1"></main>
+
+<script>
+(() => {
+  const COLUMNS = ["New", "In progress", "Waiting", "Done"];
+  const KEY = "support-kanban-v1";
+  const seed = [
+    { id: 101, title: "Customer cannot reset password", prio: "High", col: 0 },
+    { id: 102, title: "Invoice PDF shows wrong VAT number", prio: "Medium", col: 0 },
+    { id: 103, title: "Export to CSV times out", prio: "High", col: 1 },
+    { id: 104, title: "Feature request: dark mode", prio: "Low", col: 2 },
+    { id: 105, title: "Update billing address", prio: "Low", col: 3 },
+  ];
+  let tickets;
+  try { tickets = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+  if (!Array.isArray(tickets)) tickets = seed;
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(tickets)); } catch (e) {} };
+
+  const board = document.getElementById("board");
+  const statusEl = document.getElementById("status");
+  let grabbed = null;       // { id, origCol, origIndex }
+  let rendering = false;
+  let dragId = null;
+
+  const announce = (msg) => { statusEl.textContent = ""; setTimeout(() => (statusEl.textContent = msg), 30); };
+  const inCol = (c) => tickets.filter((t) => t.col === c);
+  const byId = (id) => tickets.find((t) => t.id === id);
+  const el = (tag, attrs = {}, ...kids) => {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === "class") n.className = v; else if (k === "text") n.textContent = v; else n.setAttribute(k, v);
+    }
+    kids.forEach((k) => n.append(k));
+    return n;
+  };
+
+  // Place ticket in column `col` at `index` (within that column's order).
+  function place(id, col, index) {
+    const t = byId(id);
+    tickets = tickets.filter((x) => x !== t);
+    t.col = col;
+    const colItems = inCol(col);
+    index = Math.max(0, Math.min(index, colItems.length));
+    if (index >= colItems.length) {
+      const last = colItems[colItems.length - 1];
+      tickets.splice(last ? tickets.indexOf(last) + 1 : tickets.length, 0, t);
+    } else {
+      tickets.splice(tickets.indexOf(colItems[index]), 0, t);
+    }
+    save();
+  }
+  const position = (id) => { const t = byId(id); return { col: t.col, index: inCol(t.col).indexOf(t) }; };
+  const where = (id) => {
+    const { col, index } = position(id);
+    return `${COLUMNS[col]}, position ${index + 1} of ${inCol(col).length}`;
+  };
+
+  function render(focusSel) {
+    rendering = true;
+    board.replaceChildren();
+    COLUMNS.forEach((name, c) => {
+      const items = inCol(c);
+      const hid = `col-h-${c}`;
+      const list = el("ul", { class: "cards", "data-col": c, "aria-labelledby": hid });
+      items.forEach((t) => list.append(card(t)));
+      const sec = el("section", { class: "column", "aria-labelledby": hid },
+        el("h2", { id: hid }, name,
+          el("span", { class: "count" }, String(items.length), el("span", { class: "sr", text: items.length === 1 ? " ticket" : " tickets" }))),
+        list);
+      if (!items.length) sec.append(el("p", { class: "empty", text: "No tickets. Drop one here." }));
+      wireDrop(list, c);
+      board.append(sec);
+    });
+    rendering = false;
+    if (focusSel) { const n = board.querySelector(focusSel); if (n) n.focus(); }
+  }
+
+  function card(t) {
+    const isGrab = grabbed && grabbed.id === t.id;
+    const li = el("li");
+    const art = el("article", { class: "card" + (isGrab ? " grabbed" : ""), draggable: "true", "aria-labelledby": `t-${t.id}` });
+    const grab = el("button", {
+      type: "button", class: "grab", "data-grab": t.id, "aria-pressed": String(!!isGrab),
+      "aria-describedby": "instructions",
+    }, "Reorder", el("span", { class: "sr", text: ` ticket ${t.id}` }));
+    const sel = el("select", { id: `mv-${t.id}`, "data-move": t.id });
+    COLUMNS.forEach((n, i) => { const o = el("option", { value: i, text: n }); if (i === t.col) o.selected = true; sel.append(o); });
+    art.append(
+      el("h3", { id: `t-${t.id}`, text: t.title }),
+      el("p", { class: "meta" }, el("span", { text: `#${t.id}` }), el("span", { class: "prio " + t.prio, text: `Priority: ${t.prio}` })),
+      el("div", { class: "actions" }, grab, el("label", { for: `mv-${t.id}` }, "Move to", el("span", { class: "sr", text: ` column, ticket ${t.id}` })), sel)
+    );
+    art.addEventListener("dragstart", (e) => {
+      dragId = t.id; art.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(t.id));
+    });
+    art.addEventListener("dragend", () => { dragId = null; art.classList.remove("dragging"); board.querySelectorAll(".over").forEach((n) => n.classList.remove("over")); });
+    li.append(art);
+    return li;
+  }
+
+  function wireDrop(list, c) {
+    list.parentElement.addEventListener("dragover", (e) => { if (dragId == null) return; e.preventDefault(); list.classList.add("over"); });
+    list.parentElement.addEventListener("dragleave", (e) => { if (!list.parentElement.contains(e.relatedTarget)) list.classList.remove("over"); });
+    list.parentElement.addEventListener("drop", (e) => {
+      if (dragId == null) return;
+      e.preventDefault();
+      const id = dragId; dragId = null;
+      const cards = [...list.children];
+      let index = cards.findIndex((li) => { const r = li.getBoundingClientRect(); return e.clientY < r.top + r.height / 2; });
+      if (index === -1) index = cards.length;
+      const before = byId(id);
+      if (before.col === c && inCol(c).indexOf(before) < index) index--; // removal shifts later slots
+      place(id, c, index);
+      render(`[data-grab="${id}"]`);
+      announce(`Ticket ${id} dropped. ${where(id)}.`);
+    });
+  }
+
+  // Native select: simple, touch-friendly, works with every screen reader.
+  board.addEventListener("change", (e) => {
+    const s = e.target.closest("[data-move]"); if (!s) return;
+    const id = +s.dataset.move;
+    place(id, +s.value, Infinity);
+    render(`[data-move="${id}"]`);
+    announce(`Ticket ${id} moved to ${COLUMNS[+s.value]}. ${where(id)}.`);
+  });
+
+  // Keyboard grab / move / drop.
+  board.addEventListener("keydown", (e) => {
+    const b = e.target.closest("[data-grab]"); if (!b) return;
+    const id = +b.dataset.grab;
+    if (e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      if (!grabbed) {
+        grabbed = { id, ...(({ col, index }) => ({ origCol: col, origIndex: index }))(position(id)) };
+        render(`[data-grab="${id}"]`);
+        announce(`Picked up ticket ${id}, ${byId(id).title}. ${where(id)}. Arrow keys to move, Space to drop, Escape to cancel.`);
+      } else {
+        grabbed = null;
+        render(`[data-grab="${id}"]`);
+        announce(`Dropped ticket ${id}. ${where(id)}.`);
+      }
+      return;
+    }
+    if (!grabbed) return;
+    if (e.key === "Escape") {
+      e.preventDefault();
+      place(id, grabbed.origCol, grabbed.origIndex);
+      grabbed = null;
+      render(`[data-grab="${id}"]`);
+      announce(`Move cancelled. Ticket ${id} returned to ${where(id)}.`);
+      return;
+    }
+    const { col, index } = position(id);
+    let nc = col, ni = index;
+    if (e.key === "ArrowLeft") nc = Math.max(0, col - 1);
+    else if (e.key === "ArrowRight") nc = Math.min(COLUMNS.length - 1, col + 1);
+    else if (e.key === "ArrowUp") ni = Math.max(0, index - 1);
+    else if (e.key === "ArrowDown") ni = Math.min(inCol(col).length - 1, index + 1);
+    else return;
+    e.preventDefault();
+    if (nc === col && ni === index) { announce(`Cannot move further. ${where(id)}.`); return; }
+    place(id, nc, nc === col ? ni : Math.min(index, inCol(nc).length));
+    render(`[data-grab="${id}"]`);
+    announce(`${where(id)}.`);
+  });
+
+  // Dropping on blur (user tabbed/clicked away) so nothing stays "held".
+  board.addEventListener("focusout", (e) => {
+    if (rendering || !grabbed || !e.target.closest("[data-grab]")) return;
+    const id = grabbed.id; grabbed = null;
+    e.target.setAttribute("aria-pressed", "false");   // update in place so focus isn't disturbed
+    e.target.closest(".card").classList.remove("grabbed");
+    announce(`Ticket ${id} dropped. ${where(id)}.`);
+  });
+
+  document.getElementById("addForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const input = document.getElementById("newTitle");
+    const title = input.value.trim(); if (!title) return;
+    const id = Math.max(100, ...tickets.map((t) => t.id)) + 1;
+    tickets.push({ id, title, prio: document.getElementById("newPrio").value, col: 0 });
+    save(); input.value = "";
+    render();
+    input.focus();
+    announce(`Ticket ${id} added to New.`);
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

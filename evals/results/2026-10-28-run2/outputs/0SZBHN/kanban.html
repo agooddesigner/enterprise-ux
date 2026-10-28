@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Ticket Board</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --surface: #fff; --col: #e8eaee; --text: #1a1d23; --muted: #4a5160;
+    --border: #8a92a1; --accent: #0b57d0; --accent-text: #fff; --focus: #0b57d0;
+    --high: #8c1d18; --med: #7a4a00; --low: #1e5e2e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161a; --surface: #20242b; --col: #1a1d23; --text: #eef0f3; --muted: #b6bcc8;
+      --border: #7d8696; --accent: #8ab4f8; --accent-text: #08111f; --focus: #8ab4f8;
+      --high: #ffb4ab; --med: #ffcf7a; --low: #8fdc9f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--text);
+         font: 1rem/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  h1 { margin: 0 0 4px; font-size: 1.5rem; }
+  .sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+        clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  .help { color: var(--muted); max-width: 70ch; margin: 0 0 16px; }
+  kbd { font: inherit; font-weight: 600; border: 1px solid var(--border); border-radius: 4px; padding: 0 5px; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  button, input, select { font: inherit; color: inherit; }
+  form { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-bottom: 20px; }
+  form div { display: flex; flex-direction: column; gap: 2px; }
+  label { font-size: .9rem; font-weight: 600; }
+  input, select { min-height: 44px; padding: 6px 10px; background: var(--surface);
+                  border: 2px solid var(--border); border-radius: 6px; }
+  .btn { min-height: 44px; padding: 6px 16px; border: 2px solid var(--accent); border-radius: 6px;
+         background: var(--accent); color: var(--accent-text); font-weight: 600; cursor: pointer; }
+
+  .board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: start; }
+  @media (max-width: 900px) { .board { grid-template-columns: 1fr; } }
+  .column { background: var(--col); border: 2px solid transparent; border-radius: 10px; padding: 12px; }
+  .column.over { border-color: var(--accent); border-style: dashed; }
+  .column h2 { margin: 0 0 8px; font-size: 1.1rem; display: flex; justify-content: space-between; }
+  .count { color: var(--muted); font-weight: 400; }
+  ul.cards { list-style: none; margin: 0; padding: 0; min-height: 56px; display: grid; gap: 8px; }
+  .empty { color: var(--muted); font-style: italic; margin: 0; padding: 12px 4px; }
+
+  .card { background: var(--surface); border: 2px solid var(--border); border-radius: 8px; padding: 10px; }
+  .card.dragging { opacity: .5; }
+  .card.grabbed { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent); }
+  .card h3 { margin: 0 0 2px; font-size: 1rem; overflow-wrap: anywhere; }
+  .meta { margin: 0 0 8px; color: var(--muted); font-size: .9rem; }
+  .prio { font-weight: 700; }
+  .prio.High { color: var(--high); } .prio.Medium { color: var(--med); } .prio.Low { color: var(--low); }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+  .handle { min-height: 44px; min-width: 44px; padding: 4px 12px; background: transparent;
+            border: 2px solid var(--border); border-radius: 6px; cursor: grab; }
+  .handle[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .moveto { display: flex; flex-direction: column; }
+  .moveto label { font-weight: 400; font-size: .8rem; }
+  .moveto select { min-height: 44px; }
+  @media (prefers-reduced-motion: no-preference) { .card, .column { transition: border-color .15s, box-shadow .15s; } }
+  @media (forced-colors: active) {
+    .card.grabbed, .column.over { outline: 3px solid Highlight; }
+    .handle[aria-pressed="true"] { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Support tickets</h1>
+  <p class="help" id="instructions">
+    Move tickets by dragging, or with the keyboard: press <kbd>Move</kbd> on a ticket to pick it up, then
+    <kbd>←</kbd> <kbd>→</kbd> change column, <kbd>↑</kbd> <kbd>↓</kbd> reorder, <kbd>Enter</kbd> or
+    <kbd>Space</kbd> drops it, <kbd>Esc</kbd> cancels. Each ticket also has a “Move to” menu.
+  </p>
+</header>
+
+<form id="add" aria-labelledby="add-h">
+  <h2 id="add-h" class="sr">Add a ticket</h2>
+  <div><label for="t-title">Ticket title</label><input id="t-title" required autocomplete="off"></div>
+  <div><label for="t-who">Requester</label><input id="t-who" autocomplete="off"></div>
+  <div><label for="t-prio">Priority</label>
+    <select id="t-prio"><option>High</option><option selected>Medium</option><option>Low</option></select></div>
+  <button class="btn" type="submit">Add to New</button>
+</form>
+
+<main>
+  <h2 class="sr">Board</h2>
+  <div class="board" id="board"></div>
+</main>
+
+<div class="sr" role="status" aria-live="polite" aria-atomic="true" id="live"></div>
+
+<script>
+const COLUMNS = ["New", "In progress", "Waiting", "Done"];
+let nextId = 7;
+let tickets = [
+  { id: 1, title: "Cannot reset password", who: "Ana Ruiz", prio: "High", status: "New" },
+  { id: 2, title: "Invoice shows wrong VAT", who: "Dev Patel", prio: "Medium", status: "New" },
+  { id: 3, title: "Export to CSV times out", who: "Mia Chen", prio: "High", status: "In progress" },
+  { id: 4, title: "Dark mode request", who: "Sam Ortiz", prio: "Low", status: "In progress" },
+  { id: 5, title: "Refund for duplicate charge", who: "Lena Fox", prio: "Medium", status: "Waiting" },
+  { id: 6, title: "Update billing address", who: "Joe Park", prio: "Low", status: "Done" },
+];
+let grabbed = null;       // { id, status, index } original position, for Esc
+let dragId = null;
+const board = document.getElementById("board");
+const live = document.getElementById("live");
+
+const announce = msg => { live.textContent = ""; setTimeout(() => live.textContent = msg, 30); };
+const inCol = s => tickets.filter(t => t.status === s);
+const slug = s => s.replace(/\s/g, "-").toLowerCase();
+
+function move(id, status, index) {
+  const t = tickets.find(x => x.id === id);
+  tickets = tickets.filter(x => x !== t);
+  t.status = status;
+  const col = inCol(status);
+  index = Math.max(0, Math.min(index, col.length));
+  const before = col[index];
+  if (before) tickets.splice(tickets.indexOf(before), 0, t); else tickets.push(t);
+  return index;
+}
+
+function position(id) {
+  const t = tickets.find(x => x.id === id), col = inCol(t.status);
+  return `${t.status}, position ${col.indexOf(t) + 1} of ${col.length}`;
+}
+
+function render(focusSel) {
+  board.innerHTML = "";
+  for (const name of COLUMNS) {
+    const items = inCol(name);
+    const sec = document.createElement("section");
+    sec.className = "column"; sec.dataset.status = name;
+    sec.setAttribute("aria-labelledby", "h-" + slug(name));
+    sec.innerHTML = `<h2 id="h-${slug(name)}">${name} <span class="count">(${items.length}<span class="sr"> tickets</span>)</span></h2>`;
+    const ul = document.createElement("ul");
+    ul.className = "cards"; ul.setAttribute("aria-labelledby", "h-" + slug(name));
+    items.forEach(t => ul.append(card(t)));
+    sec.append(ul);
+    if (!items.length) {
+      const p = document.createElement("p"); p.className = "empty"; p.textContent = "No tickets";
+      sec.append(p);
+    }
+    addDropHandlers(sec, ul);
+    board.append(sec);
+  }
+  if (focusSel) { const el = board.querySelector(focusSel); if (el) el.focus(); }
+}
+
+function card(t) {
+  const li = document.createElement("li");
+  li.className = "card"; li.draggable = true; li.dataset.id = t.id;
+  if (grabbed && grabbed.id === t.id) li.classList.add("grabbed");
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  li.append(el("h3", "", t.title));
+  const meta = el("p", "meta");
+  meta.append(el("span", "prio " + t.prio, t.prio + " priority"), document.createTextNode(t.who ? " · " + t.who : ""));
+  li.append(meta);
+
+  const actions = el("div", "actions");
+  const h = el("button", "handle", "⠿ Move");
+  h.type = "button"; h.dataset.handle = t.id;
+  h.setAttribute("aria-label", "Move: " + t.title);
+  h.setAttribute("aria-pressed", grabbed && grabbed.id === t.id ? "true" : "false");
+  h.setAttribute("aria-describedby", "instructions");
+  h.addEventListener("click", () => toggleGrab(t.id));
+  h.addEventListener("keydown", e => handleKey(e, t.id));
+  h.addEventListener("blur", () => { if (grabbed && grabbed.id === t.id) setTimeout(() => {
+      if (grabbed && document.activeElement !== board.querySelector(`[data-handle="${t.id}"]`)) drop(true); }, 0); });
+  actions.append(h);
+
+  const wrap = el("div", "moveto");
+  const sid = "mv-" + t.id;
+  const lab = el("label", "", "Move to"); lab.htmlFor = sid;
+  lab.append(el("span", "sr", " for " + t.title));
+  const sel = el("select"); sel.id = sid;
+  COLUMNS.forEach(c => { const o = el("option", "", c); o.selected = c === t.status; sel.append(o); });
+  sel.addEventListener("change", () => {
+    const i = move(t.id, sel.value, Infinity);
+    render("#" + sid);
+    announce(`${t.title} moved. ${position(t.id)}.`);
+  });
+  wrap.append(lab, sel); actions.append(wrap);
+  li.append(actions);
+
+  li.addEventListener("dragstart", e => { dragId = t.id; li.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(t.id)); });
+  li.addEventListener("dragend", () => { dragId = null; li.classList.remove("dragging");
+    board.querySelectorAll(".over").forEach(c => c.classList.remove("over")); });
+  return li;
+}
+
+function dropIndex(ul, y) {
+  const cards = [...ul.querySelectorAll(".card:not(.dragging)")];
+  const i = cards.findIndex(c => { const r = c.getBoundingClientRect(); return y < r.top + r.height / 2; });
+  return i === -1 ? cards.length : i;
+}
+function addDropHandlers(sec, ul) {
+  sec.addEventListener("dragover", e => { if (dragId == null) return; e.preventDefault();
+    e.dataTransfer.dropEffect = "move"; sec.classList.add("over"); });
+  sec.addEventListener("dragleave", e => { if (!sec.contains(e.relatedTarget)) sec.classList.remove("over"); });
+  sec.addEventListener("drop", e => {
+    if (dragId == null) return; e.preventDefault();
+    const id = dragId; const t = tickets.find(x => x.id === id);
+    // index among the column's other tickets
+    move(id, sec.dataset.status, dropIndex(ul, e.clientY));
+    render(`[data-handle="${id}"]`);
+    announce(`${t.title} dropped. ${position(id)}.`);
+  });
+}
+
+function toggleGrab(id) {
+  if (grabbed && grabbed.id === id) return drop(false);
+  const t = tickets.find(x => x.id === id);
+  grabbed = { id, status: t.status, index: inCol(t.status).indexOf(t) };
+  render(`[data-handle="${id}"]`);
+  announce(`Picked up ${t.title}. ${position(id)}. Use arrow keys to move, Enter to drop, Escape to cancel.`);
+}
+function drop(silent) {
+  const id = grabbed.id, t = tickets.find(x => x.id === id);
+  grabbed = null;
+  render(silent ? null : `[data-handle="${id}"]`);
+  announce(`Dropped ${t.title}. ${position(id)}.`);
+}
+function handleKey(e, id) {
+  if (!grabbed || grabbed.id !== id) return;
+  const t = tickets.find(x => x.id === id);
+  const ci = COLUMNS.indexOf(t.status), idx = inCol(t.status).indexOf(t);
+  let handled = true;
+  switch (e.key) {
+    case "ArrowLeft": case "ArrowRight": {
+      const n = ci + (e.key === "ArrowRight" ? 1 : -1);
+      if (n < 0 || n >= COLUMNS.length) { announce("No column in that direction."); break; }
+      move(id, COLUMNS[n], idx); break;
+    }
+    case "ArrowUp": case "ArrowDown": {
+      const n = idx + (e.key === "ArrowDown" ? 1 : -1);
+      if (n < 0 || n >= inCol(t.status).length) { announce(n < 0 ? "Already at top." : "Already at bottom."); break; }
+      move(id, t.status, n); break;
+    }
+    case "Enter": case " ": e.preventDefault(); return drop(false);
+    case "Escape": move(id, grabbed.status, grabbed.index); grabbed = null;
+      render(`[data-handle="${id}"]`); announce(`Move cancelled. ${position(id)}.`); return;
+    case "Tab": return;
+    default: handled = false;
+  }
+  if (handled) {
+    e.preventDefault();
+    if (["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.key)) {
+      const moved = tickets.find(x => x.id === id);
+      render(`[data-handle="${id}"]`);
+      if (moved) announce(position(id) + ".");
+    }
+  }
+}
+
+document.getElementById("add").addEventListener("submit", e => {
+  e.preventDefault();
+  const title = document.getElementById("t-title").value.trim();
+  if (!title) return;
+  tickets.push({ id: nextId++, title, who: document.getElementById("t-who").value.trim(),
+                 prio: document.getElementById("t-prio").value, status: "New" });
+  e.target.reset(); document.getElementById("t-prio").value = "Medium";
+  render(); announce(`Ticket “${title}” added to New.`);
+  document.getElementById("t-title").focus();
+});
+
+render();
+</script>
+</body>
+</html>

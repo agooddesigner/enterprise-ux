@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Staffing Brief</title>
+<style>
+:root{
+  --bg:#f6f7f9; --surface:#fff; --surface-2:#f1f3f6; --line:#e3e6eb; --line-2:#eef0f3;
+  --ink:#14181f; --ink-2:#4a5260; --ink-3:#6b7382;
+  --accent:#2457d6; --accent-soft:#e8eefc; --accent-ink:#1b43a8;
+  --crit:#b42318; --crit-soft:#fdecea; --warn:#9a5b00; --warn-soft:#fff3dc; --ok:#1a7a46; --ok-soft:#e5f5ec;
+  --series-b:#8b93a3; --shadow:0 1px 2px rgba(16,24,40,.05);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1116; --surface:#161a21; --surface-2:#1d222b; --line:#2a303b; --line-2:#222831;
+  --ink:#eef0f4; --ink-2:#b5bcc9; --ink-3:#8e97a7;
+  --accent:#6d97ff; --accent-soft:#1b2745; --accent-ink:#a9c2ff;
+  --crit:#ff8a7d; --crit-soft:#3a1a18; --warn:#f2b45a; --warn-soft:#3a2b10; --ok:#58cf8d; --ok-soft:#12301f;
+  --series-b:#7d8596; --shadow:none;}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums}
+.wrap{max-width:1360px;margin:0 auto;padding:20px 24px 48px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+button{font:inherit;color:inherit}
+a{color:var(--accent-ink)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+h1{font-size:22px;line-height:28px;margin:0;font-weight:650;letter-spacing:-.01em}
+.meta{color:var(--ink-3);font-size:13px;margin-top:2px}
+.meta b{color:var(--ink-2);font-weight:600}
+.top-actions{display:flex;gap:8px;align-items:center}
+.btn{height:32px;padding:0 12px;border:1px solid var(--line);background:var(--surface);border-radius:6px;cursor:pointer;font-weight:550;box-shadow:var(--shadow)}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.primary{color:#0b1020}}
+.btn.primary:hover{filter:brightness(1.08);background:var(--accent)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow)}
+.card h2{font-size:14px;margin:0;font-weight:650}
+.card-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 16px 10px}
+.sub{color:var(--ink-3);font-size:12.5px;margin-top:2px;font-weight:400}
+
+/* decision banner */
+.decision{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:16px 18px;margin-bottom:16px;border-left:4px solid var(--accent)}
+.decision .label{font-size:12px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.decision .headline{font-size:18px;line-height:26px;font-weight:650;margin-top:2px;letter-spacing:-.005em}
+.decision .why{color:var(--ink-2);margin-top:2px;max-width:780px}
+.decision .acts{display:flex;gap:8px;flex-wrap:wrap}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+.kpi{padding:14px 16px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi .k{color:var(--ink-3);font-size:12.5px}
+.kpi .v{font-size:28px;line-height:34px;font-weight:650;letter-spacing:-.02em}
+.kpi .v small{font-size:14px;font-weight:500;color:var(--ink-3);letter-spacing:0}
+.kpi .d{font-size:12.5px;color:var(--ink-2);display:flex;gap:6px;align-items:center}
+.kpi svg{margin-top:6px;width:100%;height:28px;display:block}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;border-radius:999px;padding:1px 8px 1px 6px;line-height:18px;white-space:nowrap}
+.tag.crit{background:var(--crit-soft);color:var(--crit)} .tag.warn{background:var(--warn-soft);color:var(--warn)}
+.tag.ok{background:var(--ok-soft);color:var(--ok)} .tag.neutral{background:var(--surface-2);color:var(--ink-2)}
+.tag svg{width:12px;height:12px;margin:0}
+
+.grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:16px;align-items:start;margin-bottom:16px}
+
+/* table */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:12px;font-weight:600;color:var(--ink-3);text-align:right;padding:8px 10px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--surface-2);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;padding-left:16px}
+th:last-child,td:last-child{padding-right:16px}
+td{padding:10px 10px;border-bottom:1px solid var(--line-2);text-align:right;vertical-align:middle;white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--surface-2)}
+td.q{text-align:left;white-space:normal;min-width:150px}
+td.q a{color:var(--ink);font-weight:600;text-decoration:none} td.q a:hover{text-decoration:underline}
+td.q .s{display:block;color:var(--ink-3);font-size:12px;font-weight:400}
+.delta{font-weight:600;font-size:12px;margin-left:4px}
+.delta.up{color:var(--ok)} .delta.down{color:var(--ink-3)}
+.step{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.step button{width:28px;height:28px;border:0;background:none;cursor:pointer;font-size:16px;line-height:1;border-radius:5px}
+.step button:hover:not([disabled]){background:var(--surface-2)}
+.step button[disabled]{opacity:.35;cursor:not-allowed}
+.step output{min-width:28px;text-align:center;font-weight:650}
+.load{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.bar{position:relative;width:84px;height:8px;background:var(--surface-2);border-radius:4px;overflow:visible}
+.bar i{display:block;height:100%;border-radius:4px;background:var(--series-b)}
+.bar i.crit{background:var(--crit)} .bar i.warn{background:var(--warn)} .bar i.ok{background:var(--ok)}
+.bar::after{content:"";position:absolute;left:66.6%;top:-3px;bottom:-3px;width:1.5px;background:var(--ink-2);opacity:.6}
+.load span{width:42px;text-align:right}
+tfoot td{font-weight:650;background:var(--surface-2);border-top:1px solid var(--line);border-bottom:0}
+.pool{padding:10px 16px;font-size:12.5px;color:var(--ink-2);display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between;border-top:1px solid var(--line)}
+
+/* chart */
+.legend{display:flex;gap:16px;padding:0 16px;font-size:12.5px;color:var(--ink-2);flex-wrap:wrap}
+.legend i{display:inline-block;width:14px;height:0;border-top:2px solid;vertical-align:middle;margin-right:6px}
+#chart{position:relative;padding:4px 8px 8px 8px}
+#chart svg{width:100%;display:block;overflow:visible}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;padding:8px 10px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-100%);display:none;z-index:3;line-height:1.5}
+.tip b{font-weight:650}
+details.tv{padding:0 16px 14px;font-size:12.5px;color:var(--ink-2)}
+details.tv summary{cursor:pointer;padding:4px 0}
+details.tv table{margin-top:6px}
+details.tv th,details.tv td{padding:4px 8px;font-size:12px}
+
+/* at risk */
+.risk td.acct a{font-weight:600;color:var(--ink);text-decoration:none}
+.risk td.acct a:hover{text-decoration:underline}
+.risk td.acct .s{display:block;color:var(--ink-3);font-size:12px;font-weight:400}
+.risk td{text-align:left} .risk th{text-align:left}
+.risk td.n,.risk th.n{text-align:right}
+
+/* states */
+.skel{background:linear-gradient(90deg,var(--surface-2),var(--line-2),var(--surface-2));background-size:200% 100%;animation:sh 1.2s infinite;border-radius:6px;height:16px}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skel{animation:none}}
+.banner{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 16px;margin-bottom:16px;border:1px solid var(--crit);background:var(--crit-soft);border-radius:8px;color:var(--ink)}
+.empty{padding:28px 16px;text-align:center;color:var(--ink-2)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.25);display:none;z-index:10}
+footer{color:var(--ink-3);font-size:12.5px;margin-top:8px;line-height:1.6}
+
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}
+@media (max-width:560px){.wrap{padding:16px}.kpis{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Support staffing brief</h1>
+      <div class="meta">Wed, Oct 28 · Window: today 08:00–17:00 PT · Backlog vs. forecast inbound · <b id="fresh">Updated 08:10 PT</b></div>
+    </div>
+    <div class="top-actions">
+      <button class="btn" id="refresh">Refresh data</button>
+      <button class="btn" id="copy">Copy plan summary</button>
+    </div>
+  </header>
+
+  <div id="err" class="banner" role="alert" hidden>
+    <div><b>Couldn't load queue data from the ticketing system.</b> Showing nothing rather than stale numbers. Last good sync was yesterday 17:02 PT.</div>
+    <button class="btn" id="retry">Retry</button>
+  </div>
+
+  <section class="card decision" id="decision" aria-live="polite"></section>
+
+  <section class="kpis" id="kpis" aria-label="Key metrics"></section>
+
+  <div class="grid">
+    <section class="card" aria-labelledby="alloc-h">
+      <div class="card-h">
+        <div>
+          <h2 id="alloc-h">Where the 40 agents are today</h2>
+          <div class="sub">Load = (open now + forecast inbound) ÷ what the assigned agents can close by 17:00. Above 100% means tickets carry over and SLAs slip.</div>
+        </div>
+      </div>
+      <div class="tbl-wrap"><table id="alloc"></table></div>
+      <div class="pool" id="pool"></div>
+    </section>
+
+    <section class="card" aria-labelledby="chart-h">
+      <div class="card-h"><div>
+        <h2 id="chart-h">Open tickets through the day</h2>
+        <div class="sub">All queues combined, simulated hour by hour</div></div></div>
+      <div class="legend" id="legend"></div>
+      <div id="chart"></div>
+      <details class="tv"><summary>View as table</summary><div id="chart-table"></div></details>
+    </section>
+  </div>
+
+  <section class="card risk" aria-labelledby="risk-h">
+    <div class="card-h"><div>
+      <h2 id="risk-h">Accounts about to breach SLA</h2>
+      <div class="sub">Next response due within 3 hours, sorted by time left. Top 8 of 23 — <a href="#/tickets?sla=at-risk">view all</a></div></div></div>
+    <div class="tbl-wrap"><table id="risk"></table></div>
+  </section>
+
+  <footer>
+    Assumptions: 9-hour day (08:00–17:00), per-agent daily close rates from the trailing 4-week median by queue, forecast from same-weekday volume ±1 σ. Each queue keeps ≥ 1 agent. Reassigning assumes agents are cross-trained for the destination queue — check the skills matrix before moving Security or Tier 2.
+  </footer>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ---------- data ---------- */
+const QUEUES=[
+ {id:'t1',   name:'Technical · Tier 1',   sub:'Product how-to, bugs',        open:142, inbound:310, rate:38, now:12},
+ {id:'t2',   name:'Technical · Tier 2',   sub:'Escalated engineering',       open:61,  inbound:52,  rate:14, now:7},
+ {id:'bill', name:'Billing & invoicing',  sub:'Renewals spike (Q4 close)',   open:188, inbound:205, rate:40, now:7},
+ {id:'onb',  name:'Onboarding',           sub:'New customers, first 30 days',open:21,  inbound:37,  rate:20, now:4},
+ {id:'ent',  name:'Enterprise named accts',sub:'Dedicated, 1h SLA',          open:14,  inbound:27,  rate:11, now:4},
+ {id:'int',  name:'Integrations & API',   sub:'Webhooks, SSO, SCIM',         open:9,   inbound:22,  rate:13, now:4},
+ {id:'sec',  name:'Security & compliance',sub:'Questionnaires, DPA, incidents',open:7, inbound:12,  rate:8,  now:2},
+];
+const TOTAL=40, HOURS=9, MIN_AGENTS=1;
+const ARRIVAL=[.07,.15,.16,.13,.11,.12,.12,.09,.05]; // 08..16 share of daily inbound
+const HOUR_LABELS=['08','09','10','11','12','13','14','15','16','17'];
+const RISK=[
+ {acct:'Halvorsen Logistics',plan:'Enterprise',arr:412,t:'#48213',q:'Integrations & API',issue:'SSO login loop after IdP cert rotation',left:22,owner:'Priya N.'},
+ {acct:'Meridian Health Group',plan:'Enterprise',arr:688,t:'#48177',q:'Enterprise named accts',issue:'Export job failing for 3 days',left:34,owner:'Unassigned'},
+ {acct:'Brightwater Capital',plan:'Enterprise',arr:355,t:'#48240',q:'Security & compliance',issue:'SOC 2 bridge letter needed for audit Friday',left:51,owner:'Daniel O.'},
+ {acct:'Tessera Retail',plan:'Business',arr:96,t:'#48102',q:'Billing & invoicing',issue:'Double-charged on annual renewal',left:62,owner:'Unassigned'},
+ {acct:'Northgate Freight',plan:'Business',arr:74,t:'#48255',q:'Technical · Tier 2',issue:'API rate limits returning 429 on batch sync',left:88,owner:'Marcus L.'},
+ {acct:'Okafor & Wells LLP',plan:'Business',arr:61,t:'#48261',q:'Billing & invoicing',issue:'Seat true-up invoice disputed',left:104,owner:'Unassigned'},
+ {acct:'Pinecrest Education',plan:'Business',arr:48,t:'#48119',q:'Technical · Tier 1',issue:'Dashboard blank on Safari 17',left:139,owner:'Hana K.'},
+ {acct:'Lumen Biotech',plan:'Enterprise',arr:540,t:'#48270',q:'Enterprise named accts',issue:'Webhook retries duplicating records',left:171,owner:'Priya N.'},
+];
+const TREND={ // last 14 days
+ backlog:[388,402,371,395,420,415,361,380,399,412,404,429,404,442],
+ sla:[95.8,96.1,94.9,95.2,94.0,93.8,95.5,94.7,93.1,92.6,92.9,92.2,91.8,91.4],
+ csat:[93,92,93,92,92,91,93,92,92,91,91,91,90,90],
+ age:[1.9,2.1,2.0,2.4,2.2,2.6,2.3,2.5,2.9,2.8,3.0,3.1,3.4,3.2],
+};
+
+/* ---------- model ---------- */
+const sum=a=>a.reduce((x,y)=>x+y,0);
+const demand=q=>q.open+q.inbound;
+const cap=(q,a)=>a*q.rate;
+const load=(q,a)=>demand(q)/cap(q,a);
+function simulate(plan){ // hourly open-ticket totals
+  const open=QUEUES.map(q=>q.open), series=[sum(open)];
+  for(let h=0;h<HOURS;h++){
+    QUEUES.forEach((q,i)=>{
+      const avail=open[i]+q.inbound*ARRIVAL[h], c=cap(q,plan[i])/HOURS;
+      open[i]=Math.max(0,avail-c);
+    });
+    series.push(sum(open));
+  }
+  return series;
+}
+const carry=(q,a)=>Math.max(0,Math.round(demand(q)-cap(q,a)));
+function recommend(){
+  const p=QUEUES.map(()=>MIN_AGENTS); let left=TOTAL-sum(p);
+  while(left-->0){let b=0,br=-1;QUEUES.forEach((q,i)=>{const r=load(q,p[i]);if(r>br){br=r;b=i}});p[b]++}
+  return p;
+}
+const REC=recommend(), NOW=QUEUES.map(q=>q.now);
+
+/* ---------- state (URL) ---------- */
+const params=new URLSearchParams(location.search);
+let plan=NOW.slice();
+const pp=(params.get('plan')||'').split(',').map(Number);
+if(pp.length===QUEUES.length&&sum(pp)<=TOTAL&&pp.every(n=>n>=MIN_AGENTS))plan=pp;
+const pageState=params.get('state'); // loading | error
+function syncURL(){
+  const u=new URL(location.href);
+  if(plan.join()===NOW.join())u.searchParams.delete('plan');else u.searchParams.set('plan',plan.join(','));
+  history.replaceState(null,'',u);
+}
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const ICON={
+ crit:'<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1 11.5 11h-11z" fill="currentColor"/></svg>',
+ warn:'<svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="currentColor"/></svg>',
+ ok:'<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5 4.5 9.5 10.5 2.5" stroke="currentColor" stroke-width="2" fill="none"/></svg>',
+ neutral:'<svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5" width="8" height="2" fill="currentColor"/></svg>'};
+function status(r){
+  if(r>1.1)return['crit','Will breach'];
+  if(r>1.0)return['crit','Over capacity'];
+  if(r>.85)return['warn','Tight'];
+  if(r>=.6)return['ok','On track'];
+  return['neutral','Spare capacity'];
+}
+const tag=(c,t)=>`<span class="tag ${c}">${ICON[c]}${t}</span>`;
+function spark(data,color){
+  const w=200,h=28,mn=Math.min(...data),mx=Math.max(...data),rng=(mx-mn)||1;
+  const pts=data.map((d,i)=>[i/(data.length-1)*w,h-3-((d-mn)/rng)*(h-8)]);
+  const last=pts[pts.length-1];
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke" points="${pts.map(p=>p.join(',')).join(' ')}"/></svg>`;
+}
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',2600)}
+const fmtMin=m=>m<60?`${m}m`:`${Math.floor(m/60)}h ${String(m%60).padStart(2,'0')}m`;
+
+/* ---------- render ---------- */
+function renderKpis(){
+  const curCarry=sum(QUEUES.map((q,i)=>carry(q,NOW[i]))), planCarry=sum(QUEUES.map((q,i)=>carry(q,plan[i])));
+  const k=[
+   {k:'Open backlog',v:'442',d:tag('crit','+38')+' vs last Wed',s:spark(TREND.backlog,'var(--ink-3)'),href:'#/tickets?status=open'},
+   {k:'First-response SLA · yesterday',v:'91.4<small>%</small>',d:tag('crit','−3.6 pts')+' vs 95% target',s:spark(TREND.sla,'var(--ink-3)'),href:'#/reports/sla'},
+   {k:'Projected carryover to tomorrow',v:`${planCarry}<small> tickets</small>`,d:plan.join()===NOW.join()?'At current assignments':tag(planCarry<curCarry?'ok':'crit',(planCarry-curCarry>0?'+':'−')+Math.abs(planCarry-curCarry))+` vs current (${curCarry})`,s:'',href:'#/tickets?projected=carryover'},
+   {k:'CSAT · 7-day',v:'90<small>%</small>',d:tag('warn','−3 pts')+' vs 4 wks ago',s:spark(TREND.csat,'var(--ink-3)'),href:'#/reports/csat'},
+   {k:'Oldest open ticket',v:'3d 4h',d:'Meridian Health · #47902',s:spark(TREND.age,'var(--ink-3)'),href:'#/tickets/47902'},
+  ];
+  $('#kpis').innerHTML=k.map(x=>`<a class="card kpi" href="${x.href}" style="text-decoration:none;color:inherit"><span class="k">${x.k}</span><span class="v">${x.v}</span><span class="d">${x.d}</span>${x.s}</a>`).join('');
+}
+function renderDecision(){
+  const el=$('#decision');
+  const diffs=QUEUES.map((q,i)=>({q,d:REC[i]-NOW[i]}));
+  const gain=diffs.filter(x=>x.d>0).sort((a,b)=>b.d-a.d), lose=diffs.filter(x=>x.d<0).sort((a,b)=>a.d-b.d);
+  const moved=sum(gain.map(x=>x.d));
+  const recCarry=sum(QUEUES.map((q,i)=>carry(q,REC[i]))), curCarry=sum(QUEUES.map((q,i)=>carry(q,NOW[i])));
+  const isRec=plan.join()===REC.join();
+  const short=n=>n.replace('Technical · ','').replace(' & invoicing','').replace(' named accts','').replace(' & compliance','').replace(' & API','');
+  const from=lose.map(x=>`${short(x.q.name)} (${x.d})`).join(', '), to=gain.map(x=>`${short(x.q.name)} (+${x.d})`).join(', ');
+  el.innerHTML=`<div><div class="label">Recommendation</div>
+    <div class="headline">Move ${moved} agent${moved===1?'':'s'}: ${to}</div>
+    <div class="why">Taking them from ${from}. Cuts projected carryover from <b>${curCarry}</b> to <b>${recCarry}</b> tickets. Billing is the biggest gap — Q4 renewals are running ~34% above a normal Wednesday.</div></div>
+    <div class="acts"><button class="btn primary" id="apply" ${isRec?'disabled':''}>${isRec?'Recommendation applied':'Apply recommendation'}</button>
+    <button class="btn" id="reset" ${plan.join()===NOW.join()?'disabled':''}>Reset to current</button></div>`;
+  $('#apply').onclick=()=>{plan=REC.slice();update();toast('Recommended plan loaded below. Nothing is sent to agents.')};
+  $('#reset').onclick=()=>{plan=NOW.slice();update()};
+}
+function renderAlloc(){
+  const order=QUEUES.map((q,i)=>i).sort((a,b)=>load(QUEUES[b],NOW[b])-load(QUEUES[a],NOW[a]));
+  const free=TOTAL-sum(plan);
+  let h=`<caption class="sr">Queue workload and agent assignment, sorted by current load</caption><thead><tr>
+    <th scope="col">Queue</th><th scope="col">Open now</th><th scope="col">Forecast inbound</th><th scope="col">Agents now</th>
+    <th scope="col">Agents today</th><th scope="col">Load</th><th scope="col">Carryover</th><th scope="col">Status</th></tr></thead><tbody>`;
+  for(const i of order){
+    const q=QUEUES[i],a=plan[i],r=load(q,a),[c,t]=status(r),d=a-NOW[i];
+    const cls=r>1?'crit':r>.85?'warn':r>=.6?'ok':'';
+    h+=`<tr><td class="q"><a href="#/queues/${q.id}">${q.name}</a><span class="s">${q.sub}</span></td>
+      <td>${q.open}</td><td>${q.inbound}</td><td>${NOW[i]}</td>
+      <td><div class="step" role="group" aria-label="Agents on ${q.name}">
+        <button data-i="${i}" data-d="-1" aria-label="Remove one agent from ${q.name}" ${a<=MIN_AGENTS?'disabled title="Each queue keeps at least 1 agent"':''}>−</button>
+        <output aria-live="polite">${a}</output>
+        <button data-i="${i}" data-d="1" aria-label="Add one agent to ${q.name}" ${free<=0?'disabled title="No unassigned agents — remove one from another queue first"':''}>+</button></div>
+        <span class="delta ${d>0?'up':'down'}" style="display:inline-block;min-width:26px;text-align:left">${d?((d>0?'+':'−')+Math.abs(d)):''}</span></td>
+      <td><div class="load"><div class="bar" title="Marker = 100% of capacity"><i class="${cls}" style="width:${Math.min(r/1.5,1)*100}%"></i></div><span>${Math.round(r*100)}%</span></div></td>
+      <td>${carry(q,a)}</td><td>${tag(c,t)}</td></tr>`;
+  }
+  const tot={o:sum(QUEUES.map(q=>q.open)),i:sum(QUEUES.map(q=>q.inbound)),cc:sum(QUEUES.map((q,i)=>carry(q,plan[i])))};
+  h+=`</tbody><tfoot><tr><td>Total</td><td>${tot.o}</td><td>${tot.i}</td><td>${sum(NOW)}</td><td style="text-align:center">${sum(plan)}</td><td></td><td>${tot.cc}</td><td></td></tr></tfoot>`;
+  $('#alloc').innerHTML=h;
+  $('#pool').innerHTML=`<span><b>${free}</b> unassigned of ${TOTAL} agents${free?' — add them to a queue':''}</span><span>Changes are saved in the page link, so you can share this plan.</span>`;
+  document.querySelectorAll('.step button').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i,d=+b.dataset.d,f=document.activeElement&&b.dataset.i+'|'+b.dataset.d;
+    plan[i]+=d;update();
+    const nb=document.querySelector(`.step button[data-i="${i}"][data-d="${d}"]:not([disabled])`)||document.querySelector(`.step button[data-i="${i}"]`);nb&&nb.focus();
+  });
+}
+let hover=null;
+function renderChart(){
+  const A=simulate(NOW),B=simulate(plan),same=plan.join()===NOW.join();
+  $('#legend').innerHTML=`<span><i style="border-color:var(--series-b);border-top-style:dashed"></i>Current assignments · ends at <b>${A[HOURS]}</b></span>`+(same?'':`<span><i style="border-color:var(--accent)"></i>Your plan · ends at <b>${B[HOURS]}</b></span>`);
+  const W=$('#chart').clientWidth-16||520,H=260,m={l:40,r:12,t:12,b:26};
+  const mx=Math.ceil(Math.max(...A,...B,1)/100)*100;
+  const x=i=>m.l+i/HOURS*(W-m.l-m.r), y=v=>H-m.b-v/mx*(H-m.t-m.b);
+  const path=s=>s.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join('');
+  let g='';
+  for(let v=0;v<=mx;v+=mx/4)g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line-2)"/><text x="${m.l-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--ink-3)">${v}</text>`;
+  HOUR_LABELS.forEach((l,i)=>{if(i%1===0&&(W>420||i%2===0))g+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--ink-3)">${l}:00</text>`});
+  const sB=`<path d="${path(A)}" fill="none" stroke="var(--series-b)" stroke-width="2" stroke-dasharray="5 4"/>`;
+  const sP=same?'':`<path d="${path(B)}" fill="none" stroke="var(--accent)" stroke-width="2"/>`;
+  const endA=`<circle cx="${x(HOURS)}" cy="${y(A[HOURS])}" r="4" fill="var(--series-b)" stroke="var(--surface)" stroke-width="2"/>`;
+  const endB=same?'':`<circle cx="${x(HOURS)}" cy="${y(B[HOURS])}" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>`;
+  let cross='';
+  if(hover!==null){cross=`<line x1="${x(hover)}" x2="${x(hover)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink-3)" stroke-dasharray="2 3"/>
+    <circle cx="${x(hover)}" cy="${y(A[hover])}" r="4" fill="var(--series-b)" stroke="var(--surface)" stroke-width="2"/>`+(same?'':`<circle cx="${x(hover)}" cy="${y(B[hover])}" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>`)}
+  $('#chart').innerHTML=`<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Projected open tickets from 08:00 to 17:00. Current assignments end at ${A[HOURS]}; your plan ends at ${B[HOURS]}.">${g}${sB}${sP}${endA}${endB}${cross}<rect id="hit" x="${m.l}" y="0" width="${W-m.l-m.r}" height="${H}" fill="transparent"/></svg><div class="tip" id="tip"></div>`;
+  const hit=$('#hit');
+  const move=e=>{const r=hit.getBoundingClientRect();const i=Math.max(0,Math.min(HOURS,Math.round((e.clientX-r.left)/r.width*HOURS)));
+    if(i!==hover){hover=i;renderChart();const t=$('#tip');t.style.display='block';t.style.left=x(i)+8+'px';t.style.top=Math.min(y(A[i]),same?9e9:y(B[i]))-6+'px';
+      t.innerHTML=`<b>${HOUR_LABELS[i]}:00</b><br>Current: ${A[i]}`+(same?'':`<br>Your plan: ${B[i]}`)}};
+  hit.onmousemove=move;hit.onmouseleave=()=>{hover=null;renderChart()};
+  $('#chart-table').innerHTML=`<table><thead><tr><th scope="col">Hour</th><th scope="col">Current</th><th scope="col">Your plan</th></tr></thead><tbody>${A.map((v,i)=>`<tr><td>${HOUR_LABELS[i]}:00</td><td>${v}</td><td>${B[i]}</td></tr>`).join('')}</tbody></table>`;
+}
+function renderRisk(){
+  let h=`<thead><tr><th scope="col">Account</th><th scope="col">Ticket</th><th scope="col">Queue</th><th scope="col">Owner</th><th scope="col" class="n">ARR</th><th scope="col" class="n">Response due in</th></tr></thead><tbody>`;
+  for(const r of RISK){
+    const c=r.left<=60?'crit':r.left<=120?'warn':'neutral';
+    h+=`<tr><td class="acct"><a href="#/accounts/${encodeURIComponent(r.acct)}">${r.acct}</a><span class="s">${r.plan} · ${r.issue}</span></td>
+    <td><a href="#/tickets/${r.t.slice(1)}">${r.t}</a></td><td>${r.q}</td>
+    <td>${r.owner==='Unassigned'?tag('warn','Unassigned'):r.owner}</td><td class="n">$${r.arr}k</td><td class="n">${tag(c,fmtMin(r.left))}</td></tr>`;
+  }
+  $('#risk').innerHTML=h+'</tbody>';
+}
+function update(){syncURL();renderDecision();renderKpis();renderAlloc();renderChart();}
+
+/* ---------- states ---------- */
+function loading(){
+  $('#decision').innerHTML='<div style="width:100%"><div class="skel" style="width:120px;margin-bottom:10px"></div><div class="skel" style="width:60%;height:24px"></div></div>';
+  $('#kpis').innerHTML=Array(5).fill('<div class="card kpi"><div class="skel" style="width:60%"></div><div class="skel" style="height:34px;width:40%;margin:6px 0"></div><div class="skel" style="width:70%"></div></div>').join('');
+  $('#alloc').innerHTML='<tbody>'+Array(7).fill('<tr><td colspan="8"><div class="skel"></div></td></tr>').join('')+'</tbody>';
+  $('#chart').innerHTML='<div class="skel" style="height:240px;margin:8px"></div>';
+  $('#risk').innerHTML='<tbody>'+Array(5).fill('<tr><td colspan="6"><div class="skel"></div></td></tr>').join('')+'</tbody>';
+}
+function boot(){
+  $('#err').hidden=true;
+  if(pageState==='loading'){loading();return}
+  if(pageState==='error'){
+    $('#err').hidden=false;
+    ['#decision','#kpis'].forEach(s=>$(s).innerHTML='');
+    $('#alloc').innerHTML='<tbody><tr><td class="empty" colspan="8">Queue data unavailable.</td></tr></tbody>';
+    $('#chart').innerHTML='<div class="empty">Chart unavailable.</div>';$('#risk').innerHTML='<tbody><tr><td class="empty">At-risk accounts unavailable.</td></tr></tbody>';return}
+  renderRisk();update();
+}
+$('#retry').onclick=()=>{const u=new URL(location.href);u.searchParams.delete('state');location.href=u};
+$('#refresh').onclick=()=>{const n=new Date();$('#fresh').textContent='Updated '+n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false})+' local';toast('Data refreshed')};
+$('#copy').onclick=async()=>{
+  const lines=QUEUES.map((q,i)=>`${q.name}: ${plan[i]} agents${plan[i]!==NOW[i]?` (${plan[i]-NOW[i]>0?'+':''}${plan[i]-NOW[i]})`:''}`);
+  const txt=`Support staffing plan, Oct 28\n${lines.join('\n')}\nProjected carryover: ${sum(QUEUES.map((q,i)=>carry(q,plan[i])))} tickets`;
+  try{await navigator.clipboard.writeText(txt);toast('Plan summary copied')}catch(e){toast('Copy blocked by browser — select the table instead')}
+};
+addEventListener('resize',()=>{if(!pageState)renderChart()});
+boot();
+</script>
+</body>
+</html>

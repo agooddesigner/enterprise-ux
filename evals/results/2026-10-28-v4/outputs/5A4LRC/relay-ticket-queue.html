@@ -1,0 +1,986 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ticket queue · Relay</title>
+<style>
+/* Art direction: a quiet, dense worklist for people who live in it all day. Cool-grey canvas, white surfaces,
+   one indigo accent for focus/primary, semantic colour (red/amber) reserved for SLA risk. Numbers are tabular. */
+:root{
+  --canvas:#f3f4f8; --surface:#fff; --surface-2:#f8f9fb; --ink:#14171f; --ink-2:#4a5160; --ink-3:#646b7a;
+  --line:#e3e6ec; --line-2:#d2d6df; --accent:#3a3fd6; --accent-ink:#fff; --accent-soft:#eceeff;
+  --red:#b42318; --red-soft:#fdeceb; --amber:#8a4b00; --amber-soft:#fff2d6; --green:#17663a; --green-soft:#e3f5ea;
+  --violet:#5b3fa8; --violet-soft:#f0ebfb; --hover:#f4f5fa; --sel:#eef0ff; --toast:#14171f; --toast-ink:#fff;
+  --row:40px; --shadow:0 8px 28px rgba(20,23,31,.16);
+}
+:root[data-density="compact"]{--row:32px}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --canvas:#0e1015; --surface:#171a21; --surface-2:#1c2028; --ink:#eef0f5; --ink-2:#b4bac8; --ink-3:#98a0b0;
+    --line:#2a2f3a; --line-2:#394050; --accent:#8d92ff; --accent-ink:#0e1015; --accent-soft:#232651;
+    --red:#ff8b82; --red-soft:#3a1d1b; --amber:#f5b552; --amber-soft:#3a2a10; --green:#6fd59a; --green-soft:#16301f;
+    --violet:#b9a2f5; --violet-soft:#2a2144; --hover:#1e222b; --sel:#222654; --toast:#eef0f5; --toast-ink:#14171f;
+    --shadow:0 8px 28px rgba(0,0,0,.5);
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--canvas);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Sans JP",sans-serif;
+  -webkit-font-smoothing:antialiased;display:flex;flex-direction:column;overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.num{font-variant-numeric:tabular-nums}
+.skip{position:absolute;left:8px;top:-48px;background:var(--accent);color:var(--accent-ink);padding:8px 12px;border-radius:8px;z-index:100}
+.skip:focus{top:8px}
+
+/* app bar */
+.appbar{display:flex;align-items:center;gap:16px;padding:0 20px;height:52px;flex:none;background:var(--ink);color:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .appbar{background:#0a0c10;border-bottom:1px solid var(--line)}}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;letter-spacing:-.01em}
+.logo i{width:24px;height:24px;border-radius:8px;background:#fff;color:var(--ink);display:grid;place-items:center;font-style:normal;font-weight:800;font-size:14px}
+.crumb{color:#c3c8d6;font-size:13px}
+.appbar .sp{flex:1}
+.me{display:flex;align-items:center;gap:10px;font-size:13px;color:#e6e9f2}
+.role-tag{font-size:12px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.14)}
+.btn-ghost-light{background:transparent;border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:999px;padding:4px 12px;font-size:13px;min-height:28px}
+.btn-ghost-light:hover{background:rgba(255,255,255,.1)}
+
+/* layout */
+.shell{flex:1;min-height:0;display:grid;grid-template-columns:232px minmax(0,1fr);gap:16px;padding:16px 20px 16px 16px}
+.shell.has-panel{grid-template-columns:232px minmax(0,1fr) 400px}
+.side{overflow:auto}
+.side h2{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3);margin:6px 12px 8px}
+.views{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.view{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;border:0;background:transparent;
+  padding:8px 12px;border-radius:999px;color:var(--ink-2);min-height:36px}
+.view:hover{background:var(--hover);color:var(--ink)}
+.view[aria-current="page"]{background:var(--ink);color:#fff;font-weight:600}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .view[aria-current="page"]{background:var(--accent);color:var(--accent-ink)}}
+.view .count{font-size:12px;min-width:24px;text-align:center;padding:1px 8px;border-radius:999px;background:var(--line);color:var(--ink-2)}
+.view[aria-current="page"] .count{background:rgba(255,255,255,.2);color:inherit}
+.view .count.alert{background:var(--red-soft);color:var(--red);font-weight:700}
+.view[aria-current="page"] .count.alert{background:#fff;color:var(--red)}
+
+.main{min-width:0;min-height:0;display:flex;flex-direction:column;gap:12px}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+h1{margin:0;font-size:28px;line-height:1.15;letter-spacing:-.02em;display:flex;align-items:baseline;gap:12px}
+h1 .total{font-size:15px;font-weight:500;color:var(--ink-3)}
+.fresh{color:var(--ink-3);font-size:13px;margin-top:4px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-2);background:var(--surface);border-radius:999px;padding:0 14px;min-height:32px;font-weight:500}
+.btn:hover:not(:disabled){background:var(--hover)}
+.btn:disabled,.btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover:not(:disabled){filter:brightness(1.08);background:var(--accent)}
+.btn.small{min-height:28px;padding:0 12px;font-size:13px}
+.btn.link{border:0;background:transparent;color:var(--accent);padding:0 4px;min-height:24px;text-decoration:underline;text-underline-offset:2px;font-weight:500}
+.icon-btn{width:28px;height:28px;border-radius:999px;border:1px solid transparent;background:transparent;display:grid;place-items:center;color:var(--ink-2)}
+.icon-btn:hover{background:var(--line)}
+svg{display:block}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden}
+.tools{display:flex;align-items:center;gap:8px;padding:12px 16px;flex-wrap:wrap;border-bottom:1px solid var(--line);min-height:57px}
+.search{position:relative;flex:1 1 220px;max-width:340px}
+.search svg{position:absolute;left:12px;top:9px;color:var(--ink-3);pointer-events:none}
+.search input{width:100%;height:34px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface-2);padding:0 34px 0 36px}
+.search input::placeholder{color:var(--ink-3)}
+.search .clear{position:absolute;right:4px;top:3px}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:999px;border:1px dashed var(--line-2);background:transparent;color:var(--ink-2)}
+.chip:hover{background:var(--hover)}
+.chip.on{border-style:solid;border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.tools .grow{flex:1}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:999px;padding:2px;gap:2px}
+.seg button{border:0;background:transparent;border-radius:999px;padding:0 10px;min-height:26px;font-size:13px;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}}
+
+.bulk{display:flex;align-items:center;gap:8px;padding:10px 16px;flex-wrap:wrap;background:var(--accent-soft);border-bottom:1px solid var(--line);min-height:57px}
+.bulk .n{font-weight:700;margin-right:6px}
+.bulk .sp{flex:1}
+.selnote{padding:8px 16px;background:var(--surface-2);border-bottom:1px solid var(--line);font-size:13px;color:var(--ink-2)}
+.banner{display:flex;align-items:center;gap:10px;padding:8px 16px;font-size:13px;border-bottom:1px solid var(--line)}
+.banner.info{background:var(--violet-soft);color:var(--ink)}
+.banner.warn{background:var(--amber-soft);color:var(--ink)}
+
+.tablewrap{flex:1;overflow:auto;position:relative;scroll-padding:40px 0 48px}
+.tablewrap[aria-busy="true"] tbody{opacity:.55}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:940px}
+caption{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+th,td{height:var(--row);padding:0 12px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;vertical-align:middle}
+thead th{position:sticky;top:0;z-index:3;background:var(--surface-2);font-size:12px;font-weight:600;color:var(--ink-2);height:36px;letter-spacing:.01em}
+th button.sort{display:inline-flex;gap:6px;align-items:center;border:0;background:transparent;padding:4px 0;font-weight:600;font-size:12px;color:inherit;min-height:24px}
+th button.sort .arr{opacity:0;font-size:11px;width:10px}
+th button.sort:hover .arr,th button.sort:focus-visible .arr,th[aria-sort] .arr{opacity:1}
+tbody tr:hover td,tbody tr:hover th{background:var(--hover)}
+tbody tr[data-sel="1"] td,tbody tr[data-sel="1"] th{background:var(--sel)}
+tbody tr[data-open="1"] td,tbody tr[data-open="1"] th{background:var(--sel);box-shadow:inset 0 0 0 0 transparent}
+tbody tr[data-open="1"] th{box-shadow:inset 3px 0 0 var(--accent)}
+tbody tr.fresh-row td,tbody tr.fresh-row th{animation:flash 3.5s ease-out}
+@keyframes flash{from{background:var(--violet-soft)}to{background:transparent}}
+tbody th{font-weight:inherit}
+td.chk,th.chk{width:44px;padding:0 0 0 14px}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);margin:0;cursor:pointer}
+.subj{display:flex;align-items:baseline;gap:8px;min-width:0;max-width:440px}
+.subj a{color:var(--ink);text-decoration:none;font-weight:600;overflow:hidden;text-overflow:ellipsis;display:block;min-width:0}
+.subj a:hover{text-decoration:underline}
+.subj .id{color:var(--ink-3);font-size:12px;font-variant-numeric:tabular-nums;flex:none}
+.tag{font-size:11px;font-weight:600;padding:0 6px;border-radius:6px;background:var(--line);color:var(--ink-2);flex:none;line-height:18px}
+.who{max-width:210px;overflow:hidden;text-overflow:ellipsis;display:block}
+.who small{color:var(--ink-3)}
+.status{display:inline-flex;align-items:center;gap:6px;padding:0 10px;min-height:22px;border-radius:999px;font-size:12px;font-weight:600}
+.s-new{background:var(--violet-soft);color:var(--violet)}
+.s-open{background:var(--accent-soft);color:var(--accent)}
+.s-pending{background:var(--amber-soft);color:var(--amber)}
+.s-solved{background:var(--green-soft);color:var(--green)}
+.prio{display:inline-flex;align-items:center;gap:7px}
+.bars{display:inline-flex;align-items:flex-end;gap:2px;height:12px}
+.bars b{width:3px;background:var(--line-2);border-radius:1px}
+.bars b:nth-child(1){height:4px}.bars b:nth-child(2){height:7px}.bars b:nth-child(3){height:10px}.bars b:nth-child(4){height:12px}
+.bars b.f{background:var(--ink-2)}
+.p-urgent .bars b.f{background:var(--red)} .p-urgent{color:var(--red);font-weight:600}
+.p-high .bars b.f{background:var(--amber)}
+.sla{display:inline-flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums}
+.sla.breach{color:var(--red);font-weight:600}
+.sla.risk{color:var(--amber);font-weight:600}
+.sla.none{color:var(--ink-3)}
+.avatar{width:24px;height:24px;border-radius:999px;display:inline-grid;place-items:center;font-size:11px;font-weight:700;background:var(--ink);color:#fff;flex:none}
+.avatar.un{background:transparent;border:1.5px dashed var(--line-2);color:var(--ink-3)}
+.avatar.me{background:var(--accent);color:var(--accent-ink)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .avatar{background:#3a4152;color:#fff}}
+.asg{display:inline-flex;align-items:center;gap:8px}
+.asg.un span:last-child{color:var(--ink-3)}
+td.act,th.act{position:sticky;right:0;background:var(--surface);width:1%;text-align:right;box-shadow:-1px 0 0 var(--line)}
+thead th.act{background:var(--surface-2);z-index:4}
+tbody tr:hover td.act{background:var(--hover)}
+tbody tr[data-sel="1"] td.act,tbody tr[data-open="1"] td.act{background:var(--sel)}
+.actions{display:inline-flex;align-items:center;gap:6px}
+.t-ago{color:var(--ink-2)}
+
+.foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;border-top:1px solid var(--line);flex-wrap:wrap;font-size:13px;color:var(--ink-2);min-height:49px}
+.foot select{height:30px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface);padding:0 10px}
+.pager{display:flex;align-items:center;gap:8px}
+
+/* states */
+.state{display:grid;place-items:center;padding:56px 24px;text-align:center;flex:1}
+.state .art{width:72px;height:72px;border-radius:24px;display:grid;place-items:center;margin:0 auto 16px;background:var(--accent-soft);color:var(--accent)}
+.state.err .art{background:var(--red-soft);color:var(--red)}
+.state h2{margin:0 0 6px;font-size:18px}
+.state p{margin:0 auto 16px;max-width:420px;color:var(--ink-2)}
+.skel td,.skel th{height:var(--row)}
+.sk{display:block;height:12px;border-radius:6px;background:linear-gradient(90deg,var(--line) 25%,var(--surface-2) 50%,var(--line) 75%);background-size:200% 100%;animation:sh 1.3s infinite linear}
+@keyframes sh{to{background-position:-200% 0}}
+
+/* panel */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:20px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.panel header{padding:16px 16px 12px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+.panel h2{margin:0;font-size:17px;line-height:1.3;overflow-wrap:anywhere}
+.panel .meta{color:var(--ink-3);font-size:12px;margin-bottom:4px}
+.pbody{overflow:auto;padding:16px;display:flex;flex-direction:column;gap:18px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field label,.field .lbl{display:block;font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:4px}
+.field select{width:100%;height:34px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);padding:0 8px}
+.field.full{grid-column:1/-1}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:13px}
+.kv dt{color:var(--ink-3)}.kv dd{margin:0;overflow-wrap:anywhere}
+.convo h3{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);margin:0 0 8px}
+.msg{padding:10px 12px;border-radius:14px;background:var(--surface-2);margin-bottom:8px;font-size:13px}
+.msg.agent{background:var(--accent-soft)}
+.msg .by{font-weight:600;display:flex;justify-content:space-between;gap:8px;margin-bottom:2px}
+.msg .by span{font-weight:400;color:var(--ink-3)}
+.note{font-size:13px;color:var(--ink-2);background:var(--surface-2);border-radius:12px;padding:10px 12px}
+
+/* menu, toast, dialog */
+.menu{position:fixed;z-index:50;min-width:200px;max-height:60vh;overflow:auto;background:var(--surface);border:1px solid var(--line-2);border-radius:14px;box-shadow:var(--shadow);padding:6px}
+.menu button{display:flex;width:100%;align-items:center;gap:10px;border:0;background:transparent;text-align:left;padding:0 10px;min-height:34px;border-radius:8px}
+.menu button:hover,.menu button:focus-visible{background:var(--hover);outline-offset:-2px}
+.menu button[aria-disabled="true"]{color:var(--ink-3);cursor:not-allowed}
+.menu hr{border:0;border-top:1px solid var(--line);margin:6px 0}
+.menu .ck{width:16px;color:var(--accent);font-weight:700}
+.toasts{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;max-width:calc(100vw - 32px)}
+.toast{pointer-events:auto;background:var(--toast);color:var(--toast-ink);border-radius:999px;padding:6px 8px 6px 18px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);max-width:100%}
+.toast .undo{background:transparent;border:1px solid currentColor;color:inherit;border-radius:999px;min-height:30px;padding:0 14px;font-weight:600}
+.toast .undo:hover{background:rgba(127,127,127,.25)}
+.toast .x{background:transparent;border:0;color:inherit;width:28px;height:28px;border-radius:999px}
+dialog{border:1px solid var(--line-2);border-radius:20px;background:var(--surface);color:var(--ink);padding:24px;max-width:460px;width:calc(100vw - 32px);box-shadow:var(--shadow)}
+dialog::backdrop{background:rgba(10,12,18,.5)}
+dialog h2{margin:0 0 8px;font-size:18px}
+dialog p{margin:0 0 12px;color:var(--ink-2)}
+dialog .row{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0 0 12px}
+kbd{font:12px ui-monospace,monospace;background:var(--surface-2);border:1px solid var(--line-2);border-bottom-width:2px;border-radius:6px;padding:1px 6px}
+.keys dd{margin:0}
+
+@media (max-width:1180px){
+  .shell.has-panel{grid-template-columns:232px minmax(0,1fr)}
+  .panel{position:fixed;right:12px;top:64px;bottom:12px;width:min(420px,calc(100vw - 24px));z-index:30;box-shadow:var(--shadow)}
+}
+@media (max-width:820px){
+  .shell,.shell.has-panel{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);padding:12px 16px}
+  .side{overflow:visible}.side h2{display:none}
+  .views{flex-direction:row;overflow-x:auto;padding-bottom:4px}
+  .view{width:auto;white-space:nowrap}
+  .crumb,.me .name{display:none}
+  h1{font-size:22px}
+  .panel{left:16px;right:16px;width:auto}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#tablewrap">Skip to tickets</a>
+<div class="appbar">
+  <div class="logo"><i aria-hidden="true">R</i>Relay</div>
+  <span class="crumb" aria-hidden="true">/ Tickets</span>
+  <span class="sp"></span>
+  <button class="btn-ghost-light" id="helpBtn" type="button">Shortcuts <kbd aria-hidden="true" style="color:#14171f">?</kbd></button>
+  <div class="me"><span class="name">Priya Raman</span><span class="avatar me" aria-hidden="true">PR</span><span class="role-tag" id="roleTag">Agent</span></div>
+</div>
+
+<div class="shell" id="shell">
+  <nav class="side" aria-label="Ticket views">
+    <h2>Views</h2>
+    <ul class="views" id="views"></ul>
+  </nav>
+
+  <main class="main" id="main">
+    <div class="head">
+      <div>
+        <h1 id="title" tabindex="-1">My open tickets <span class="total num" id="total"></span></h1>
+        <div class="fresh"><span id="fresh">Updated —</span>
+          <button class="btn small" id="refresh" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>Refresh</button>
+        </div>
+      </div>
+    </div>
+
+    <section class="card" aria-label="Tickets">
+      <div id="notices"></div>
+      <div class="tools" id="tools" role="search" aria-label="Filter tickets">
+        <div class="search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <label class="sr" for="q">Search tickets by subject, requester or number</label>
+          <input id="q" type="search" placeholder="Search subject, requester, #number" autocomplete="off" aria-keyshortcuts="/">
+        </div>
+        <button class="chip" id="fStatus" type="button" aria-haspopup="menu" aria-expanded="false">Status</button>
+        <button class="chip" id="fPrio" type="button" aria-haspopup="menu" aria-expanded="false">Priority</button>
+        <button class="btn link" id="clearF" type="button" hidden>Clear filters</button>
+        <span class="grow"></span>
+        <div class="seg" role="group" aria-label="Row density">
+          <button type="button" data-d="comfortable" aria-pressed="true">Comfortable</button>
+          <button type="button" data-d="compact" aria-pressed="false">Compact</button>
+        </div>
+      </div>
+      <div class="bulk" id="bulk" hidden></div>
+      <div class="selnote" id="selnote" hidden></div>
+      <div class="tablewrap" id="tablewrap" tabindex="-1"></div>
+      <div class="foot" id="foot"></div>
+    </section>
+  </main>
+
+  <aside class="panel" id="panel" aria-label="Ticket preview" hidden></aside>
+</div>
+
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+<div class="sr" id="live" role="status" aria-live="polite"></div>
+
+<dialog id="dlg" aria-labelledby="dlgT"><h2 id="dlgT"></h2><p id="dlgP"></p><div class="row"><button class="btn" id="dlgNo" type="button">Cancel</button><button class="btn primary" id="dlgYes" type="button"></button></div></dialog>
+
+<dialog id="help" aria-labelledby="helpT">
+  <h2 id="helpT">Keyboard shortcuts</h2>
+  <p>Row shortcuts work while focus is in the ticket list.</p>
+  <dl class="keys">
+    <dt><kbd>J</kbd> <kbd>K</kbd></dt><dd>Next / previous ticket</dd>
+    <dt><kbd>Enter</kbd></dt><dd>Open ticket preview</dd>
+    <dt><kbd>X</kbd></dt><dd>Select / deselect ticket</dd>
+    <dt><kbd>A</kbd></dt><dd>Assign to me (selection, or focused ticket)</dd>
+    <dt><kbd>S</kbd></dt><dd>Mark solved (selection, or focused ticket)</dd>
+    <dt><kbd>Esc</kbd></dt><dd>Close preview or menu</dd>
+    <dt><kbd>/</kbd></dt><dd>Focus search</dd>
+    <dt><kbd>?</kbd></dt><dd>Show this list</dd>
+  </dl>
+  <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="keysOn"> Keyboard shortcuts on</label>
+  <div class="row"><button class="btn primary" id="helpClose" type="button">Done</button></div>
+</dialog>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- constants ---------- */
+const ME = 'me';
+const AGENTS = [
+  {id:'me', name:'Priya Raman', ini:'PR'}, {id:'mw', name:'Marcus Webb', ini:'MW'}, {id:'at', name:'Aiko Tanaka', ini:'AT'},
+  {id:'dv', name:'Dmitri Volkov', ini:'DV'}, {id:'sa', name:'Sofia Alvarez', ini:'SA'}
+];
+const agentById = id => AGENTS.find(a => a.id === id);
+const STATUSES = [['new','New'],['open','Open'],['pending','Pending customer'],['solved','Solved']];
+const PRIOS = [['urgent','Urgent'],['high','High'],['normal','Normal'],['low','Low']];
+const sLabel = Object.fromEntries(STATUSES), pLabel = Object.fromEntries(PRIOS);
+const pRank = {urgent:0, high:1, normal:2, low:3}, sRank = {new:0, open:1, pending:2, solved:3};
+const MIN = 60000, HR = 3600000, DAY = 86400000;
+const VIEWS = [
+  ['mine','My open tickets'], ['unassigned','Unassigned'], ['risk','SLA at risk'], ['all','All open'], ['solved','Solved this week']
+];
+const DEFAULT_SORT = {sort:'sla', dir:'asc'};
+const COLS = [
+  {k:'subject', label:'Subject'}, {k:'requester', label:'Requester'}, {k:'status', label:'Status'},
+  {k:'priority', label:'Priority'}, {k:'sla', label:'Reply due'}, {k:'assignee', label:'Assignee'}, {k:'updated', label:'Updated'}
+];
+const qs = new URLSearchParams(location.search);
+const FORCE = qs.get('state');            // loading | error | empty  (state previews)
+const VIEWER = qs.get('role') === 'viewer';
+
+/* ---------- data (deterministic, relative to now) ---------- */
+let seed = 20261028;
+const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const pick = a => a[Math.floor(rnd() * a.length)];
+const chance = p => rnd() < p;
+
+const TOPICS = [
+  ['Can’t log in after SSO migration to Okta','Since Tuesday none of our 40 agents can sign in. We get “SAML assertion invalid” on every attempt.'],
+  ['Invoice INV-20418 charged twice for the Enterprise plan','We see two identical charges of $4,800 on our card statement. Please refund the duplicate.'],
+  ['Webhook deliveries failing with 502 since 09:00','Our endpoint is healthy but Relay shows repeated retries and then marks the delivery as failed.'],
+  ['How do I export all closed tickets from Q3?','Finance needs a CSV with requester, resolution time and tags for an audit. The export button times out.'],
+  ['Add 12 seats to our workspace','We’re onboarding a new support team on Monday. Can you add 12 seats and confirm the prorated amount?'],
+  ['Email-to-ticket not creating tickets from support@ alias','Messages sent to our alias since the DNS change never arrive. Other aliases still work.'],
+  ['Data deletion request (GDPR Art. 17) for a former customer','Please delete all tickets and attachments for the contact below and confirm in writing within 30 days.'],
+  ['Macro “Refund approved” inserts the wrong placeholder','The macro prints {{ticket.requester.first_name}} literally instead of the name. Started after last week’s update.'],
+  ['Slow dashboard — reports take over a minute to load','Reports > Resolution time takes 70+ seconds. Our team is in the Frankfurt region.'],
+  ['Request: bulk reassign tickets when an agent leaves','We offboard agents often and have to reassign hundreds of tickets by hand. Is there a better way?'],
+  ['Chat widget overlaps the cookie banner on mobile','On iOS Safari the widget covers “Accept all”, so visitors can’t dismiss the banner.'],
+  ['Cancel subscription effective end of month','We’ve decided to consolidate tools. Please cancel at the end of the current period and send final invoice.'],
+  ['API returns 429 even under documented rate limit','We make ~300 requests/min but get throttled. Docs say 700/min for our plan.'],
+  ['Customer replies are landing in spam for @contoso.co.uk','Several of our customers say they never get agent replies. SPF/DKIM look fine on our side.'],
+  ['SLA policy not applying to tickets from the VIP organisation','VIP tickets show no “reply due” time even though the policy targets that organisation.'],
+  ['Attachment upload fails above 10 MB','Customers can’t attach screen recordings. Error: “Upload failed (413)”.'],
+  ['Two-factor codes not arriving for admin accounts','Our three admins can’t finish sign-in because SMS codes don’t arrive. Locked out of billing.'],
+  ['Merge duplicate requesters: Ólafur Þórsson','There are four profiles for the same person with different emails; history is scattered.'],
+  ['Translate agent replies automatically?','Half of our inbound is Japanese. Is there a way to auto-translate replies before sending?'],
+  ['Audit log missing role-change events for March','Security review found no entries for role changes between 3–9 March. Were they dropped?']
+];
+const PEOPLE = [
+  ['Hannah Brooks','Northwind Traders'],['佐藤 美咲','Sakura Logistics'],['Zoë Müller','Müller & Söhne GmbH'],['Ólafur Þórsson','Fjord Analytics'],
+  ['Carlos Mendes','Mendes Foods'],['Amelia Hart','Hartley & Co Solicitors'],['Rohan Mehta','Orbit Fintech'],['Chloé Dubois','Maison Dubois'],
+  ['Tomasz Kowalski','Kowalski Industrial Supplies International'],['Fatima Al-Sayed','Nile Health'],['Liam O’Connor','Greenfield Energy'],
+  ['Grace Liu','Brightpath Learning'],['Jonas Eriksson','Nordlys Software'],['Ngozi Okafor','Lagos Mobility'],['Elena Petrova','Petrova Design Studio'],
+  ['Ben Carter','Carter Construction'],['Mei Tanaka','Tanaka Robotics'],['Diego Ramírez','Ramírez Legal'],['Sam Whitfield','Whitfield Print']
+];
+const CHANNELS = ['Email','Chat','Web form','API'];
+const FOLLOWUPS = [
+  'Thanks for the quick reply — I’ve attached the screenshot you asked for.',
+  'Still seeing this as of this morning. Happy to jump on a call if that’s easier.',
+  'Any update? Our team is blocked on this.'
+];
+const AGENT_Q = ['Thanks for reaching out. Could you share the workspace URL and a timestamp of the most recent failure?','I’ve escalated this to our platform team and will update you as soon as I hear back.'];
+
+const now0 = Date.now();
+function makeTicket(n, i, opts = {}) {
+  const [subject, body] = TOPICS[(i * 7 + Math.floor(rnd() * 3)) % TOPICS.length];
+  const [name, company] = pick(PEOPLE);
+  const r = rnd();
+  const status = opts.status || (r < .17 ? 'new' : r < .56 ? 'open' : r < .76 ? 'pending' : r < .9 ? 'solved' : 'open');
+  let assignee = status === 'new' ? (chance(.8) ? null : pick(AGENTS).id) : (chance(.3) ? ME : chance(.12) ? null : pick(AGENTS).id);
+  if (opts.assignee !== undefined) assignee = opts.assignee;
+  const pr = rnd();
+  const priority = pr < .08 ? 'urgent' : pr < .3 ? 'high' : pr < .85 ? 'normal' : 'low';
+  const age = opts.age != null ? opts.age : Math.floor(30 + rnd() * rnd() * 6000) * MIN;
+  const created = now0 - age - Math.floor(rnd() * 600) * MIN;
+  const updated = now0 - Math.min(age, Math.floor(rnd() * rnd() * 3000) * MIN) - (opts.age != null ? 0 : 0);
+  const targetH = {urgent:1, high:4, normal:8, low:24}[priority];
+  const due = created + targetH * HR + Math.floor((rnd() - .15) * 3) * HR;
+  const longSubj = chance(.06) ? subject + ' — customer says it affects every region and wants a call with an engineer today' : subject;
+  const t = {
+    id: n, subject: longSubj, body, name, email: name.split(' ')[0].toLowerCase().replace(/[^a-z]/g,'') + (rnd() < .5 ? '' : '.' + n % 90) + '@' + company.split(' ')[0].toLowerCase().replace(/[^a-z]/g,'') + '.com',
+    company, channel: pick(CHANNELS), status, priority, assignee, created, updated, due,
+    locked: status !== 'solved' && chance(.04), mergedInto: null, msgs: []
+  };
+  if (t.locked) t.mergedInto = n + 1 + Math.floor(rnd() * 40);
+  t.msgs.push({who: name, agent: false, at: created, text: body});
+  if (status === 'pending' || chance(.35)) t.msgs.push({who: (agentById(assignee) || AGENTS[1]).name, agent: true, at: created + 25 * MIN, text: pick(AGENT_Q)});
+  if (status !== 'new' && chance(.4)) t.msgs.push({who: name, agent: false, at: created + 70 * MIN, text: pick(FOLLOWUPS)});
+  return t;
+}
+let tickets = [];
+for (let i = 0; i < 148; i++) tickets.push(makeTicket(5400 - i, i));
+tickets.forEach(t => { if (t.status === 'solved') t.updated = now0 - Math.floor(rnd() * 6 * DAY); });
+let incoming = [];
+let lastLoaded = Date.now();
+
+/* ---------- state + url ---------- */
+const S = {
+  view:'mine', q:'', status:new Set(), prio:new Set(), sort:DEFAULT_SORT.sort, dir:DEFAULT_SORT.dir,
+  page:1, size:25, open:null, sel:new Set(), allMatching:false, loading:false, error: FORCE === 'error'
+};
+function readUrl() {
+  const p = new URLSearchParams(location.search);
+  const v = p.get('v'); if (VIEWS.some(x => x[0] === v)) S.view = v;
+  S.q = p.get('q') || '';
+  S.status = new Set((p.get('st') || '').split(',').filter(x => sLabel[x]));
+  S.prio = new Set((p.get('pr') || '').split(',').filter(x => pLabel[x]));
+  const so = p.get('sort'); if (COLS.some(c => c.k === so)) { S.sort = so; S.dir = p.get('dir') === 'desc' ? 'desc' : 'asc'; }
+  S.page = Math.max(1, parseInt(p.get('p')) || 1);
+  const n = parseInt(p.get('n')); if ([25,50,100].includes(n)) S.size = n;
+  S.open = parseInt(p.get('t')) || null;
+}
+function urlFor(over = {}) {
+  const s = Object.assign({view:S.view, q:S.q, status:S.status, prio:S.prio, sort:S.sort, dir:S.dir, page:S.page, size:S.size, open:S.open}, over);
+  const p = new URLSearchParams(location.search);
+  ['v','q','st','pr','sort','dir','p','n','t'].forEach(k => p.delete(k));
+  if (s.view !== 'mine') p.set('v', s.view);
+  if (s.q) p.set('q', s.q);
+  if (s.status.size) p.set('st', [...s.status].join(','));
+  if (s.prio.size) p.set('pr', [...s.prio].join(','));
+  if (s.sort !== DEFAULT_SORT.sort || s.dir !== DEFAULT_SORT.dir) { p.set('sort', s.sort); p.set('dir', s.dir); }
+  if (s.page > 1) p.set('p', s.page);
+  if (s.size !== 25) p.set('n', s.size);
+  if (s.open) p.set('t', s.open);
+  const str = p.toString();
+  return location.pathname + (str ? '?' + str : '');
+}
+function syncUrl() { history.replaceState(null, '', urlFor()); }
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
+const absFmt = new Intl.DateTimeFormat(undefined, {dateStyle:'medium', timeStyle:'short', timeZoneName:'short'});
+const clockFmt = new Intl.DateTimeFormat(undefined, {hour:'2-digit', minute:'2-digit', timeZoneName:'short'});
+const nf = new Intl.NumberFormat();
+function ago(ms) {
+  const m = Math.round((Date.now() - ms) / MIN);
+  if (m < 1) return 'just now';
+  if (m < 60) return m + ' min ago';
+  if (m < 1440) return Math.round(m / 60) + ' h ago';
+  return Math.round(m / 1440) + ' d ago';
+}
+function dur(mins) {
+  mins = Math.abs(Math.round(mins));
+  if (mins < 60) return mins + 'm';
+  if (mins < 1440) { const h = Math.floor(mins / 60), m = mins % 60; return m ? h + 'h ' + m + 'm' : h + 'h'; }
+  const d = Math.floor(mins / 1440), h = Math.floor(mins % 1440 / 60); return h ? d + 'd ' + h + 'h' : d + 'd';
+}
+function sla(t) {
+  if (t.status === 'solved') return {k:'none', text:'—', label:'Solved', v:Infinity};
+  if (t.status === 'pending') return {k:'none', text:'Paused', label:'Paused while waiting on customer', v:Infinity};
+  const m = (t.due - Date.now()) / MIN;
+  if (m < 0) return {k:'breach', text:'Overdue ' + dur(m), label:'Reply overdue by ' + dur(m), v:t.due};
+  if (m < 60) return {k:'risk', text:'Due in ' + dur(m), label:'Reply due in ' + dur(m), v:t.due};
+  return {k:'ok', text:'Due in ' + dur(m), label:'Reply due in ' + dur(m), v:t.due};
+}
+const slaIcon = k => k === 'breach'
+  ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17.5v.01"/></svg>'
+  : k === 'risk' ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>' : '';
+const bars = p => { const n = {urgent:4, high:3, normal:2, low:1}[p]; return '<span class="bars" aria-hidden="true">' + [1,2,3,4].map(i => '<b' + (i <= n ? ' class="f"' : '') + '></b>').join('') + '</span>'; };
+const statusIcon = {new:'●', open:'◐', pending:'❙❙', solved:'✓'};
+const statusPill = s => '<span class="status s-' + s + '"><span aria-hidden="true">' + statusIcon[s] + '</span>' + esc(sLabel[s]) + '</span>';
+function asg(id) {
+  const a = agentById(id);
+  if (!a) return '<span class="asg un"><span class="avatar un" aria-hidden="true">?</span><span>Unassigned</span></span>';
+  return '<span class="asg"><span class="avatar' + (id === ME ? ' me' : '') + '" aria-hidden="true">' + a.ini + '</span><span>' + esc(a.name) + (id === ME ? ' (you)' : '') + '</span></span>';
+}
+function announce(msg) { const l = $('live'); l.textContent = ''; setTimeout(() => { l.textContent = msg; }, 30); }
+
+/* ---------- query pipeline ---------- */
+function inView(t, v) {
+  switch (v) {
+    case 'mine': return t.status !== 'solved' && t.assignee === ME;
+    case 'unassigned': return t.status !== 'solved' && !t.assignee;
+    case 'risk': { if (t.status === 'solved') return false; const s = sla(t); return s.k === 'breach' || s.k === 'risk'; }
+    case 'all': return t.status !== 'solved';
+    case 'solved': return t.status === 'solved' && now0 - t.updated < 7 * DAY + DAY;
+  }
+}
+function matches(t) {
+  if (!inView(t, S.view)) return false;
+  if (S.status.size && !S.status.has(t.status)) return false;
+  if (S.prio.size && !S.prio.has(t.priority)) return false;
+  if (S.q) {
+    const q = S.q.toLowerCase().replace(/^#/, '');
+    if (!(t.subject.toLowerCase().includes(q) || t.name.toLowerCase().includes(q) || t.company.toLowerCase().includes(q) || String(t.id).includes(q))) return false;
+  }
+  return true;
+}
+function sortKey(t, k) {
+  switch (k) {
+    case 'subject': return t.subject.toLowerCase();
+    case 'requester': return t.name.toLowerCase();
+    case 'status': return sRank[t.status];
+    case 'priority': return pRank[t.priority];
+    case 'sla': return sla(t).v;
+    case 'assignee': return t.assignee ? agentById(t.assignee).name : '￿';
+    case 'updated': return t.updated;
+  }
+}
+function result() {
+  const all = tickets.filter(matches);
+  const dir = S.dir === 'asc' ? 1 : -1;
+  all.sort((a, b) => {
+    const x = sortKey(a, S.sort), y = sortKey(b, S.sort);
+    const c = typeof x === 'string' ? x.localeCompare(y) : (x === y ? 0 : x < y ? -1 : 1);
+    return c * dir || b.id - a.id;
+  });
+  const pages = Math.max(1, Math.ceil(all.length / S.size));
+  if (S.page > pages) S.page = pages;
+  const start = (S.page - 1) * S.size;
+  return {all, rows: all.slice(start, start + S.size), start, pages};
+}
+
+/* ---------- rendering ---------- */
+let R = result();
+const ic = {
+  more:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
+  x:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  caret:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>'
+};
+
+function renderViews() {
+  const mineN = tickets.filter(t => inView(t, 'mine')).length;
+  $('views').innerHTML = VIEWS.map(([k, label]) => {
+    const n = tickets.filter(t => inView(t, k)).length;
+    const alert = k === 'risk' && n > 0;
+    return '<li><button type="button" class="view" data-view="' + k + '"' + (S.view === k ? ' aria-current="page"' : '') + '><span>' + esc(label) + '</span><span class="count num' + (alert ? ' alert' : '') + '">' + n + '</span></button></li>';
+  }).join('');
+}
+function renderHead() {
+  const label = VIEWS.find(v => v[0] === S.view)[1];
+  $('title').firstChild.nodeValue = label + ' ';
+  $('total').textContent = FORCE === 'error' || S.error ? '' : nf.format(R.all.length) + (S.q || S.status.size || S.prio.size ? ' matching' : '');
+  document.title = label + ' · Ticket queue · Relay';
+  $('fresh').firstChild.nodeValue = 'Updated ' + clockFmt.format(lastLoaded) + ' · ';
+}
+function renderTools() {
+  $('q').value !== S.q && ($('q').value = S.q);
+  const f = (btn, name, set, labels) => {
+    const on = set.size > 0;
+    btn.className = 'chip' + (on ? ' on' : '');
+    btn.innerHTML = esc(name) + (on ? ': ' + esc(set.size > 2 ? set.size + ' selected' : [...set].map(x => labels[x]).join(', ')) : '') + ' ' + ic.caret;
+  };
+  f($('fStatus'), 'Status', S.status, sLabel);
+  f($('fPrio'), 'Priority', S.prio, pLabel);
+  $('clearF').hidden = !(S.q || S.status.size || S.prio.size);
+  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.d === document.documentElement.dataset.density)));
+}
+function renderNotices() {
+  let h = '';
+  if (VIEWER) h += '<div class="banner warn" role="note"><strong>View-only access.</strong> You can read this queue but not change tickets. Ask a workspace admin to give you the Agent role.</div>';
+  if (incoming.length) h += '<div class="banner info"><span><strong>' + plural(incoming.length, 'new ticket', 'new tickets') + '</strong> arrived since ' + clockFmt.format(lastLoaded) + '.</span><button class="btn small" id="loadNew" type="button">Show new tickets</button></div>';
+  $('notices').innerHTML = h;
+}
+function skeleton() {
+  const cols = VIEWER ? 7 : 9;
+  return '<table aria-hidden="true"><tbody>' + Array.from({length:10}, () => '<tr class="skel">' + Array.from({length:cols}, (_, i) => '<td><span class="sk" style="width:' + (i === (VIEWER ? 0 : 1) ? 260 : 60 + (i * 17) % 50) + 'px;max-width:100%"></span></td>').join('') + '</tr>').join('') + '</tbody></table>';
+}
+function stateBlock(kind) {
+  const svg = {
+    err:'<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17.5v.01"/></svg>',
+    ok:'<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>',
+    none:'<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>'
+  };
+  if (kind === 'error') return '<div class="state err"><div><div class="art">' + svg.err + '</div><h2>Couldn’t load tickets</h2><p>Relay didn’t respond, so we can’t tell what’s in this view. Your filters are kept. Nothing was changed.</p><button class="btn primary" id="retry" type="button">Try again</button></div></div>';
+  if (kind === 'filtered') return '<div class="state"><div><div class="art">' + svg.none + '</div><h2>No tickets match these filters</h2><p>Nothing in “' + esc(VIEWS.find(v => v[0] === S.view)[1]) + '” fits' + (S.q ? ' “' + esc(S.q) + '”' : ' your filters') + '. Try fewer filters or a different spelling.</p><button class="btn" id="emptyClear" type="button">Clear filters</button></div></div>';
+  const msg = {
+    mine:['You’re all caught up', 'No open tickets are assigned to you. Pick up something from the unassigned queue.', 'Go to Unassigned', 'unassigned'],
+    unassigned:['Nobody’s waiting for an owner', 'Every open ticket has an assignee. New tickets will appear here.', 'See all open tickets', 'all'],
+    risk:['No tickets are close to breaching', 'Nothing is overdue or due within the hour.', 'See all open tickets', 'all'],
+    all:['The queue is empty', 'There are no open tickets right now. New tickets will appear here.', '', ''],
+    solved:['Nothing solved this week yet', 'Tickets marked solved in the last 7 days appear here.', 'See all open tickets', 'all']
+  }[S.view];
+  return '<div class="state"><div><div class="art">' + svg.ok + '</div><h2>' + msg[0] + '</h2><p>' + msg[1] + '</p>' + (msg[2] ? '<button class="btn" data-view="' + msg[3] + '" type="button">' + msg[2] + '</button>' : '') + '</div></div>';
+}
+function renderTable() {
+  const wrap = $('tablewrap');
+  wrap.setAttribute('aria-busy', String(S.loading));
+  if (FORCE === 'loading') { wrap.innerHTML = skeleton(); $('foot').innerHTML = ''; return; }
+  if (S.error) { wrap.innerHTML = stateBlock('error'); $('foot').innerHTML = ''; return; }
+  const pool = FORCE === 'empty' ? [] : R.all;
+  if (!pool.length) {
+    const filtered = S.q || S.status.size || S.prio.size;
+    wrap.innerHTML = stateBlock(FORCE === 'empty' ? 'empty' : filtered ? 'filtered' : 'empty');
+    $('foot').innerHTML = ''; return;
+  }
+  const canEdit = !VIEWER;
+  const pageSel = R.rows.filter(t => S.sel.has(t.id) || S.allMatching).length;
+  const ths = COLS.map(c => {
+    const on = S.sort === c.k;
+    const next = on ? (S.dir === 'asc' ? 'descending' : 'default order') : 'ascending';
+    return '<th scope="col"' + (on ? ' aria-sort="' + (S.dir === 'asc' ? 'ascending' : 'descending') + '"' : '') + '><button class="sort" type="button" data-sort="' + c.k + '" title="Sort by ' + c.label.toLowerCase() + ', ' + next + '">' + c.label + '<span class="arr" aria-hidden="true">' + (on ? (S.dir === 'asc' ? '▲' : '▼') : '▲') + '</span></button></th>';
+  }).join('');
+  let h = '<table><caption>' + esc(VIEWS.find(v => v[0] === S.view)[1]) + ': ' + plural(R.all.length, 'ticket', 'tickets') + ', sorted by ' + COLS.find(c => c.k === S.sort).label.toLowerCase() + ' ' + S.dir + 'ending</caption><thead><tr>' +
+    (canEdit ? '<th scope="col" class="chk"><input type="checkbox" id="selPage" aria-label="Select all ' + R.rows.length + ' tickets on this page"></th>' : '') + ths +
+    (canEdit ? '<th scope="col" class="act"><span class="sr">Actions</span></th>' : '') + '</tr></thead><tbody>';
+  for (const t of R.rows) {
+    const s = sla(t), sel = S.sel.has(t.id) || S.allMatching;
+    h += '<tr data-id="' + t.id + '"' + (sel ? ' data-sel="1"' : '') + (S.open === t.id ? ' data-open="1"' : '') + (t._fresh ? ' class="fresh-row"' : '') + '>' +
+      (canEdit ? '<td class="chk"><input type="checkbox" data-sel="' + t.id + '"' + (sel ? ' checked' : '') + ' aria-label="Select ticket #' + t.id + '"></td>' : '') +
+      '<th scope="row"><div class="subj"><span class="id">#' + t.id + '</span><a href="' + esc(urlFor({open:t.id})) + '" data-open="' + t.id + '" title="' + esc(t.subject) + '">' + esc(t.subject) + '</a>' + (t.locked ? '<span class="tag">Merged</span>' : '') + '</div></th>' +
+      '<td><span class="who" title="' + esc(t.name + ' · ' + t.company) + '">' + esc(t.name) + ' <small>' + esc(t.company) + '</small></span></td>' +
+      '<td>' + statusPill(t.status) + '</td>' +
+      '<td><span class="prio p-' + t.priority + '">' + bars(t.priority) + esc(pLabel[t.priority]) + '</span></td>' +
+      '<td><span class="sla ' + s.k + '" data-sla="' + t.id + '" title="' + esc(s.label) + '">' + slaIcon(s.k) + '<span>' + s.text + '</span></span></td>' +
+      '<td>' + asg(t.assignee) + '</td>' +
+      '<td><time class="t-ago" datetime="' + new Date(t.updated).toISOString() + '" title="' + esc(absFmt.format(t.updated)) + '">' + ago(t.updated) + '</time></td>' +
+      (canEdit ? '<td class="act"><div class="actions">' +
+        (!t.locked && t.assignee !== ME && t.status !== 'solved' ? '<button class="btn small" type="button" data-take="' + t.id + '">Assign to me</button>' : '') +
+        '<button class="icon-btn" type="button" data-more="' + t.id + '" aria-haspopup="menu" aria-expanded="false" aria-label="Actions for ticket #' + t.id + '">' + ic.more + '</button></div></td>' : '') +
+      '</tr>';
+    t._fresh = false;
+  }
+  h += '</tbody></table>';
+  wrap.innerHTML = h;
+  const hc = $('selPage');
+  if (hc) { hc.checked = pageSel === R.rows.length && pageSel > 0; hc.indeterminate = pageSel > 0 && pageSel < R.rows.length; }
+  const end = R.start + R.rows.length;
+  $('foot').innerHTML = '<span class="num">Showing ' + nf.format(R.start + 1) + '–' + nf.format(end) + ' of ' + nf.format(R.all.length) + '</span>' +
+    '<div class="pager"><label>Rows per page <select id="size">' + [25,50,100].map(n => '<option' + (n === S.size ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></label>' +
+    '<button class="btn small" type="button" id="prev"' + (S.page <= 1 ? ' disabled' : '') + '>Previous</button><span class="num">Page ' + S.page + ' of ' + R.pages + '</span>' +
+    '<button class="btn small" type="button" id="next"' + (S.page >= R.pages ? ' disabled' : '') + '>Next</button></div>';
+}
+function selCount() { return S.allMatching ? R.all.length : S.sel.size; }
+function renderBulk() {
+  const n = selCount(), bulk = $('bulk'), note = $('selnote');
+  $('tools').hidden = n > 0;
+  bulk.hidden = n === 0;
+  if (!n) { note.hidden = true; return; }
+  bulk.innerHTML = '<span class="n num">' + nf.format(n) + ' selected</span>' +
+    '<button class="btn small" type="button" data-bulk="assign-me">Assign to me</button>' +
+    '<button class="btn small" type="button" data-bulk="assign" aria-haspopup="menu" aria-expanded="false">Assign to ' + ic.caret + '</button>' +
+    '<button class="btn small" type="button" data-bulk="status" aria-haspopup="menu" aria-expanded="false">Set status ' + ic.caret + '</button>' +
+    '<button class="btn small" type="button" data-bulk="priority" aria-haspopup="menu" aria-expanded="false">Set priority ' + ic.caret + '</button>' +
+    '<span class="sp"></span><button class="btn small" type="button" data-bulk="clear">Clear selection</button>';
+  const pageAll = R.rows.length && R.rows.every(t => S.sel.has(t.id));
+  if (S.allMatching) { note.hidden = false; note.innerHTML = 'All ' + nf.format(R.all.length) + ' matching tickets are selected. <button class="btn link" type="button" data-bulk="clear">Clear selection</button>'; }
+  else if (pageAll && R.all.length > R.rows.length) { note.hidden = false; note.innerHTML = 'All ' + R.rows.length + ' tickets on this page are selected. <button class="btn link" type="button" data-bulk="all">Select all ' + nf.format(R.all.length) + ' matching tickets</button>'; }
+  else note.hidden = true;
+}
+function renderPanel() {
+  const p = $('panel'), t = tickets.find(x => x.id === S.open);
+  $('shell').classList.toggle('has-panel', !!t);
+  if (!t) { p.hidden = true; p.innerHTML = ''; return; }
+  const s = sla(t), ro = VIEWER || t.locked;
+  const opts = (list, cur) => list.map(([k, l]) => '<option value="' + k + '"' + (k === cur ? ' selected' : '') + '>' + l + '</option>').join('');
+  const keepScroll = p.querySelector('.pbody') ? p.querySelector('.pbody').scrollTop : 0;
+  const keepFocus = p.contains(document.activeElement) ? document.activeElement.id : '';
+  p.hidden = false;
+  p.innerHTML = '<header><div><div class="meta num">#' + t.id + ' · ' + esc(t.channel) + '</div><h2>' + esc(t.subject) + '</h2></div><button class="icon-btn" id="closePanel" type="button" aria-label="Close preview">' + ic.x + '</button></header>' +
+    '<div class="pbody">' +
+    (t.locked ? '<p class="note">This ticket was merged into #' + t.mergedInto + ' and is read-only.</p>' : '') +
+    (VIEWER ? '<p class="note">You have view-only access. Ask a workspace admin to change tickets.</p>' : '') +
+    '<div class="fields">' +
+      '<div class="field"><label for="pStatus">Status</label><select id="pStatus"' + (ro ? ' disabled' : '') + '>' + opts(STATUSES, t.status) + '</select></div>' +
+      '<div class="field"><label for="pPrio">Priority</label><select id="pPrio"' + (ro ? ' disabled' : '') + '>' + opts(PRIOS, t.priority) + '</select></div>' +
+      '<div class="field full"><label for="pAsg">Assignee</label><select id="pAsg"' + (ro ? ' disabled' : '') + '><option value="">Unassigned</option>' + AGENTS.map(a => '<option value="' + a.id + '"' + (a.id === t.assignee ? ' selected' : '') + '>' + esc(a.name) + (a.id === ME ? ' (you)' : '') + '</option>').join('') + '</select></div>' +
+    '</div>' +
+    '<dl class="kv"><dt>Requester</dt><dd>' + esc(t.name) + '<br><span style="color:var(--ink-3)">' + esc(t.email) + '</span></dd><dt>Company</dt><dd>' + esc(t.company) + '</dd>' +
+    '<dt>Reply due</dt><dd><span class="sla ' + s.k + '">' + slaIcon(s.k) + esc(s.k === 'none' ? s.label : s.text) + '</span>' + (s.k !== 'none' ? '<br><span style="color:var(--ink-3)">' + esc(absFmt.format(t.due)) + '</span>' : '') + '</dd>' +
+    '<dt>Created</dt><dd>' + esc(absFmt.format(t.created)) + '</dd></dl>' +
+    '<section class="convo"><h3>Conversation</h3>' + t.msgs.map(m => '<div class="msg' + (m.agent ? ' agent' : '') + '"><div class="by">' + esc(m.who) + '<span>' + esc(ago(m.at)) + '</span></div>' + esc(m.text) + '</div>').join('') + '</section>' +
+    '</div>';
+  p.querySelector('.pbody').scrollTop = keepScroll;
+  if (keepFocus) { const f = document.getElementById(keepFocus); f && f.focus(); }
+}
+function render() {
+  R = result();
+  renderViews(); renderHead(); renderTools(); renderNotices(); renderTable(); renderBulk(); renderPanel();
+  syncUrl();
+}
+function resetSelection() { S.sel.clear(); S.allMatching = false; }
+
+/* ---------- menus ---------- */
+let menuEl = null, menuAnchor = null;
+function closeMenu(restore = true) {
+  if (!menuEl) return;
+  menuEl.remove(); menuEl = null;
+  if (menuAnchor) { menuAnchor.setAttribute('aria-expanded', 'false'); if (restore && document.contains(menuAnchor)) menuAnchor.focus(); }
+  menuAnchor = null;
+}
+function openMenu(anchor, items) {
+  closeMenu(false);
+  const m = document.createElement('div');
+  m.className = 'menu'; m.setAttribute('role', 'menu');
+  const build = () => {
+    m.innerHTML = items.map((it, i) => it.divider ? '<hr role="separator">' :
+      '<button type="button" role="' + (it.check != null ? 'menuitemcheckbox' : 'menuitem') + '"' + (it.check != null ? ' aria-checked="' + it.check + '"' : '') + (it.disabled ? ' aria-disabled="true" title="' + esc(it.disabled) + '"' : '') + ' data-i="' + i + '" tabindex="-1">' +
+      (it.check != null ? '<span class="ck" aria-hidden="true">' + (it.check ? '✓' : '') + '</span>' : '') + esc(it.label) + '</button>').join('');
+  };
+  build();
+  document.body.appendChild(m);
+  const r = anchor.getBoundingClientRect(), mr = m.getBoundingClientRect();
+  m.style.left = Math.max(8, Math.min(r.left, innerWidth - mr.width - 8)) + 'px';
+  m.style.top = (r.bottom + 6 + mr.height > innerHeight ? Math.max(8, r.top - mr.height - 6) : r.bottom + 6) + 'px';
+  menuEl = m; menuAnchor = anchor; anchor.setAttribute('aria-expanded', 'true');
+  const btns = () => [...m.querySelectorAll('button')];
+  btns()[0] && btns()[0].focus();
+  m.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const it = items[+b.dataset.i];
+    if (it.disabled) return;
+    if (it.keepOpen) {
+      const idx = btns().indexOf(b);
+      it.onPick(); it.check = !it.check; build(); btns()[idx].focus(); return;
+    }
+    closeMenu(false);
+    it.onPick();
+  });
+  m.addEventListener('keydown', e => {
+    const b = btns(), i = b.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') { e.preventDefault(); b[(i + 1) % b.length].focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); b[(i - 1 + b.length) % b.length].focus(); }
+    else if (e.key === 'Home') { e.preventDefault(); b[0].focus(); }
+    else if (e.key === 'End') { e.preventDefault(); b[b.length - 1].focus(); }
+    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeMenu(); }
+    else if (e.key === 'Tab') closeMenu(false);
+  });
+}
+document.addEventListener('mousedown', e => { if (menuEl && !menuEl.contains(e.target) && !(menuAnchor && menuAnchor.contains(e.target))) closeMenu(false); });
+addEventListener('resize', () => closeMenu(false));
+$('tablewrap').addEventListener('scroll', () => closeMenu(false));
+
+/* ---------- toasts + undo ---------- */
+let toastTimer = null, undoFn = null;
+function toast(msg, undo) {
+  const box = $('toasts'); box.innerHTML = ''; clearTimeout(toastTimer);
+  const el = document.createElement('div'); el.className = 'toast';
+  el.innerHTML = '<span>' + esc(msg) + '</span>' + (undo ? '<button class="undo" type="button">Undo</button>' : '') + '<button class="x" type="button" aria-label="Dismiss">' + ic.x + '</button>';
+  box.appendChild(el); undoFn = undo || null;
+  const dismiss = () => { el.remove(); undoFn = null; };
+  const start = () => { clearTimeout(toastTimer); toastTimer = setTimeout(dismiss, Math.max(8000, msg.length * 90)); };
+  start();
+  el.addEventListener('mouseenter', () => clearTimeout(toastTimer)); el.addEventListener('mouseleave', start);
+  el.addEventListener('focusin', () => clearTimeout(toastTimer)); el.addEventListener('focusout', start);
+  el.querySelector('.x').onclick = dismiss;
+  const u = el.querySelector('.undo');
+  if (u) u.onclick = () => { const f = undoFn; dismiss(); f && f(); };
+}
+
+/* ---------- mutations ---------- */
+const FIELD_LABEL = {assignee:'Assignee', status:'Status', priority:'Priority'};
+function confirmDialog(title, text, yes) {
+  return new Promise(res => {
+    const d = $('dlg'); $('dlgT').textContent = title; $('dlgP').textContent = text; $('dlgYes').textContent = yes;
+    const done = v => { d.close(); res(v); };
+    $('dlgYes').onclick = () => done(true); $('dlgNo').onclick = () => done(false);
+    d.oncancel = () => res(false);
+    d.showModal(); $('dlgYes').focus();
+  });
+}
+function describe(patch, n) {
+  const t = plural(n, 'ticket', 'tickets');
+  if ('assignee' in patch) return patch.assignee === ME ? 'Assigned ' + t + ' to you' : patch.assignee ? 'Assigned ' + t + ' to ' + agentById(patch.assignee).name : 'Unassigned ' + t;
+  if (patch.status) return patch.status === 'solved' ? 'Marked ' + t + ' as solved' : 'Set ' + t + ' to ' + sLabel[patch.status].toLowerCase();
+  return 'Set priority to ' + pLabel[patch.priority].toLowerCase() + ' on ' + t;
+}
+async function apply(ids, patch, opts = {}) {
+  if (VIEWER) return;
+  const list = ids.map(id => tickets.find(t => t.id === id)).filter(Boolean);
+  const locked = list.filter(t => t.locked);
+  const eligible = list.filter(t => !t.locked);
+  const changing = eligible.filter(t => Object.keys(patch).some(k => t[k] !== patch[k]));
+  if (!changing.length) {
+    toast(locked.length ? plural(locked.length, 'ticket is', 'tickets are') + ' merged and read-only. Nothing changed.' : 'Nothing to change. ' + (list.length === 1 ? 'The ticket already' : 'Those tickets already') + ' match.');
+    return;
+  }
+  if (locked.length && list.length > 1) {
+    const ok = await confirmDialog(plural(locked.length, 'ticket', 'tickets') + ' can’t be changed', locked.length + ' of ' + list.length + ' selected are merged and read-only. Continue with the other ' + eligible.length + '?', 'Continue with ' + eligible.length);
+    if (!ok) return;
+  }
+  const idx = opts.focusIndex;
+  const prev = changing.map(t => ({t, was: Object.fromEntries(Object.keys(patch).map(k => [k, t[k]])), updated: t.updated}));
+  changing.forEach(t => { Object.assign(t, patch); t.updated = Date.now(); });
+  resetSelection();
+  render();
+  if (idx != null) focusRow(idx);
+  let msg = describe(patch, changing.length);
+  const unchanged = eligible.length - changing.length;
+  if (unchanged > 0) msg += ' (' + unchanged + ' already set)';
+  if (locked.length) msg += '. Skipped ' + locked.length + ' merged';
+  toast(msg, () => {
+    prev.forEach(p => { Object.assign(p.t, p.was); p.t.updated = p.updated; });
+    render(); announce('Undone. ' + plural(prev.length, 'ticket', 'tickets') + ' restored.');
+  });
+}
+function targets() { return S.allMatching ? R.all.map(t => t.id) : [...S.sel]; }
+function focusRow(i) {
+  requestAnimationFrame(() => {
+    const links = $('tablewrap').querySelectorAll('tbody a[data-open]');
+    if (!links.length) { $('tablewrap').focus(); return; }
+    links[Math.max(0, Math.min(i, links.length - 1))].focus();
+  });
+}
+const rowIndex = id => R.rows.findIndex(t => t.id === id);
+function agentItems(onPick) {
+  return [...AGENTS.map(a => ({label: a.name + (a.id === ME ? ' (you)' : ''), onPick: () => onPick(a.id)})), {divider:true}, {label:'Unassigned', onPick: () => onPick(null)}];
+}
+const statusItems = onPick => STATUSES.map(([k, l]) => ({label:l, onPick: () => onPick(k)}));
+const prioItems = onPick => PRIOS.map(([k, l]) => ({label:l, onPick: () => onPick(k)}));
+
+function openTicket(id, focusPanel) {
+  S.open = id; render();
+  if (focusPanel !== false) { const c = $('closePanel'); c && c.focus(); }
+}
+function closePanel() {
+  const id = S.open; S.open = null; render();
+  const link = $('tablewrap').querySelector('a[data-open="' + id + '"]'); link ? link.focus() : $('tablewrap').focus();
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click', e => {
+  const t = e.target;
+  const view = t.closest('[data-view]');
+  if (view) { S.view = view.dataset.view; S.page = 1; resetSelection(); S.open = null; render(); announce(VIEWS.find(v => v[0] === S.view)[1] + ', ' + plural(R.all.length, 'ticket', 'tickets')); $('title').focus(); return; }
+  const open = t.closest('a[data-open]');
+  if (open) { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); openTicket(+open.dataset.open); return; }
+  const sortBtn = t.closest('[data-sort]');
+  if (sortBtn) {
+    const k = sortBtn.dataset.sort;
+    if (S.sort !== k) { S.sort = k; S.dir = k === 'updated' ? 'desc' : 'asc'; }
+    else if (S.dir === (k === 'updated' ? 'desc' : 'asc')) S.dir = S.dir === 'asc' ? 'desc' : 'asc';
+    else { S.sort = DEFAULT_SORT.sort; S.dir = DEFAULT_SORT.dir; }
+    S.page = 1; resetSelection(); render();
+    announce('Sorted by ' + COLS.find(c => c.k === S.sort).label.toLowerCase() + ', ' + (S.dir === 'asc' ? 'ascending' : 'descending'));
+    const nb = $('tablewrap').querySelector('[data-sort="' + S.sort + '"]'); nb && nb.focus(); return;
+  }
+  const take = t.closest('[data-take]');
+  if (take) { const id = +take.dataset.take; apply([id], {assignee:ME}, {focusIndex: rowIndex(id)}); return; }
+  const more = t.closest('[data-more]');
+  if (more) {
+    const id = +more.dataset.more, tk = tickets.find(x => x.id === id), i = rowIndex(id);
+    const link = location.origin + urlFor({open:id});
+    openMenu(more, [
+      tk.locked ? {label:'Merged tickets are read-only', disabled:'Merged into #' + tk.mergedInto, onPick(){}} : null,
+      !tk.locked && tk.assignee !== ME && tk.status !== 'solved' ? {label:'Assign to me', onPick: () => apply([id], {assignee:ME}, {focusIndex:i})} : null,
+      !tk.locked && tk.assignee ? {label:'Unassign', onPick: () => apply([id], {assignee:null}, {focusIndex:i})} : null,
+      !tk.locked && tk.status !== 'pending' && tk.status !== 'solved' ? {label:'Mark as pending customer', onPick: () => apply([id], {status:'pending'}, {focusIndex:i})} : null,
+      !tk.locked && tk.status !== 'solved' ? {label:'Mark as solved', onPick: () => apply([id], {status:'solved'}, {focusIndex:i})} : null,
+      !tk.locked && tk.status === 'solved' ? {label:'Reopen', onPick: () => apply([id], {status:'open'}, {focusIndex:i})} : null,
+      {divider:true},
+      {label:'Copy link to ticket', onPick: () => { (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(() => toast('Link to #' + id + ' copied'), () => toast('Couldn’t copy. Open the ticket and copy the address bar.')); }}
+    ].filter(Boolean).filter((x, j, a) => !(x.divider && (j === 0 || a[j - 1].divider))));
+    return;
+  }
+  const b = t.closest('[data-bulk]');
+  if (b) {
+    const k = b.dataset.bulk;
+    if (k === 'clear') { resetSelection(); render(); $('q').focus(); }
+    else if (k === 'all') { S.allMatching = true; render(); announce('All ' + R.all.length + ' matching tickets selected'); }
+    else if (k === 'assign-me') apply(targets(), {assignee:ME});
+    else if (k === 'assign') openMenu(b, agentItems(id => apply(targets(), {assignee:id})));
+    else if (k === 'status') openMenu(b, statusItems(v => apply(targets(), {status:v})));
+    else if (k === 'priority') openMenu(b, prioItems(v => apply(targets(), {priority:v})));
+    return;
+  }
+  if (t.closest('#closePanel')) { closePanel(); return; }
+  if (t.closest('#retry')) { S.error = false; if (FORCE === 'error') { const p = new URLSearchParams(location.search); p.delete('state'); location.search = p.toString(); return; } doRefresh(); return; }
+  if (t.closest('#loadNew')) {
+    incoming.forEach(x => x._fresh = true); tickets = incoming.concat(tickets); const n = incoming.length; incoming = []; lastLoaded = Date.now(); render(); announce(plural(n, 'new ticket', 'new tickets') + ' added'); return;
+  }
+  if (t.closest('#emptyClear') || t.closest('#clearF')) { clearFilters(); return; }
+  if (t.closest('#prev')) { S.page--; resetSelection(); render(); $('tablewrap').scrollTop = 0; announce('Page ' + S.page + ' of ' + R.pages); return; }
+  if (t.closest('#next')) { S.page++; resetSelection(); render(); $('tablewrap').scrollTop = 0; announce('Page ' + S.page + ' of ' + R.pages); return; }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.id === 'selPage') {
+    if (t.checked) R.rows.forEach(r => S.sel.add(r.id)); else { R.rows.forEach(r => S.sel.delete(r.id)); S.allMatching = false; }
+    render(); announce(selCount() + ' selected'); return;
+  }
+  if (t.dataset && t.dataset.sel) {
+    const id = +t.dataset.sel;
+    if (S.allMatching) { S.allMatching = false; S.sel = new Set(R.all.map(x => x.id)); }
+    t.checked ? S.sel.add(id) : S.sel.delete(id);
+    const ci = rowIndex(id); render(); announce(selCount() + ' selected');
+    const cb = $('tablewrap').querySelector('input[data-sel="' + id + '"]'); cb && cb.focus(); return;
+  }
+  if (t.id === 'size') { S.size = +t.value; S.page = 1; resetSelection(); render(); return; }
+  if (t.id === 'pStatus') apply([S.open], {status:t.value});
+  if (t.id === 'pPrio') apply([S.open], {priority:t.value});
+  if (t.id === 'pAsg') apply([S.open], {assignee:t.value || null});
+  if (t.id === 'keysOn') { shortcutsOn = t.checked; store('relay.keys', t.checked ? '1' : '0'); }
+});
+$('q').addEventListener('input', e => { S.q = e.target.value.trim(); S.page = 1; resetSelection(); render(); });
+$('q').addEventListener('keydown', e => { if (e.key === 'Escape' && $('q').value) { e.stopPropagation(); $('q').value = ''; S.q = ''; render(); } });
+function clearFilters() { S.q = ''; S.status.clear(); S.prio.clear(); S.page = 1; resetSelection(); render(); announce('Filters cleared. ' + plural(R.all.length, 'ticket', 'tickets')); }
+function filterMenu(btn, set, list) {
+  if (menuAnchor === btn) { closeMenu(); return; }
+  openMenu(btn, list.map(([k, l]) => ({label:l, check:set.has(k), keepOpen:true, onPick: () => { set.has(k) ? set.delete(k) : set.add(k); S.page = 1; resetSelection(); const keep = menuEl; const fb = menuAnchor; render(); menuAnchor = fb; menuEl = keep; fb.setAttribute('aria-expanded', 'true'); announce(plural(R.all.length, 'ticket', 'tickets') + ' match'); }})));
+}
+$('fStatus').addEventListener('click', e => filterMenu(e.currentTarget, S.status, STATUSES));
+$('fPrio').addEventListener('click', e => filterMenu(e.currentTarget, S.prio, PRIOS));
+document.querySelector('.seg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  document.documentElement.dataset.density = b.dataset.d; store('relay.density', b.dataset.d); renderTools();
+});
+
+/* refresh */
+function doRefresh() {
+  if (S.loading) return;
+  S.loading = true; S.error = false; $('refresh').disabled = true; $('tablewrap').setAttribute('aria-busy', 'true');
+  setTimeout(() => {
+    S.loading = false; $('refresh').disabled = false; lastLoaded = Date.now();
+    if (incoming.length) { incoming.forEach(x => x._fresh = true); tickets = incoming.concat(tickets); announce(plural(incoming.length, 'new ticket', 'new tickets') + ' added'); incoming = []; }
+    else announce('Queue refreshed');
+    render();
+  }, 450);
+}
+$('refresh').addEventListener('click', doRefresh);
+
+/* simulated arrivals: held back so rows never shift under the pointer */
+setTimeout(() => {
+  if (FORCE) return;
+  for (let i = 0; i < 3; i++) incoming.push(makeTicket(5401 + i, 40 + i, {status:'new', assignee:null, age: (3 + i * 4) * MIN}));
+  incoming.forEach(t => { t.updated = t.created = Date.now() - 3 * MIN; t.due = t.created + 4 * HR; });
+  renderNotices(); announce(plural(incoming.length, 'new ticket', 'new tickets') + ' arrived');
+}, 45000);
+/* keep countdowns honest without re-rendering rows (focus stays put) */
+setInterval(() => {
+  document.querySelectorAll('[data-sla]').forEach(el => {
+    const t = tickets.find(x => x.id === +el.dataset.sla); if (!t) return;
+    const s = sla(t); el.className = 'sla ' + s.k; el.title = s.label; el.innerHTML = slaIcon(s.k) + '<span>' + s.text + '</span>';
+  });
+  if (!$('views').contains(document.activeElement)) renderViews();
+}, 60000);
+
+/* ---------- keyboard ---------- */
+function store(k, v) { try { localStorage.setItem(k, v); } catch (_) {} }
+function load(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }
+let shortcutsOn = load('relay.keys') !== '0';
+const dlgOpen = () => document.querySelector('dialog[open]');
+function focusedRowId() { const r = document.activeElement && document.activeElement.closest && document.activeElement.closest('tbody tr[data-id]'); return r ? +r.dataset.id : null; }
+document.addEventListener('keydown', e => {
+  if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+  const tag = (e.target.tagName || '').toLowerCase();
+  const typing = tag === 'input' && e.target.type !== 'checkbox' || tag === 'select' || tag === 'textarea';
+  if (e.key === 'Escape' && !dlgOpen() && !menuEl && S.open && !typing) { closePanel(); return; }
+  if (typing || dlgOpen() || menuEl || !shortcutsOn) return;
+  if (e.key === '/') { e.preventDefault(); $('q').focus(); return; }
+  if (e.key === '?') { e.preventDefault(); showHelp(); return; }
+  if (!e.target.closest('#tablewrap')) return;               // row shortcuts only while focus is in the list (WCAG 2.1.4)
+  const id = focusedRowId(); const i = id ? rowIndex(id) : -1;
+  if (e.key === 'j' || e.key === 'k') {
+    e.preventDefault(); const links = $('tablewrap').querySelectorAll('tbody a[data-open]');
+    const n = e.key === 'j' ? Math.min(links.length - 1, i + 1) : Math.max(0, i - 1); links[n] && links[n].focus();
+  } else if (e.key === 'x' && id && !VIEWER) {
+    const cb = $('tablewrap').querySelector('input[data-sel="' + id + '"]'); cb.checked = !cb.checked; cb.dispatchEvent(new Event('change', {bubbles:true}));
+    const l = $('tablewrap').querySelector('a[data-open="' + id + '"]'); l && l.focus();
+  } else if ((e.key === 'a' || e.key === 's') && !VIEWER) {
+    const ids = selCount() ? targets() : id ? [id] : [];
+    if (ids.length) { e.preventDefault(); apply(ids, e.key === 'a' ? {assignee:ME} : {status:'solved'}, {focusIndex:i}); }
+  }
+});
+function showHelp() { $('keysOn').checked = shortcutsOn; $('help').showModal(); }
+$('helpBtn').addEventListener('click', showHelp);
+$('helpClose').addEventListener('click', () => $('help').close());
+
+/* ---------- init ---------- */
+(function init() {
+  const d = load('relay.density'); document.documentElement.dataset.density = d === 'compact' ? 'compact' : 'comfortable';
+  readUrl();
+  if (VIEWER) $('roleTag').textContent = 'Viewer';
+  render();
+  addEventListener('popstate', () => { readUrl(); render(); });
+})();
+})();
+</script>
+</body>
+</html>

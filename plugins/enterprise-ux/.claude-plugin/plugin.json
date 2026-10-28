@@ -1,0 +1,25 @@
+{
+  "name": "enterprise-ux",
+  "description": "Plan, grill, design and audit enterprise SaaS UX: tables, filters, forms, states, permissions, onboarding, billing, notifications, AI features and WCAG 2.2 AA \u2014 distilled from 12 design systems, NN/g and W3C.",
+  "version": "4.0.0",
+  "author": {
+    "name": "Ankit Pareek",
+    "url": "https://agooddesigner.in"
+  },
+  "homepage": "https://agooddesigner.in",
+  "license": "MIT",
+  "keywords": [
+    "ux",
+    "design",
+    "enterprise",
+    "saas",
+    "tables",
+    "forms",
+    "dashboard",
+    "design-system",
+    "accessibility",
+    "wcag",
+    "ux-audit",
+    "heuristics"
+  ]
+}
