@@ -80,14 +80,14 @@ Claude reads `SKILL.md` first, then only the files the task needs — so it stay
 ### Claude Code
 
 ```bash
-/plugin marketplace add YOUR-GITHUB-USERNAME/enterprise-ux
+/plugin marketplace add agooddesigner/enterprise-ux
 /plugin install enterprise-ux@enterprise-ux
 ```
 
 Or copy the skill folder manually:
 
 ```bash
-git clone https://github.com/YOUR-GITHUB-USERNAME/enterprise-ux
+git clone https://github.com/agooddesigner/enterprise-ux
 cp -r enterprise-ux/plugins/enterprise-ux/skills/enterprise-ux ~/.claude/skills/
 ```
 
