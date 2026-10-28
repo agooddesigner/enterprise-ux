@@ -123,8 +123,6 @@ Audit this screen for UX and WCAG 2.2 AA. Top 3 issues first. [attach screenshot
 | Build an invoices list | 28% | 75% | **80%** |
 | Make a kanban accessible | 85% | 80% | 85% |
 
-Honest read: the biggest gains are in planning and grilling; on code it catches the enterprise details (URL state, select-all-matching, partial failures, reachable error states) the base model skips; on accessibility the base model is already good. Full method, raw outputs and screenshots: [`evals/`](evals/README.md) · [`results`](evals/results/COMBINED.md).
-
 ![Invoices list: no skill vs v1 vs v2](evals/results/2026-10-28-run2/screenshots/E1-side-by-side.png)
 
 ### v4: Intake and visual direction
